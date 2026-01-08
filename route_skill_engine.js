@@ -191,8 +191,9 @@ const RouteSkillEngine = {
      * @returns {Object} { newPlayer, message, messageType }
      */
     executeBlueprintSkill: function(player, skillId, blueprintConfig, routeConfig) {
-        // 檢查技能是否已解鎖
-        if (!player.blueprint_skills?.includes(skillId)) {
+        // 檢查技能是否已解鎖（從 blueprint_state.activated_skills 檢查）
+        const activatedSkills = player.blueprint_state?.activated_skills || [];
+        if (!activatedSkills.includes(skillId)) {
             return {
                 newPlayer: player,
                 message: '技能尚未解鎖',
