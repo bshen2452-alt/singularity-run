@@ -296,9 +296,12 @@ const RouteSkillEngine = {
      */
     getAllSkillStates: function(player, routeConfig) {
         const route = player.route;
+        // 從 blueprint_state.activated_skills 取得已啟用的藍圖技能
+        const activatedBlueprintSkills = player.blueprint_state?.activated_skills || [];
+        
         const availableSkills = routeConfig.getAvailableSkills(
             route, 
-            player.blueprint_skills || []
+            activatedBlueprintSkills
         );
         
         return availableSkills.map(skill => ({

@@ -148,12 +148,13 @@ function RouteSkillPanel({ player, route, onUseSkill }) {
                             <span style={{
                                 display: 'inline-block',
                                 padding: '2px 6px',
-                                background: 'var(--accent-cyan)33',
+                                background: skill.isOwnRoute !== false ? 'var(--accent-cyan)33' : 'rgba(255,153,68,0.3)',
                                 borderRadius: '4px',
                                 marginRight: '6px',
-                                fontSize: '0.65rem'
+                                fontSize: '0.65rem',
+                                color: skill.isOwnRoute !== false ? 'var(--accent-cyan)' : '#ff9944'
                             }}>
-                                藍圖
+                                {skill.isOwnRoute !== false ? '藍圖' : '跨路線 ×50%'}
                             </span>
                             {skill.description}
                         </div>

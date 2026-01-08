@@ -187,17 +187,20 @@ ROUTE_SKILL_CONFIG.getAvailableSkills = function(routeId, unlockedBlueprints = [
         });
     }
     
-    // 加入已解鎖的藍圖主動技能
+    // 加入已解鎖的藍圖主動技能（包含跨路線技能）
     if (unlockedBlueprints && Array.isArray(unlockedBlueprints)) {
         unlockedBlueprints.forEach(skillId => {
             if (this.isActiveSkill(skillId) && window.STRATEGY_BLUEPRINT_CONFIG) {
                 const blueprintSkill = window.STRATEGY_BLUEPRINT_CONFIG.getSkill(skillId);
-                if (blueprintSkill && blueprintSkill.route === routeId) {
+                if (blueprintSkill) {
+                    const isOwnRoute = blueprintSkill.route === routeId;
                     skills.push({
                         ...blueprintSkill,
                         type: 'blueprint',
                         source: 'blueprint',
-                        cooldown: blueprintSkill.effects?.cooldown_turns || this.SYSTEM.default_cooldown
+                        cooldown: blueprintSkill.effects?.cooldown_turns || this.SYSTEM.default_cooldown,
+                        isOwnRoute: isOwnRoute,
+                        effectMultiplier: isOwnRoute ? 1.0 : 0.5  // 跨路線效果減半
                     });
                 }
             }
