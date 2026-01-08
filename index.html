@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇點競速 v11.0 - 財務系統調整</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--bg-primary:#0a0a0f;--bg-secondary:#12121a;--bg-tertiary:#1a1a25;--bg-card:rgba(20,20,30,0.85);--accent-cyan:#00f5ff;--accent-magenta:#ff00aa;--accent-yellow:#ffd000;--accent-green:#00ff88;--accent-red:#ff3366;--accent-orange:#ff6600;--accent-purple:#aa44ff;--text-primary:#e8e8f0;--text-secondary:#a0a0b0;--text-muted:#606075;--border-color:rgba(0,245,255,0.2);--glow-cyan:0 0 20px rgba(0,245,255,0.4);--font-display:'Orbitron',sans-serif;--font-body:'Rajdhani',sans-serif;--font-mono:'Share Tech Mono',monospace}
+        body{font-family:var(--font-body);background:var(--bg-primary);color:var(--text-primary);min-height:100vh}
+        body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(0,245,255,0.08)0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(255,0,170,0.08)0%,transparent 50%);pointer-events:none;z-index:-1}
+        ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:var(--bg-secondary)}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--accent-cyan),var(--accent-magenta));border-radius:4px}
+        @keyframes pulse-glow{0%,100%{opacity:1}50%{opacity:0.5}}
+        @keyframes slide-in{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- 1. 配置文件 -->
+    <script src="config.js"></script>
+    <script src="global_market_config.js"></script>
+    <script src="region_config.js"></script>
+    <script src="data_config.js"></script>
+    <script src="energy_config.js"></script>
+    <script src="space_config.js"></script>
+    <script src="compute_config.js"></script>
+    <script src="products_config.js"></script>
+    <script src="community_config.js"></script>
+    <script src="marketing_config.js"></script>
+    <script src="etf_config.js"></script>
+    <script src="credit_config.js"></script>
+    <script src="strategy_blueprint_config.js"></script>
+    <script src="route_skill_config.js"></script>
+    <script src="asset_card_config.js"></script>
+    <script src="facility_upgrade_products_config.js"></script>
+    <script src="energy_products_config.js"></script>
+
+    <!-- 2. 核心引擎文件 -->
+    <script src="executeRivalInvestment_engine.js"></script>
+    <script src="global_market_engine.js"></script>
+    <script src="region_engine.js"></script>
+    <script src="asset_card_engine.js"></script>
+    <script src="facility_upgrade_engine.js"></script>
+    <script src="facility_upgrade_integration.js"></script>
+    <script src="energy_price_engine.js"></script>
+    <script src="InitialState_engine.js"></script>
+    <script src="data_engine.js"></script>
+    <script src="space_engine.js"></script>
+    <script src="strategy_blueprint_engine.js"></script>
+    <script src="strategy_blueprint_integration.js"></script>
+    <script src="route_skill_engine.js"></script>
+    <script src="space_efficiency_debuff.js"></script>
+    <script src="space_construction_patch.js"></script>
+    <script src="event_engine.js"></script>
+    <script src="ending_engine.js"></script>
+    <script src="products_engine.js"></script>
+    <script src="marketing_engine.js"></script>
+    <script src="community_engine.js"></script>
+    <script src="game_handleTurn_engine.js"></script>
+    <script src="game_handleEndTurn_engine.js"></script>
+    <script src="compute_engine.js"></script>
+    <script src="processTurnUpdates_engine.js"></script>
+    <script src="turn_update_space_patch.js"></script>
+    <script src="executeAssetAction_engine.js"></script>
+    <script src="executeMilestoneLaunch_engine.js"></script>
+    <script src="products_integration.js"></script>
+    <script src="products_operating_fix.js"></script>
+    <script src="mastery_experience_fix.js"></script>
+    <script src="product_line_upgrade_engine.js"></script>
+    <!-- 在 space_engine.js 之後 -->
+    <script src="space_facility_tech_ext.js"></script>
+    <script src="processTurnUpdates_facility_tech.js"></script>
+    <script src="executeStrategy_engine.js"></script>
+    <script src="executeFinance_engine.js"></script>
+    <script src="etf_engine.js"></script>
+    <script src="market_perturbation_engine.js"></script>
+    <script src="credit_engine.js"></script>
+    <script src="dashboard_engine.js"></script>
+    <script src="state_migration_engine.js"></script>
+
+
+    <!-- 3. 统一引擎接口（在所有子引擎加载后） -->
+    <script src="engine.js"></script>
+    <script src="useGameState.js"></script>
+
+    <!-- 3.5 效率整合補丁（已包含空間效率+算力使用率）-->
+    <script src="useGameState_efficiency_patch.js"></script>
+    <!-- 4. 資料文件（兼容舊系統接口 + 自動補丁） -->
+    <script src="data_system_patch.js"></script>
+
+    
+    <!-- 4. React 组件 -->
+    <script type="text/babel" src="ui_products.jsx"></script>
+    <script type="text/babel" src="ui_space.jsx"></script>
+    <script type="text/babel" src="ui_assets.jsx"></script>
+    <script type="text/babel" src="ui_asset_cards.jsx"></script>
+    <script type="text/babel" src="ui_facility_upgrade.jsx"></script>
+    <script type="text/babel" src="ui_organization.jsx"></script>
+    <script type="text/babel" src="ui_community.jsx"></script>
+    <script type="text/babel" src="ui_rivals.jsx"></script>
+    <script type="text/babel" src="./Components.jsx"></script>
+    <script type="text/babel" src="ui_blueprint.jsx"></script>
+    <script type="text/babel" src="ui_route_skill.jsx"></script>
+    <script type="text/babel" src="ui_facility_tech.jsx"></script>
+    <script type="text/babel" src="ui_region.jsx"></script>
+    <script type="text/babel" src="ui_dashboard.jsx"></script>
+    <script type="text/babel" src="utils.js"></script>
+    <script type="text/babel" src="./GameUI.jsx"></script>  
+    <script type="text/babel">
+// ============================================
+// 奇點競速 - React 遊戲介面 (純視覺化層)
+// ============================================
+
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+// ============================================
+// 工具函數 (從 Utils 導入)
+// ============================================
+
+// 使用全局 Utils 對象
+const { 
+    formatNumber,
+    getStatusColor,
+    getDoomColor,
+    getDoomLabelInfo,
+    getMessageTypeColors,
+    getDialogTypeColors,
+    getDialogIcon,
+    calculatePercentage,
+    getModalSize,
+    useLocalStorage 
+} = window.Utils || {};
+
+// ============================================
+// UI 組件 (從 Components 導入)
+// ============================================
+
+// 使用全局 Components 對象
+const {
+    GlowButton,
+    Panel,
+    ProgressBar,
+    MessageLog,
+    Modal,
+    Input,
+    SelectCard,
+    Tabs,
+    ConfirmDialog
+} = window.Components || {};
+
+// ============================================
+// 自定義 UI 組件 (專屬於遊戲介面)
+// ============================================
+
+// 數值顯示組件
+function StatValue({ label, value, icon, color = 'var(--accent-cyan)', suffix = '', prefix = '' }) {
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {icon && <span>{icon}</span>}
+                {label}
+            </div>
+            <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: color, textShadow: `0 0 20px ${color}44`, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontSize: '1rem', opacity: 0.7 }}>{prefix}</span>
+                {typeof value === 'number' ? formatNumber(value) : value}
+                <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>{suffix}</span>
+            </div>
+        </div>
+    );
+}
+
+
+
+// 功能解鎖通知組件
+function UnlockNotification({ tier, onClose }) {
+    const config = TIER_UNLOCK_CONFIG[tier];
+    if (!config) return null;
+    const [offset, setOffset] = React.useState({ x: 0, y: 0 });
+    const [dragging, setDragging] = React.useState(false);
+    const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
+
+    const handleMouseDown = (e) => {
+        setDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    };
+
+    React.useEffect(() => {
+        if (!dragging) return;
+        const handleMouseMove = (e) => {
+            setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+        };
+        const handleMouseUp = () => setDragging(false);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [dragging, dragStart]);
+    
+    return (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001, backdropFilter: 'blur(10px)', animation: 'slide-in 0.3s ease-out' }}>
+            <div style={{ background: 'var(--bg-secondary)', border: `2px solid ${config.color}`, borderRadius: '16px', width: '500px', maxWidth: '95vw', overflow: 'hidden', boxShadow: `0 0 60px ${config.color}44, 0 20px 60px rgba(0, 0, 0, 0.5)`, transform: `translate(${offset.x}px, ${offset.y}px)`, cursor: dragging ? 'grabbing' : 'grab', transition: dragging ? 'none' : 'transform 0.2s ease-out' }}>
+                {/* 標題區 */}
+                <div onMouseDown={handleMouseDown} style={{ background: `linear-gradient(135deg, ${config.color}33, transparent)`, padding: '24px', textAlign: 'center', borderBottom: `1px solid ${config.color}44`, cursor: 'grab', userSelect: 'none' }}>
+                    <div style={{ fontSize: '4rem', marginBottom: '12px', animation: 'pulse-glow 2s infinite' }}>{config.icon}</div>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: config.color, textTransform: 'uppercase', letterSpacing: '3px', margin: 0 }}>
+                        🎉 新功能解鎖！
+                    </h2>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text-primary)', marginTop: '8px' }}>
+                        {config.title}
+                    </h3>
+                </div>
+                
+                {/* 功能列表 */}
+                <div style={{ padding: '20px' }}>
+                    {config.features.map((feature, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px', marginBottom: '8px', border: `1px solid ${config.color}22` }}>
+                            <span style={{ fontSize: '1.5rem' }}>{feature.icon}</span>
+                            <div>
+                                <div style={{ fontWeight: 600, color: config.color, marginBottom: '4px' }}>{feature.name}</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{feature.desc}</div>
+                            </div>
+                        </div>
+                    ))}
+                    
+                    {config.futureHint && (
+                        <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', borderLeft: `3px solid ${config.color}44` }}>
+                            🔮 {config.futureHint}
+                        </div>
+                    )}
+                </div>
+                
+                {/* 按鈕 */}
+                <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
+                    <GlowButton variant="primary" onClick={onClose} icon="✨">
+                        開始探索新功能
+                    </GlowButton>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+// ============================================
+// 遊戲畫面組件
+// ============================================
+
+function StartScreen({ onStart }) {
+    const [companyName, setCompanyName] = useState('');
+    const [selectedRoute, setSelectedRoute] = useState(null);
+    const [rivalCount, setRivalCount] = useState(3);
+    const routes = GameConfig.TECH_ROUTES;
+    const canStart = companyName.trim() && selectedRoute;
+
+    return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', position: 'relative' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 900, background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '8px', textShadow: '0 0 40px rgba(0, 245, 255, 0.3)', letterSpacing: '4px' }}>奇點競速</h1>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(0.8rem, 2vw, 1.2rem)', color: 'var(--text-secondary)', letterSpacing: '8px', textTransform: 'uppercase', marginBottom: '16px' }}>The Singularity Run</h2>
+                <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>在 AI 競賽中生存。平衡研發進度、財務狀況與風險管理。<br />開發 AGI 抵達奇點——或在此之前被淘汰。</p>
+            </div>
+            <div style={{ width: '100%', maxWidth: '800px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '32px', backdropFilter: 'blur(10px)' }}>
+                <Input label="公司名稱" value={companyName} onChange={setCompanyName} placeholder="輸入你的 AI 公司名稱..." icon="🏢" />
+                <div style={{ marginTop: '24px' }}>
+                    <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>🎯 選擇核心商業模式</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                        {Object.entries(routes).map(([key, route]) => (
+                            <SelectCard key={key} selected={selectedRoute === key} onClick={() => setSelectedRoute(key)} title={route.name} description={route.description} icon={route.icon} color={route.color} />
+                        ))}
+                    </div>
+                </div>
+                {/* 對手數量選擇 */}
+                <div style={{ marginTop: '24px' }}>
+                    <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>🏢 競爭對手數量 (1-6)</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <input type="range" min="1" max="6" value={rivalCount} onChange={(e) => setRivalCount(parseInt(e.target.value))}
+                            style={{ flex: 1, accentColor: 'var(--accent-cyan)' }} />
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.5rem', color: 'var(--accent-cyan)', minWidth: '40px', textAlign: 'center' }}>{rivalCount}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                        對手將從你未選擇的技術路線中隨機產生，每位對手使用不同路線
+                    </div>
+                </div>
+                <div style={{ marginTop: '32px', textAlign: 'center' }}>
+                    <GlowButton variant="primary" size="large" onClick={() => onStart(companyName, selectedRoute, rivalCount)} disabled={!canStart} icon="🚀">開始競賽</GlowButton>
+                </div>
+            </div>
+            <div style={{ position: 'absolute', bottom: '20px', color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>v11.0 Web Edition</div>
+        </div>
+    );
+}
+
+function TopStatusBar({ player, derived, globalParams, route }) {
+    // 安全讀取globalParams，防止undefined導致NaN
+    const safeGlobalParams = {
+        P_GPU: globalParams?.P_GPU ?? 1.0,
+        E_Price: globalParams?.E_Price ?? 1.0,
+        R_base: globalParams?.R_base ?? 1.0,
+        I_Hype: globalParams?.I_Hype ?? 1.0
+    };
+    return (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px 24px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', backdropFilter: 'blur(10px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: `linear-gradient(135deg, ${route.color}44, ${route.color}22)`, border: `2px solid ${route.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>{route.icon}</div>
+                <div>
+                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--text-primary)', margin: 0 }}>{player.name}</h2>
+                    <div style={{ fontSize: '0.8rem', color: route.color, fontFamily: 'var(--font-mono)' }}>{route.name}</div>
+                </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                <div style={{ textAlign: 'center', padding: '8px 16px', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>季度</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--accent-cyan)' }}>Q{player.turn_count}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', fontSize: '0.8rem' }}>
+                    <div style={{ color: 'var(--text-secondary)' }}>利率 <span style={{ color: safeGlobalParams.R_base > 1 ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>{safeGlobalParams.R_base.toFixed(2).replace(/\.?0+$/, '')}x</span></div>
+                    <div style={{ color: 'var(--text-secondary)' }}>GPU <span style={{ color: safeGlobalParams.P_GPU > 1 ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>{safeGlobalParams.P_GPU.toFixed(2).replace(/\.?0+$/, '')}x</span></div>
+                    <div style={{ color: 'var(--text-secondary)' }}>Hype <span style={{ color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }}>{safeGlobalParams.I_Hype.toFixed(2).replace(/\.?0+$/, '')}x</span></div>
+                    <div style={{ color: 'var(--text-secondary)' }}>能源 <span style={{ color: safeGlobalParams.E_Price > 1 ? 'var(--accent-red)' : 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>{safeGlobalParams.E_Price.toFixed(2).replace(/\.?0+$/, '')}x</span></div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+
+
+// 戰略行動面板
+function StrategyActions({ gameState, derived, onAction, usedActions = {} }) {
+    console.log("StrategyActions loaded");
+    const { player } = gameState;
+    const route = GameConfig.TECH_ROUTES[player.route];
+    
+    // 檢查可發布的里程碑
+    const launchableMilestones = (() => {   
+        const result = [];
+        const MODEL_TIERS = GameConfig.COSTS.MODEL_TIERS;
+        for (let tier = 1; tier <= 5; tier++) { 
+            // 跳過已完成的里程碑          
+            if (player.mp_milestones?.[tier]) continue; 
+            // 檢查前置里程碑（tier > 1 需要完成前一個）
+            if (tier > 1 && !player.mp_milestones?.[tier - 1]) continue; 
+            // 檢查 MP 是否達到門檻
+            const tierData = MODEL_TIERS[tier];
+            if (tierData && player.model_power < tierData.mp) continue; 
+                result.push(tier);
+        }
+        return result;
+    })();
+    
+    // 計算下一個里程碑目標
+    const nextMilestoneData = (() => {
+        for (let tier = 1; tier <= 5; tier++) {
+            if (!player.mp_milestones?.[tier]) {
+                const tierData = GameConfig.COSTS.MODEL_TIERS[tier];
+                return { tier, data: tierData, mpNeeded: tierData.mp, mpCurrent: player.model_power };
+            }
+        }
+        return null;
+    })();
+    
+    // 檢查是否本季已執行核心戰略
+    const coreActionUsed = usedActions.research || usedActions.alignment || usedActions.marketing || usedActions.special;
+    
+    // 路線技能處理函數
+    const handleRouteSkill = (skillId, skillType) => {
+        onAction('routeSkill', { skillId, skillType });
+    };
+
+    return (
+        <div style={{ display: 'grid', gap: '12px' }}>
+            {/* 核心戰略區塊 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>核心戰略 (每季限選一項)</h4>
+                {coreActionUsed && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', padding: '4px 8px', background: 'var(--accent-green)22', borderRadius: '4px' }}>✓ 本季已執行</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                <div style={{ padding: '12px', background: usedActions.research ? 'var(--accent-cyan)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.research ? 'var(--accent-cyan)' : 'var(--accent-cyan)33'}` }}>
+                    <GlowButton variant="primary" onClick={() => onAction('research')} icon="🔬" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>全力研發</GlowButton>
+                    <div style={{ fontSize: '0.75rem', color: derived.active_pflops <= 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>{derived.active_pflops <= 0 ? '⚠️ 算力不足' : 'MP ↑↑ | 熵值 ↑↑'}
+                </div>
+                </div>
+                <div style={{ padding: '12px', background: usedActions.alignment ? 'var(--accent-green)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.alignment ? 'var(--accent-green)' : 'var(--accent-green)33'}` }}>
+                    <GlowButton variant="success" onClick={() => onAction('alignment')} icon="🛡️" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>安全對齊</GlowButton>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>對齊度 ↑ | 熵值 ↓↓</div>
+                </div>
+                <div style={{ padding: '12px', background: usedActions.marketing ? 'var(--accent-yellow)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.marketing ? 'var(--accent-yellow)' : 'var(--accent-yellow)33'}` }}>
+                    <GlowButton variant="warning" onClick={() => onAction('marketing')} icon="📣" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>市場營銷</GlowButton>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hype ↑↑ | Trust ↑</div>
+                </div>
+            </div>
+
+
+            
+            {/* 里程碑發布準備完成 */}
+            {launchableMilestones.length > 0 && (
+                <div style={{ marginTop: '16px', padding: '16px', background: 'var(--accent-magenta)11', borderRadius: '8px', border: '1px solid var(--accent-magenta)33' }}>
+                    <h4 style={{ color: 'var(--accent-magenta)', fontSize: '0.9rem', marginBottom: '12px' }}>🎯 里程碑發布準備完成</h4>
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                        {launchableMilestones.map(tier => {
+                            const data = GameConfig.COSTS.MODEL_TIERS[tier];
+                            const failCount = player.milestone_fail_count?.[tier] || 0;
+                            const costMult = 1 + failCount * 0.5;
+                            const totalCost = 100 * costMult;
+                            return (
+                                <div key={tier} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '6px', border: '1px solid var(--accent-magenta)44' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{data.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                            💰 發起成本：${totalCost}M {failCount > 0 && `(+${failCount}次失敗)`}
+                                        </div>
+                                    </div>
+                                    <GlowButton 
+                                        variant="secondary" 
+                                        size="small"
+                                        onClick={() => onAction('milestone', { tier })}
+                                    >
+                                        發布
+                                    </GlowButton>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+            
+            {/* 下一階段目標 */}
+            {nextMilestoneData && (
+                <div style={{ marginTop: '16px', padding: '16px', background: 'var(--accent-cyan)11', borderRadius: '8px', border: '1px solid var(--accent-cyan)33' }}>
+                    <h4 style={{ color: 'var(--accent-cyan)', fontSize: '0.9rem', marginBottom: '12px' }}>🎯 下一階段目標</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{nextMilestoneData.data.name}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px', display: 'grid', gap: '4px' }}>
+                                <span>📊 需要 MP: {nextMilestoneData.mpNeeded}</span>
+                                <span style={{ color: nextMilestoneData.mpCurrent >= nextMilestoneData.mpNeeded ? 'var(--accent-green)' : 'var(--accent-yellow)' }}>
+                                    ⏳ 還差: {Math.max(0, nextMilestoneData.mpNeeded - nextMilestoneData.mpCurrent).toFixed(1)} MP
+                                </span>
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'right', fontSize: '1.8rem', opacity: 0.3 }}>
+                            {Math.max(0, nextMilestoneData.mpNeeded - nextMilestoneData.mpCurrent) === 0 ? '✓' : '→'}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 路線專屬技能欄位 - 獨立冷卻 */}
+            {window.RouteSkillPanel && (
+                <RouteSkillPanel 
+                    player={player}
+                    route={route}
+                    onUseSkill={handleRouteSkill}
+                />
+            )}
+
+            {/* 算力分配策略 */}
+            {player.mp_tier >= 1 && (
+                <div style={{ display: 'grid', gap: '12px', marginTop: '16px' }}>
+                    <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '8px' }}>算力分配策略</h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                        <div style={{ padding: '12px', background: player.product_state.compute_strategy === 'ResearchFocus' ? 'var(--accent-cyan)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${player.product_state.compute_strategy === 'ResearchFocus' ? 'var(--accent-cyan)' : 'var(--accent-cyan)33'}`, opacity: player.product_state.compute_strategy && player.product_state.compute_strategy !== 'ResearchFocus' ? 0.5 : 1 }}>
+                            <GlowButton variant="primary" onClick={() => onAction('setComputeStrategy', { strategy: 'ResearchFocus' })} icon="🔬" style={{ width: '100%', marginBottom: '8px' }}>研發優先</GlowButton>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>維持模型訓練算力，犧牲產品服務品質</div>
+                        </div>
+                        <div style={{ padding: '12px', background: player.product_state.compute_strategy === 'ProductFocus' ? 'var(--accent-green)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${player.product_state.compute_strategy === 'ProductFocus' ? 'var(--accent-green)' : 'var(--accent-green)33'}`, opacity: player.product_state.compute_strategy && player.product_state.compute_strategy !== 'ProductFocus' ? 0.5 : 1 }}>
+                            <GlowButton variant="success" onClick={() => onAction('setComputeStrategy', { strategy: 'ProductFocus' })} icon="📦" style={{ width: '100%', marginBottom: '8px' }}>產品優先</GlowButton>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>保障產品服務，降低研發速度</div>
+                        </div>
+                        <div style={{ padding: '12px', background: player.product_state.compute_strategy === 'Balanced' ? 'var(--accent-yellow)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${player.product_state.compute_strategy === 'Balanced' ? 'var(--accent-yellow)' : 'var(--accent-yellow)33'}`, opacity: player.product_state.compute_strategy && player.product_state.compute_strategy !== 'Balanced' ? 0.5 : 1 }}>
+                            <GlowButton variant="warning" onClick={() => onAction('setComputeStrategy', { strategy: 'Balanced' })} icon="⚖️" style={{ width: '100%', marginBottom: '8px' }}>平衡發展</GlowButton>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>均衡分配算力資源</div>
+                        </div>
+                        <div style={{ padding: '12px', background: player.product_state.compute_strategy === 'CloudBursting' ? 'var(--accent-magenta)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${player.product_state.compute_strategy === 'CloudBursting' ? 'var(--accent-magenta)' : 'var(--accent-magenta)33'}`, opacity: player.product_state.compute_strategy && player.product_state.compute_strategy !== 'CloudBursting' ? 0.5 : 1 }}>
+                            <GlowButton variant="secondary" onClick={() => onAction('setComputeStrategy', { strategy: 'CloudBursting' })} icon="☁️" style={{ width: '100%', marginBottom: '8px' }}>自動雲端</GlowButton>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>自動租用雲端算力滿足需求，成本較高</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* 社群戰略面板 - 在算力分配策略下方 */}
+                {player.mp_tier >= 1 && window.CommunityUI && (
+                    React.createElement(window.CommunityUI.CommunityStrategyPanel, {
+                        player: player,
+                        onSelectStrategy: (strategyId) => onAction('communityStrategy', { strategyId }),
+                        disabled: false,
+                        selectedStrategy: player.selected_community_strategy
+                    })
+                )}
+
+            {/* 商品開發進度條 */}
+            {player.mp_tier >= 1 && player.product_state?.developing?.length > 0 && (
+                <div style={{ marginTop: '12px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>📋 開發中商品 ({player.product_state.developing.length})</div>
+                    {player.product_state.developing.map((dev) => (
+                        <div key={dev.id} style={{ marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '2px' }}>
+                                <span style={{ color: 'var(--text-primary)' }}>{dev.name}</span>
+                                <span style={{ color: 'var(--accent-cyan)' }}>{dev.progress.toFixed(0)}%</span>
+                            </div>
+                            <ProgressBar value={dev.progress} max={100} color="var(--accent-cyan)" height={4} showLabel={false} />
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+// 財務行動面板
+function FinanceActions({ gameState, derived, onAction }) {
+    const { player } = gameState;
+    const [amount, setAmount] = useState(100);
+    const [repayAmount, setRepayAmount] = useState(100);
+    
+    // 從 GameConfig 獲取所有可用的財務行動
+    const getAvailableActions = () => {
+        const actions = [];
+        const tier = player.mp_tier || 0;
+        const FA = GameConfig.FINANCE_ACTIONS;
+
+        // Tier 0 行動 (起始可用)
+        Object.values(FA.tier0 || {}).forEach(action => {
+            actions.push({ ...action, available: true, tierLabel: '起始' });
+        });
+
+        // Tier 1 行動 (債券類)
+        Object.values(FA.tier1 || {}).forEach(action => {
+            actions.push({ ...action, available: tier >= 1, tierLabel: 'Tier 1' });
+        });
+
+        // Tier 2 行動 (股票類)
+        Object.values(FA.tier2 || {}).forEach(action => {
+            const isIPODone = player.is_public || false;
+            let available = tier >= 2;
+            if (action.requiresIPO && !isIPODone) {
+                available = false;
+            }
+            if (action.oneTime && isIPODone) {
+                available = false;
+            }
+            actions.push({ ...action, available, tierLabel: 'Tier 2', isIPODone });
+        });
+
+        // Tier 3 行動 (商業功能)
+        Object.values(FA.tier3 || {}).forEach(action => {
+            actions.push({ ...action, available: tier >= 3, tierLabel: 'Tier 3' });
+        });
+
+        return actions;
+    };
+
+    const availableActions = getAvailableActions();
+    
+    // 根據 tier 分組
+    const actionsByTier = {
+        起始: availableActions.filter(a => a.tierLabel === '起始'),
+        'Tier 1': availableActions.filter(a => a.tierLabel === 'Tier 1'),
+        'Tier 2': availableActions.filter(a => a.tierLabel === 'Tier 2'),
+        'Tier 3': availableActions.filter(a => a.tierLabel === 'Tier 3')
+    };
+    
+    // 獲取顏色
+    const getTierColor = (tier) => {
+        const colors = { '起始': 'var(--accent-green)', 'Tier 1': 'var(--accent-yellow)', 'Tier 2': 'var(--accent-cyan)', 'Tier 3': 'var(--accent-magenta)' };
+        return colors[tier] || 'var(--accent-cyan)';
+    };
+    
+    return (
+        <div style={{ display: 'grid', gap: '16px' }}>
+            {/* 財務評級 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    財務評級: <span style={{ color: 'var(--accent-yellow)' }}>{derived.finance_rating}</span>
+                </h4>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    現金: <span style={{ color: player.cash >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>${player.cash.toFixed(1)}M</span> | 
+                    市值: <span style={{ color: 'var(--accent-cyan)' }}>${player.market_cap.toFixed(0)}M</span>
+                </div>
+            </div>
+
+            {/* 債務警告面板 */}
+            {player.debt > 0 && (
+                <div style={{ padding: '12px 16px', background: 'var(--accent-red)22', borderRadius: '8px', border: '2px solid var(--accent-red)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                        <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>當前債務</div>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--accent-red)' }}>${player.debt.toFixed(1)}M</div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* 財務操作清單 - 按 Tier 分組 */}
+            {Object.entries(actionsByTier).map(([tier, actions]) => 
+                actions.length > 0 && (
+                    <div key={tier}>
+                        <div style={{ fontSize: '0.85rem', color: getTierColor(tier), fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            {tier === '起始' ? '🌟' : tier === 'Tier 1' ? '📊' : tier === 'Tier 2' ? '📈' : '🎯'} {tier}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                            {actions.map(action => {
+                                const isLocked = !action.available;
+                                const onCooldown = (player.finance_cooldowns || {})[action.id] > 0;
+                                const meetsEmergencyLoanRequirement = action.id === 'emergencyLoan' 
+                                    ? player.cash < (action.effects?.cash_threshold || 30) 
+                                    : true;
+                                const canClick = action.available && !onCooldown && meetsEmergencyLoanRequirement;
+                                return (
+                                    <div 
+                                        key={action.id}
+                                        style={{
+                                            padding: '12px',
+                                            background: canClick ? `${getTierColor(tier)}11` : 'var(--bg-secondary)',
+                                            border: `1px solid ${canClick ? `${getTierColor(tier)}44` : 'var(--border-color)'}`,
+                                            borderRadius: '8px',
+                                            cursor: canClick ? 'pointer' : 'not-allowed',
+                                            opacity: canClick ? 1 : 0.5,
+                                            transition: 'all 0.2s ease',
+                                            position: 'relative'
+                                        }}
+                                        onMouseEnter={(e) => canClick && (e.currentTarget.style.background = `${getTierColor(tier)}22`)}
+                                        onMouseLeave={(e) => canClick && (e.currentTarget.style.background = `${getTierColor(tier)}11`)}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                            <span style={{ fontSize: '1.2rem' }}>{action.icon || '💼'}</span>
+                                            <span style={{ color: getTierColor(tier), fontWeight: 600, flex: 1 }}>{action.name || action.id}</span>
+                                            {isLocked && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🔒</span>}
+                                            {onCooldown && <span style={{ fontSize: '0.75rem', color: 'var(--accent-orange)' }}>⏳ {player.finance_cooldowns[action.id]}</span>}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px', minHeight: '30px' }}>
+                                            {action.description || '執行此財務操作'}
+                                        </div>
+                                        {action.available && (
+                                            <GlowButton 
+                                                variant={tier === '起始' ? 'success' : tier === 'Tier 1' ? 'warning' : tier === 'Tier 2' ? 'primary' : 'secondary'}
+                                                size="small" 
+                                                onClick={() => onAction('financeAction', { actionId: action.id, amount: amount })}
+                                                disabled={onCooldown || !meetsEmergencyLoanRequirement}
+                                                style={{ width: '100%' }}
+                                            >
+                                                {onCooldown ? `冷卻中 ${player.finance_cooldowns[action.id]}季` : !meetsEmergencyLoanRequirement && action.id === 'emergencyLoan' ? '現金充足' : '執行'}
+                                            </GlowButton>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )
+            )}
+            
+            {/* 償還債務區 */}
+            {player.debt > 0 && (
+                <div style={{ marginTop: '8px', padding: '16px', background: 'var(--accent-red)11', borderRadius: '8px', border: '1px solid var(--accent-red)22' }}>
+                    <h4 style={{ color: 'var(--accent-red)', fontSize: '0.9rem', marginBottom: '12px' }}>💸 償還債務 (當前總債務: ${player.debt.toFixed(1)}M)</h4>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: '150px' }}>
+                            <Input label="償還金額" type="number" value={repayAmount} onChange={setRepayAmount} min={0} max={Math.min(player.cash, player.debt)} />
+                        </div>
+                        <GlowButton variant="success" onClick={() => onAction('repayDebt', { amount: repayAmount })} disabled={repayAmount <= 0 || player.cash < repayAmount}>
+                            償還 ${repayAmount}M
+                        </GlowButton>
+                        <GlowButton variant="warning" onClick={() => onAction('repayDebt', { amount: Math.min(player.cash, player.debt) })} disabled={player.cash <= 0 || player.debt <= 0}>
+                            全部償還
+                        </GlowButton>
+                    </div>
+                    {player.locked_pflops > 0 && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>償還債務將解鎖抵押的 PFLOPS</div>}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// 資產行動面板 - 使用新的 UI 組件
+function AssetActions({ gameState, derived, onAction }) {
+    const AssetPanel = window.AssetComponents?.AssetActionsPanel;
+    if (AssetPanel) {
+        return <AssetPanel gameState={gameState} derived={derived} onAction={onAction} />;
+    }
+    // 降級處理：如果新組件未載入，顯示提示
+    return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+        資產面板載入中...
+    </div>;
+}
+
+// 行動菜單主組件
+function ActionMenu({ gameState, derived, onAction, onEndTurn, usedActions }) {
+    const [activeTab, setActiveTab] = useState('strategy');
+    const player = gameState?.player;
+    const mpTier = player?.mp_tier || 0;
+    
+    const baseTabs = [
+        { id: 'strategy', label: '戰略', icon: '⚔️' },
+        { id: 'finance', label: '財務', icon: '💰' },
+        { id: 'assets', label: '資產', icon: '🏭' },
+        { id: 'products', label: '商品', icon: '📦' }
+    ];
+    
+    const tabs = mpTier >= 2 ? [...baseTabs, { id: 'blueprint', label: '藍圖', icon: '🎯' }] : baseTabs;
+    
+    return (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', backdropFilter: 'blur(10px)' }}>
+            <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+            {activeTab === 'strategy' && <StrategyActions gameState={gameState} derived={derived} onAction={onAction} usedActions={usedActions} />}
+            {activeTab === 'finance' && <FinanceActions gameState={gameState} derived={derived} onAction={onAction} />}
+            {activeTab === 'assets' && <AssetActions gameState={gameState} derived={derived} onAction={onAction} />}
+            {activeTab === 'products' && <ProductComponents.ProductDevelopmentPanel player={gameState.player} derived={derived} onAction={onAction} />}
+            {activeTab === 'blueprint' && mpTier >= 2 && window.StrategyBlueprintUI && <StrategyBlueprintUI.BlueprintTabContent player={player} onAction={onAction} />}
+            
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
+                <GlowButton variant="success" size="large" onClick={onEndTurn} icon="➡️">進入下一季</GlowButton>
+            </div>
+        </div>
+    );
+}
+
+// 競爭對手面板
+function RivalsPanel({ rivals, playerInvestments, onInvest }) {
+    const [investAmounts, setInvestAmounts] = useState({});
+    return (
+        <Panel title="市場投資" icon="🏢" color="var(--accent-orange)" collapsible defaultCollapsed>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {rivals.map(rival => {
+                    const invested = playerInvestments[rival.name] || 0;
+                    const mpPercent = Math.min(100, (rival.mp / 1000) * 100);
+                    return (
+                        <div key={rival.name} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                            <span style={{ width: '24px' }}>{rival.icon}</span>
+                            <span style={{ width: '120px', fontWeight: 600, color: 'var(--text-primary)' }}>{rival.name}</span>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ width: '100px', height: '6px', background: 'var(--bg-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${mpPercent}%`, height: '100%', background: 'var(--accent-magenta)', borderRadius: '3px' }} />
+                                </div>
+                                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-magenta)', minWidth: '50px' }}>MP {rival.mp.toFixed(0)}</span>
+                            </div>
+                            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-yellow)', minWidth: '80px' }}>已投 ${invested.toFixed(0)}M</span>
+                            <input type="number" value={investAmounts[rival.name] || 50} onChange={(e) => setInvestAmounts({...investAmounts, [rival.name]: parseInt(e.target.value) || 0})} 
+                                style={{ width: '60px', padding: '4px 8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }} />
+                            <GlowButton variant="success" size="small" onClick={() => onInvest(rival.name, investAmounts[rival.name] || 50)}>+</GlowButton>
+                            <GlowButton variant="danger" size="small" onClick={() => onInvest(rival.name, -(investAmounts[rival.name] || 50))} disabled={invested < (investAmounts[rival.name] || 50)}>-</GlowButton>
+                        </div>
+                    );
+                })}
+            </div>
+        </Panel>
+    );
+}
+// Doom量表組件
+function DoomGauge({ name, value, consecutive, player, rivals }) {
+    const info = getDoomLabelInfo(name);
+    
+    // Tier2 空間指標特殊處理
+    const isTier2Indicator = info.isTier2 || false;
+    let displayValue = value;
+    let displayText = '';
+    
+    if (isTier2Indicator && typeof value === 'object') {
+        displayValue = value.value || 0;
+        displayText = value.display || '';
+    }
+    
+    // 計算顏色
+    let color;
+    if (isTier2Indicator) {
+        if (info.invert) {
+            // 反向指標：數值越高越好（供電穩定、營運人力）
+            color = displayValue >= 70 ? 'var(--accent-green)' : displayValue >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+        } else {
+            // 正向指標：數值越低越好（設施負載）
+            color = displayValue < 80 ? 'var(--accent-green)' : displayValue < 100 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+        }
+    } else {
+        color = getDoomColor(displayValue);
+    }
+    
+    // 計算具體危險因素
+    const getDangerFactors = () => {
+        const factors = [];
+        if (!player) return factors;
+        
+        if (name === 'commercial_ruin') {
+            if (player.cash < 0) factors.push(`現金: $${player.cash.toFixed(0)}M (負債)`);
+            if (player.debt > player.market_cap * 0.5) factors.push(`債務過高: ${((player.debt / player.market_cap) * 100).toFixed(0)}% 市值`);
+            const rival_avg_mc = rivals ? rivals.reduce((sum, r) => sum + (r.market_cap || 1000), 0) / rivals.length : 1000;
+            if (player.market_cap < rival_avg_mc * 0.5) factors.push(`市值落後: $${player.market_cap.toFixed(0)}M < 行業均值 50%`);
+        } else if (name === 'internal_unraveling') {
+            if (player.entropy > 50) factors.push(`熵值過高: ${player.entropy.toFixed(0)}%`);
+            if (player.alignment < 50) factors.push(`對齊度不足: ${player.alignment.toFixed(0)}%`);
+            if (player.loyalty < 40) factors.push(`忠誠度低: ${player.loyalty.toFixed(0)}%`);
+        } else if (name === 'external_sanction') {
+            if (player.compliance_risk > 50) factors.push(`合規風險: ${player.compliance_risk.toFixed(0)}%`);
+            if (player.regulation > 50) factors.push(`監管壓力: ${player.regulation.toFixed(0)}%`);
+        }
+        return factors;
+    };
+    
+    const dangerFactors = getDangerFactors();
+    
+    return (
+        <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{info.icon}</span>
+                    <span style={{ color: color }}>{info.name}</span>
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: color }}>
+                    {isTier2Indicator ? displayText : (typeof displayValue === 'number' ? displayValue.toFixed(1) + '%' : '0%')}
+                    {!isTier2Indicator && displayValue >= 70 && info.threshold && <span style={{ color: 'var(--accent-red)', marginLeft: '8px' }}>({consecutive}/{info.threshold})</span>}
+                </span>
+            </div>
+            <ProgressBar value={typeof displayValue === 'number' ? displayValue : 0} max={100} color={color} height={6} showLabel={false} />
+            {!isTier2Indicator && displayValue >= 40 && dangerFactors.length > 0 && (
+                <div style={{ marginTop: '4px', fontSize: '0.7rem', color: displayValue >= 70 ? 'var(--accent-red)' : 'var(--accent-yellow)' }}>
+                    âš ï¸ {dangerFactors.join(' | ')}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// 結局畫面
+function EndingScreen({ ending, victory, player, onRestart }) {
+    return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
+            <div style={{ fontSize: '6rem', marginBottom: '24px', animation: 'pulse-glow 2s infinite' }}>{victory ? '🏆' : '💀'}</div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', color: victory ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: '16px' }}>{ending.type}</h1>
+            <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: 1.8, marginBottom: '32px' }}>{ending.msg}</p>
+            <div style={{ background: 'var(--bg-card)', padding: '24px 32px', borderRadius: '12px', marginBottom: '32px' }}>
+                <h3 style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>最終數據</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                    <StatValue label="Model Power" value={player.model_power} color="var(--accent-magenta)" />
+                    <StatValue label="持續季數" value={player.turn_count} suffix="季" />
+                    <StatValue label="最終市值" value={player.market_cap} prefix="$" suffix="M" />
+                </div>
+            </div>
+            <GlowButton variant="primary" size="large" onClick={onRestart} icon="🔄">再來一局</GlowButton>
+        </div>
+    );
+}
+
+// ============================================
+// 主應用 (使用 useGameState Hook)
+// ============================================
+
+function App() {
+    // Check if all required components are loaded
+    if (!window.Components || !window.Utils) {
+        return React.createElement("div", {
+            style: {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: "100vh",
+                color: "var(--accent-cyan)"
+            }
+        }, "Loading components...");
+    }
+    // ✅ 使用 useGameState Hook 取代所有 GameEngine 調用
+    const {
+        player,
+        rivals,
+        globalParams,
+        messages,
+        ending,
+        gamePhase,
+        setPlayer,
+        setRivals,
+        setGlobalParams,
+        setGamePhase,
+        addMessage,
+        handleAction: executeAction,
+        handleEndTurn: processEndTurn,
+        initializeGame,
+        checkSystemStatus
+    } = useGameState();
+    
+    
+    // UI 特定狀態（不屬於遊戲邏輯）
+    const [currentEvent, setCurrentEvent] = useState(null);
+    const [showEventModal, setShowEventModal] = useState(false);
+    const [usedActions, setUsedActions] = useState({});
+    const [lastTurnData, setLastTurnData] = useState({ processData: null, finances: null });
+    const [unlockNotification, setUnlockNotification] = useState(null);
+    const [unlockedTiers, setUnlockedTiers] = useState({});
+    
+    // 系統狀態檢查（開發用）
+    useEffect(() => {
+        const status = checkSystemStatus;
+        console.log('🎮 Game System Status:', status);
+        
+        if (!status.allReady) {
+            console.warn('⚠️ Some engines not loaded:', 
+                Object.entries(status)
+                    .filter(([k, v]) => k !== 'allReady' && !v)
+                    .map(([k]) => k)
+            );
+        }
+    }, []);
+
+    // 設置全局 Tier 升級回調
+    useEffect(() => {
+        window.onTierUpgrade = (tier) => {
+            console.log(`📢 收到 Tier ${tier} 升級通知`);
+        
+            if (!unlockedTiers[tier]) {
+                setUnlockNotification(tier);
+                setUnlockedTiers(prev => ({ ...prev, [tier]: true }));
+                addMessage(`🎉 解鎖 Tier ${tier} 功能！`, 'event');
+            }
+        };
+    
+        return () => {
+            window.onTierUpgrade = null;
+        };
+    }, [unlockedTiers, addMessage]);    
+    
+    // ✅ 使用 StrategyEngine 計算衍生數據（取代 GameEngine.calculateDerivedStats）
+    const derived = useMemo(() => {
+        if (!player || !window.ProcessTurnUpdates) return null;
+        return window.ProcessTurnUpdates.calculateDerivedStats(player, globalParams);
+    }, [player, globalParams]);
+
+
+    // ✅ 使用 EndingEngine 計算 Doom Gauge（取代 GameEngine.calculateDoomGauge）
+    const doomGauge = useMemo(() => {
+        if (!player || !rivals.length || !window.EndingEngine) {
+            return { commercial_ruin: 0, internal_unraveling: 0, external_sanction: 0 };
+        }
+        const baseDoom = window.EndingEngine.calculateDoomGauge(player, rivals);
+        
+        // Tier2+ 添加空間系統指標
+        if ((player.mp_tier || 0) >= 2 && window.SpaceEngine) {
+            const tier2Indicators = window.SpaceEngine.getTier2RiskIndicators(player);
+            if (tier2Indicators) {
+                baseDoom.facility_capacity = tier2Indicators.facility_capacity;
+                baseDoom.power_stability = tier2Indicators.power_stability;
+                baseDoom.operations_staff = tier2Indicators.operations_staff;
+            }
+        }
+        
+        return baseDoom;
+    }, [player, rivals]);
+
+    
+    
+    // 開始遊戲
+    const handleStartGame = useCallback((name, route, rivalCount = 3) => {
+        // ✅ 使用 useGameState 的 initializeGame
+        const success = initializeGame(route, rivalCount);
+        
+        if (success) {
+            // 設置玩家名稱（如果需要）
+            setPlayer(prev => ({ ...prev, name }));
+            addMessage(`${name} 成立！選擇路線：${GameConfig.TECH_ROUTES[route].name}，面對 ${rivalCount} 位競爭對手`, 'success');
+        }
+        
+    }, [initializeGame, setPlayer, addMessage]);
+
+    // 處理行動（加上 UI 層的限制邏輯）
+    const handleAction = useCallback((action, params = {}) => {
+        console.log("🎯 index.html handleAction:", action, params);
+        if (!player) return;
+        
+        // 核心戰略行動限制（UI 層邏輯）
+        const coreActions = ['research', 'alignment', 'marketing', 'special'];
+        if (coreActions.includes(action)) {
+            if (usedActions.research || usedActions.alignment || usedActions.marketing || usedActions.special) {
+                addMessage('本季核心戰略已執行，請等待下季！', 'warning');
+                return;
+            }
+            setUsedActions(prev => ({ ...prev, [action]: true }));
+        }
+
+        // ✅ 使用 useGameState 的 handleAction
+        console.log("📤 調用 executeAction...");
+        executeAction(action, params);
+        console.log("📥 executeAction 調用完成");
+        
+        // 處理特殊事件（如解鎖通知）
+        // 注意：這些邏輯應該在 Engine 層返回，這裡只是示例
+        // 實際應該從 executeAction 的返回值中獲取
+        
+    }, [player, usedActions, addMessage, executeAction]);
+
+    // 結束回合
+    const handleEndTurn = useCallback(() => {
+        if (!player) return;
+        
+        // 執行回合結算前，先計算財務數據
+        const finances = window.calculateQuarterlyFinances ? 
+            window.calculateQuarterlyFinances(player, rivals, globalParams) : null;
+        
+        processEndTurn();
+        
+        // 從 TurnUpdateEngine 取得最新的 processData
+        // (processEndTurn 內部會調用 handleEndTurn，結果存在 window.__lastTurnResult)
+        const lastResult = window.__lastTurnResult;
+        if (lastResult?.processData || finances) {
+            setLastTurnData({
+                processData: lastResult?.processData || {},
+                finances: finances
+            });
+        }
+        
+        setUsedActions({});
+    }, [player, rivals, globalParams, processEndTurn]);
+
+    // 重新開始
+    const handleRestart = useCallback(() => {
+        setPlayer(null);
+        setRivals([]);
+        setGlobalParams({ ...GameConfig.GLOBAL_PARAMS_INITIAL });
+        setGamePhase('setup');
+        setUnlockedTiers({});
+        setUnlockNotification(null);
+        setUsedActions({});
+    }, [setPlayer, setRivals, setGlobalParams, setGamePhase]);
+
+    // 投資競爭對手
+    const handleInvestRival = useCallback((rivalName, amount) => {
+        handleAction('investRival', { rivalName, amount });
+    }, [handleAction]);
+
+    // 渲染遊戲階段
+    if (gamePhase === 'setup') return <StartScreen onStart={handleStartGame} />;
+    if (gamePhase === 'ended' && ending) {
+        return <EndingScreen 
+            ending={ending} 
+            victory={ending.victory || false} 
+            player={player} 
+            onRestart={handleRestart} 
+        />;
+    }
+
+    if (gamePhase === 'playing' && player && derived) {
+        const gameState = { player, globalParams, rivals, doomGauge };
+        return (
+            <div style={{ minHeight: '100vh', paddingBottom: '100px' }}>
+                {window.DashboardUI?.GameDashboardNew ? (
+                        React.createElement(window.DashboardUI.GameDashboardNew, {
+                            gameState: { ...gameState, doomGauge },
+                            derived: derived,
+                            processData: lastTurnData.processData,
+                            finances: lastTurnData.finances,
+                            messages: messages
+                        })
+                    ) : (
+                        <GameDashboard gameState={gameState} derived={derived} onAction={handleAction} />
+                    )}
+                <div style={{ padding: '0 16px' }}>
+                    {window.RivalsUI ? React.createElement(window.RivalsUI.RivalsPanelEnhanced, {
+                        rivals: rivals,
+                        player: player,
+                        globalParams: globalParams,
+                        onInvestRival: handleInvestRival,
+                        onBuyETF: (etfId, amount) => handleAction('buyETF', { etfId, amount }),
+                        onSellETF: (etfId, shares) => handleAction('sellETF', { etfId, shares }),
+                        disabled: false
+                    }) : React.createElement(RivalsPanel, {
+                        rivals: rivals,
+                        playerInvestments: player.rival_investments || {},
+                        onInvest: handleInvestRival
+                    })}
+                                    </div>
+                <div style={{ padding: '16px' }}>
+                    <Panel title="事件日誌" icon="📆" color="var(--accent-cyan)" collapsible>
+                        <MessageLog messages={messages} />
+                    </Panel>
+                </div>
+                <div style={{ padding: '16px' }}>
+                    <ActionMenu 
+                        gameState={gameState} 
+                        derived={derived} 
+                        onAction={handleAction} 
+                        onEndTurn={handleEndTurn} 
+                        usedActions={usedActions} 
+                    />
+                </div>
+                
+                {/* 隨機事件彈窗 */}
+                <Modal isOpen={showEventModal} onClose={() => setShowEventModal(false)} title="隨機事件">
+                    {currentEvent && (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
+                                {currentEvent.type === 'neutral' ? '✨' : '⚠️'}
+                            </div>
+                            <p style={{ fontSize: '1.1rem', marginBottom: '24px' }}>{currentEvent.event.desc}</p>
+                            <GlowButton variant="primary" onClick={() => setShowEventModal(false)}>確認</GlowButton>
+                        </div>)}
+                </Modal>
+                
+                {/* 功能解鎖通知 */}
+                {unlockNotification && (<UnlockNotification tier={unlockNotification} onClose={() => setUnlockNotification(null)} />)}
+                </div>
+        );
+    }
+    
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'var(--accent-cyan)' }}>
+            Loading...
+        </div>
+    );
+}
+
+// 渲染應用
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
