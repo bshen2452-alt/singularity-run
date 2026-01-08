@@ -119,6 +119,7 @@ const ROUTE_SKILL_CONFIG = {
     // ==========================================
     // 這些技能的定義在 strategy_blueprint_config.js
     // 此處僅定義哪些藍圖技能具有主動觸發能力
+    // 判定標準：具有 cooldown_turns 或 trigger_condition: 'manual' 的技能
     BLUEPRINT_ACTIVE_SKILLS: {
         // 格式: skill_id -> 是否為主動技能
         // 這些技能需要在藍圖中解鎖後才會出現在技能欄
@@ -143,6 +144,41 @@ const ROUTE_SKILL_CONFIG = {
         'sl_external_003': true, // 數據主權收購 (cooldown_turns: 8)
         'sl_external_005': true, // 算力證券化 (cooldown_turns: 12)
         'sl_risk_001': true      // 對齊度暴力破解 (cooldown_turns: 3)
+    },
+    
+    /**
+     * 動態檢測技能是否為主動技能
+     * 根據技能的 effects 中是否包含 cooldown_turns 或 trigger_condition: 'manual'
+     * @param {string} skillId - 技能ID
+     * @returns {boolean}
+     */
+    isActiveSkillDynamic: function(skillId) {
+        // 先檢查靜態列表
+        if (this.BLUEPRINT_ACTIVE_SKILLS[skillId] === true) {
+            return true;
+        }
+        
+        // 動態檢測：從 STRATEGY_BLUEPRINT_CONFIG 獲取技能定義
+        const config = window.STRATEGY_BLUEPRINT_CONFIG;
+        if (!config) return false;
+        
+        const skill = config.getSkill(skillId);
+        if (!skill || !skill.effects) return false;
+        
+        // 檢查是否有 cooldown_turns 或 trigger_condition: 'manual'
+        if (skill.effects.cooldown_turns !== undefined) return true;
+        if (skill.effects.trigger_condition === 'manual') return true;
+        
+        // 檢查嵌套對象中的 cooldown_turns
+        for (const key in skill.effects) {
+            const effectValue = skill.effects[key];
+            if (effectValue && typeof effectValue === 'object') {
+                if (effectValue.cooldown_turns !== undefined) return true;
+                if (effectValue.trigger_condition === 'manual') return true;
+            }
+        }
+        
+        return false;
     }
 };
 
