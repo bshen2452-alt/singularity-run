@@ -123,29 +123,26 @@ const ROUTE_SKILL_CONFIG = {
         // 格式: skill_id -> 是否為主動技能
         // 這些技能需要在藍圖中解鎖後才會出現在技能欄
         
-        // OpenSource 路線
-        'os_risk_001': true,   // 透明度轟炸
-        'os_external_004': true, // 授權變更公告
+        // Multimodal 路線
+        'mm_risk_005': true,     // 感官斷路器 (trigger_condition: manual)
         
         // Military 路線  
-        'mi_external_001': true, // 國會遊說
-        'mi_risk_003': true,     // 緊急銷毀協議
-        
-        // Multimodal 路線
-        'mm_external_002': true, // 病毒行銷
-        'mm_risk_004': true,     // 模型回滾
+        'mi_external_004': true, // 危機製造者 (cooldown_turns: 8)
+        'mi_risk_001': true,     // 焦土政策 (trigger_condition: manual)
+        'mi_risk_005': true,     // 灰色行動小組 (cooldown_turns: 6)
+        'mi_risk_006': true,     // 替罪羊計劃 (cooldown_turns: 5)
         
         // Embodied 路線
-        'eb_external_003': true, // 工廠參訪日
-        'eb_risk_002': true,     // 緊急召回
+        'em_risk_001': true,     // 緊急回收指令 (cooldown_turns: 4)
         
         // Efficiency 路線
-        'ef_external_001': true, // 技術白皮書
-        'ef_risk_005': true,     // 人才挖角反制
+        'ef_risk_004': true,     // 技術債轉移 (cooldown_turns: 6)
+        'ef_risk_006': true,     // 熵值熱沉機制 (cooldown_turns: 4)
         
         // Scaling Law 路線
-        'sl_external_005': true, // 算力證券化
-        'sl_risk_001': true      // 對齊度暴力破解
+        'sl_external_003': true, // 數據主權收購 (cooldown_turns: 8)
+        'sl_external_005': true, // 算力證券化 (cooldown_turns: 12)
+        'sl_risk_001': true      // 對齊度暴力破解 (cooldown_turns: 3)
     }
 };
 
