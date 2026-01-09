@@ -459,7 +459,7 @@
             calculateOperationalStability(player, derived),
             calculateTechRisk(player, derived, rivals),
             calculateMarketPosition(player, derived, rivals),
-            calculateComplianceRisk(player, derived)
+            calculateRegulatoryRisk(player, derived)
         ];
 
         // 計算總體風險分數 (加權平均)
