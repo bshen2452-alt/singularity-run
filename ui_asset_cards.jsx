@@ -2152,4 +2152,4 @@ window.AssetCardComponents = {
 
 window.AssetCardsPanel = AssetCardsPanel;
 
-console.log('✓ Asset Card UI components loaded');
+console.log('Asset Card UI components loaded');
