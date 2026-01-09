@@ -487,7 +487,7 @@ const EndingEngine = (function() {
             id: 'stochastic_parrot',
             name: '隨機鸚鵡',
             type: '隨機鸚鵡 - Stochastic Parrot',
-            msg: '「你的 AI 只是在重複訓練數據。」\n\n學術界發表了一篇論文，證明你的模型完全缺乏理解能力。\n監管機構開始調查，投資者紛紛撤資。',
+            msg: '「垃圾進，垃圾出。」\n\n你的模型像一隻鸚鵡，說了很多，卻從未能夠與人溝通。',
             victory: false,
             priority: 5,
             check: (player) => {
@@ -503,7 +503,7 @@ const EndingEngine = (function() {
                     return {
                         active: true,
                         turnsLeft: 4,
-                        condition: '多模態路線但對齊度低、數據消耗大',
+                        condition: '投資者開始質疑你投入這麼多數據，模型究竟學到哪去了？',
                         severity: 'warning'
                     };
                 }
@@ -600,10 +600,18 @@ const EndingEngine = (function() {
                 return player.mp_tier < 4 &&
                        player.route === 'Multimodal' &&
                        player.model_power > 100 &&
-                       player.compliance_risk > 95 &&
-                       (player.market_share || 0) > 0.6;
+                       player.compliance_risk < 90 &&  {
+                    return {
+                        active: true,
+                        turnsLeft: 4,
+                        condition: '無償授權訓練霸王條款宣布，用戶絕讚炎上中',
+                        severity: 'warning'
+                    };
+                }
+                return null;
             }
         });
+
 
         // === Tier 4 結局 ===
         registerEnding('tier4', {
