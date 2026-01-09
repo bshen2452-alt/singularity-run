@@ -446,46 +446,6 @@
         };
     };
 
-    // ============================================
-    // 綜合風險儀表板
-    // ============================================
-    
-    DashboardEngine.calculateRiskDashboard = function(player, derived, rivals) {
-        const tier = player.mp_tier || 0;
-        
-        // 計算各類風險
-        const risks = [
-            calculateFinancialHealth(player, derived),
-            calculateOperationalStability(player, derived),
-            calculateTechRisk(player, derived, rivals),
-            calculateMarketPosition(player, derived, rivals),
-            calculateRegulatoryRisk(player, derived)
-        ];
-
-        // 計算總體風險分數 (加權平均)
-        const weights = [0.25, 0.20, 0.25, 0.15, 0.15];
-        const overallScore = risks.reduce((sum, risk, idx) => {
-            return sum + risk.score * weights[idx];
-        }, 0);
-
-        // 根據 Tier 調整風險評估
-        let tierAdjustment = 0;
-        if (tier >= 4) {
-            tierAdjustment = -5; // 高 Tier 容錯更高
-        } else if (tier === 0) {
-            tierAdjustment = 10; // 低 Tier 更脆弱
-        }
-
-        const adjustedScore = Math.min(100, Math.max(0, overallScore + tierAdjustment));
-
-        return {
-            overallScore: adjustedScore,
-            overallLevel: getRiskLevel(adjustedScore),
-            risks,
-            tier,
-            timestamp: Date.now()
-        };
-    };
 
     // ============================================
     // Doom Gauge 整合
