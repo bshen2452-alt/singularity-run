@@ -545,8 +545,7 @@ const EndingEngine = (function() {
             id: 'the_long_afternoon',
             name: '長日未央',
             type: '長日未央 - The Long Afternoon',
-            msg: '「沒有奇蹟，沒有滅亡。」\n\n你的 AI 成為世界基礎設施的一部分，沒有成神，也沒有帶來威脅。\n人類未來沒有被誰重新定義，
-但至少是由自己走下去。',
+            msg: '「沒有奇蹟，沒有滅亡。」\n\n你的 AI 成為世界基礎設施的一部分，沒有成神，也沒有帶來威脅。\n人類未來沒有被誰重新定義，但至少是由自己走下去。',
             victory: true,
             priority: 5,
             check: (player) => {
