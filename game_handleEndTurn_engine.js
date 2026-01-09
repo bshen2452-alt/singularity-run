@@ -783,7 +783,7 @@ function handleEndTurn(player, rivals, globalParams) {
         // ============================================
         if (newPlayer.cash < -100) {
             messages.push({
-                text: 'âš ï¸ å…¬å¸ç€•è‡¨ç ´ç”¢ï¼ç¾é‡‘æµåš´é‡ä¸è¶³',
+                text: '現金少於 -$100M，企業破產！',
                 type: 'danger'
             });
         }
