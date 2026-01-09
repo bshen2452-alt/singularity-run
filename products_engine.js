@@ -54,11 +54,11 @@ const ProductEngine = {
         const nextTier = currentTier + 1;
         
         // 如果已經是最高Tier，無上限
-        if (nextTier > 5) return 1000;
+        if (nextTier > 5) return 1005;
         
         // 返回下一個里程碑的MP閾值
         const nextTierData = COSTS.MODEL_TIERS[nextTier];
-        return nextTierData ? nextTierData.mp : 1000;
+        return nextTierData ? nextTierData.mp : 1005;
     },
     
     /**

@@ -936,8 +936,8 @@ function DataSynthesisTab({ player, methods, onAction }) {
         return (
             <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔒</div>
-                MP 不足，暫無可用的合成方法
-                <div style={{ fontSize: '0.7rem', marginTop: '8px' }}>需要 MP ≥ 25 解鎖</div>
+                尚未研發合成技術
+                <div style={{ fontSize: '0.7rem', marginTop: '8px' }}>Tier 3 升級合成路徑解鎖</div>
             </div>
         );
     }

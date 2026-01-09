@@ -42,7 +42,7 @@ function checkMilestones(player) {
     return {
         nextTier: null,
         // 如果所有里程碑都完成了，MP 上限應為最高值（例如 1000），確保不會被舊門檻鎖住
-        mpCap: 1000, 
+        mpCap: 1005, 
         tierName: null,
         isCapped: false
     };

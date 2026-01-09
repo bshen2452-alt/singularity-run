@@ -86,7 +86,7 @@ function executeStrategy(player, actionId, globalParams, params = {}) {
                 newPlayer.model_power = capResult.finalMP;
             } else {
                 // 回退邏輯：沒有里程碑引擎時直接應用
-                newPlayer.model_power = Math.min(1000, newPlayer.model_power + growth);
+                newPlayer.model_power = Math.min(1005, newPlayer.model_power + growth);
             }
             
             const entropyChg = 5 + (actualGrowth * 0.2);
@@ -129,7 +129,7 @@ function executeStrategy(player, actionId, globalParams, params = {}) {
                     milestoneUnlocked = capResult.nextTier;
                 }
             } else {
-                newPlayer.model_power = Math.min(1000, newPlayer.model_power + mpGain);
+                newPlayer.model_power = Math.min(1005, newPlayer.model_power + mpGain);
             }
 
             message = `安全對齊完成！熵值 -${entropyReduction}, 對齊度 +${alignIncrease}`;

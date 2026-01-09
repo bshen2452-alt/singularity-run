@@ -348,7 +348,7 @@ function getRivalInvestmentInfo(rivals, player = null) {
         };
         
         // 計算投資潛力（基於對手狀態）
-        const growthScore = (rival.mp / 1000) * 50; // MP潛力
+        const growthScore = (rival.mp / 1005) * 50; // MP潛力
         const stabilityScore = ((rival.trust + rival.alignment) / 200) * 30; // 穩定性
         const hypeScore = (rival.hype / 200) * 20; // 炒作潛力
         

@@ -26,7 +26,7 @@ const EndingEngine = (function() {
         tier3: [],
         // Tier 4 結局 (mp_tier === 4)
         tier4: [],
-        // AGI 結局 (model_power >= 1000)
+        // AGI 結局 (model_power >= 5)
         agi: []
     };
 
@@ -80,12 +80,12 @@ const EndingEngine = (function() {
         const specialEnding = checkTierEndings('special', player, rivals, globalParams);
         if (specialEnding) return specialEnding;
 
-        // 2. 檢查對手勝利 (model_power >= 1000)
+        // 2. 檢查對手勝利 (model_power >= 1005)
         const rivalEnding = checkRivalVictory(rivals);
         if (rivalEnding) return rivalEnding;
 
-        // 3. 檢查 AGI 結局 (玩家 model_power >= 1000)
-        if (modelPower >= 1000) {
+        // 3. 檢查 AGI 結局 (玩家 model_power >= 1005)
+        if (modelPower >= 1005) {
             const agiEnding = checkTierEndings('agi', player, rivals, globalParams);
             if (agiEnding) return agiEnding;
         }
@@ -133,9 +133,9 @@ const EndingEngine = (function() {
         if (!rivals || !Array.isArray(rivals)) return null;
 
         for (const rival of rivals) {
-            // 對手需要 model_power >= 1000 才觸發勝利（不是 mp）
+            // 對手需要 model_power >= 1005 才觸發勝利（不是 mp）
             const rivalMP = rival.model_power || rival.mp || 0;
-            if (rivalMP >= 1000) {
+            if (rivalMP >= 1005) {
                 return {
                     ending: {
                         msg: `「先驅的背影。」\n\n你的主要競爭對手 ${rival.name} 完成了這項壯舉。\n市場和人才瞬間倒向了奇點的擁有者，你只是錯過了時代。`,
@@ -337,7 +337,7 @@ const EndingEngine = (function() {
                 
                 // 估算對手MP增長率 (基於config)
                 const growthRate = (leadingRival.config?.mp_mult || 1) * 8;
-                const turnsLeft = estimateTurnsToCondition(rivalMP, 1000, growthRate);
+                const turnsLeft = estimateTurnsToCondition(rivalMP, 1005, growthRate);
 
                 if (turnsLeft <= 5 && turnsLeft > 0) {
                     return {
@@ -644,7 +644,7 @@ const EndingEngine = (function() {
             victory: true,
             priority: 100,
             check: (player) => {
-                return player.model_power >= 1000 && player.cash > 2000;
+                return player.model_power >= 1005 && player.cash > 2000;
             }
         });
 
@@ -656,7 +656,7 @@ const EndingEngine = (function() {
             victory: true,
             priority: 90,
             check: (player) => {
-                return player.model_power >= 1000 && (player.talent?.turing || 0) >= 5;
+                return player.model_power >= 1005 && (player.talent?.turing || 0) >= 5;
             }
         });
 
@@ -668,7 +668,7 @@ const EndingEngine = (function() {
             victory: true,
             priority: 80,
             check: (player) => {
-                return player.model_power >= 1000 && player.loyalty >= 90;
+                return player.model_power >= 1005 && player.loyalty >= 90;
             }
         });
 
@@ -680,7 +680,7 @@ const EndingEngine = (function() {
             victory: false,
             priority: 70,
             check: (player) => {
-                return player.model_power >= 1000 && player.debt > 500;
+                return player.model_power >= 1005 && player.debt > 500;
             }
         });
 
@@ -692,7 +692,7 @@ const EndingEngine = (function() {
             victory: true,
             priority: 1, // 最低優先級，作為 fallback
             check: (player) => {
-                return player.model_power >= 1000;
+                return player.model_power >= 1005;
             }
         });
 

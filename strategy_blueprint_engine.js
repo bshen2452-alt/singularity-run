@@ -463,7 +463,7 @@ const StrategyBlueprintEngine = {
             newPlayer.cash = (newPlayer.cash || 0) + perTurnEffects.cash;
         }
         if (perTurnEffects.mp !== 0) {
-            newPlayer.model_power = Math.min(1000, 
+            newPlayer.model_power = Math.min(1005, 
                 (newPlayer.model_power || 0) + perTurnEffects.mp
             );
         }
@@ -510,7 +510,7 @@ const StrategyBlueprintEngine = {
             const ee = specialEffects.entropy_emergence;
             if ((newPlayer.entropy || 0) > ee.threshold) {
                 const bonus = ee.mp_bonus_min + Math.random() * (ee.mp_bonus_max - ee.mp_bonus_min);
-                newPlayer.model_power = Math.min(1000, (newPlayer.model_power || 0) + bonus);
+                newPlayer.model_power = Math.min(1005, (newPlayer.model_power || 0) + bonus);
                 messages.push({
                     text: `⚡ 混沌湧現！MP +${bonus.toFixed(1)}`,
                     type: 'success'

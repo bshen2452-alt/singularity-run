@@ -47,7 +47,7 @@ const COSTS = {
         2: { mp: 100, reward: 100, name: "Tier 2: 垂直領域專家模型 (Domain Expert)" },
         3: { mp: 200, reward: 200, name: "Tier 3: 類通用模型 (Near-GPT Class)" },
         4: { mp: 500, reward: 400, name: "Tier 4: 超級智能準備 (Superintelligence Prep)" },
-        5: { mp: 1000, reward: 1000, name: "Tier 5: AGI (奇點降臨)" }
+        5: { mp: 1005, reward: 1000, name: "Tier 5: AGI (奇點降臨)" }
     }
 };
 

@@ -282,10 +282,10 @@ function updateRivalsState(rivals, player, globalParams) {
         }
         
         // 應用成長
-        updated.mp = Math.min(1000, (updated.mp || 10) + mpGrowth);
+        updated.mp = Math.min(1005, (updated.mp || 10) + mpGrowth);
         
         // 市值更新（基於MP和狀態）
-        const mpRatio = updated.mp / 1000;
+        const mpRatio = updated.mp / 1005;
         const hypeEffect = Math.min(50, (updated.hype || 0) * 0.5);
         const trustEffect = (updated.trust || 0) * 0.3;
         updated.market_cap = Math.max(100, 500 + mpRatio * 2000 + hypeEffect * 10 + trustEffect * 5);
