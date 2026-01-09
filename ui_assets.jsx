@@ -798,51 +798,113 @@ function DataManagementTier2({ player, quantity, setQuantity, onAction }) {
 // 總覽標籤內容
 function DataOverviewTab({ summary, report, processingTasks, contracts }) {
     const grayWarning = report?.gray_warning || false;
+    const grayRatio = report?.gray_ratio || 0;
     const decayEstimate = report?.decay_estimate || {};
 
     return (
         <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
-                {/* 合規數據 */}
-                <div style={{ padding: '10px', background: 'var(--accent-green)11', borderRadius: '6px', border: '1px solid var(--accent-green)33' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)', marginBottom: '4px' }}>✓ 合規數據</div>
-                    <div style={{ fontSize: '1.2rem', color: 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>
-                        {summary?.legal_total?.toFixed(0) || 0}
-                    </div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        高品質: {summary?.by_type?.legal_high_broad || 0} | 低品質: {summary?.by_type?.legal_low || 0}
+            {/* 總覽統計 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
+                <div style={{ padding: '8px', background: 'var(--accent-green)11', borderRadius: '6px', border: '1px solid var(--accent-green)33', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--accent-green)' }}>✓ 合規</div>
+                    <div style={{ fontSize: '1rem', color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                        {(summary?.legal_total || 0).toFixed(0)}
                     </div>
                 </div>
-
-                {/* 灰色數據 */}
-                <div style={{ padding: '10px', background: grayWarning ? 'var(--accent-red)11' : 'var(--accent-yellow)11', borderRadius: '6px', border: `1px solid ${grayWarning ? 'var(--accent-red)33' : 'var(--accent-yellow)33'}` }}>
-                    <div style={{ fontSize: '0.7rem', color: grayWarning ? 'var(--accent-red)' : 'var(--accent-yellow)', marginBottom: '4px' }}>
-                        ⚠ 灰色數據 {grayWarning && '(風險高)'}
-                    </div>
-                    <div style={{ fontSize: '1.2rem', color: grayWarning ? 'var(--accent-red)' : 'var(--accent-yellow)', fontFamily: 'var(--font-mono)' }}>
-                        {summary?.gray_total?.toFixed(0) || 0}
+                <div style={{ padding: '8px', background: grayWarning ? 'var(--accent-red)11' : 'var(--accent-yellow)11', borderRadius: '6px', border: `1px solid ${grayWarning ? 'var(--accent-red)33' : 'var(--accent-yellow)33'}`, textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.65rem', color: grayWarning ? 'var(--accent-red)' : 'var(--accent-yellow)' }}>⚠ 灰色</div>
+                    <div style={{ fontSize: '1rem', color: grayWarning ? 'var(--accent-red)' : 'var(--accent-yellow)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                        {(summary?.gray_total || 0).toFixed(0)}
                     </div>
                 </div>
-
-                {/* 合成數據 */}
-                <div style={{ padding: '10px', background: 'var(--accent-purple)11', borderRadius: '6px', border: '1px solid var(--accent-purple)33' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-purple)', marginBottom: '4px' }}>🧬 合成數據</div>
-                    <div style={{ fontSize: '1.2rem', color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)' }}>
-                        {summary?.synthetic_total?.toFixed(0) || 0}
-                    </div>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        品質: {((summary?.synthetic_quality || 0.5) * 100).toFixed(0)}%
-                    </div>
-                </div>
-
-                {/* 衰減預估 */}
-                <div style={{ padding: '10px', background: 'var(--bg-tertiary)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>📉 下季衰減</div>
-                    <div style={{ fontSize: '1.2rem', color: 'var(--accent-yellow)', fontFamily: 'var(--font-mono)' }}>
-                        -{decayEstimate.high_decay || 0}
+                <div style={{ padding: '8px', background: 'var(--accent-purple)11', borderRadius: '6px', border: '1px solid var(--accent-purple)33', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--accent-purple)' }}>🧬 合成</div>
+                    <div style={{ fontSize: '1rem', color: 'var(--accent-purple)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                        {(summary?.synthetic_total || 0).toFixed(0)}
                     </div>
                 </div>
             </div>
+            
+            {/* 6種數據類型詳細顯示 */}
+            <div style={{ padding: '10px', background: 'var(--bg-tertiary)', borderRadius: '6px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>📦 數據庫存明細</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                    {/* 合規數據 */}
+                    <DataTypeRowLegacy 
+                        icon="💎" 
+                        name="優質通用" 
+                        value={summary?.by_type?.legal_high_broad || 0} 
+                        color="#00f5ff"
+                    />
+                    <DataTypeRowLegacy 
+                        icon="📊" 
+                        name="專業領域" 
+                        value={summary?.by_type?.legal_high_focused || 0} 
+                        color="#44aaff"
+                    />
+                    <DataTypeRowLegacy 
+                        icon="📁" 
+                        name="基礎合規" 
+                        value={summary?.by_type?.legal_low || 0} 
+                        color="#88aa88"
+                    />
+                    {/* 灰色數據 */}
+                    <DataTypeRowLegacy 
+                        icon="🔶" 
+                        name="敏感高值" 
+                        value={summary?.by_type?.gray_high || 0} 
+                        color="#ffaa00"
+                        warning={true}
+                    />
+                    <DataTypeRowLegacy 
+                        icon="🕷️" 
+                        name="爬蟲採集" 
+                        value={summary?.by_type?.gray_low || 0} 
+                        color="#aa6600"
+                        warning={true}
+                    />
+                    {/* 合成數據 */}
+                    <DataTypeRowLegacy 
+                        icon="🧬" 
+                        name="合成數據" 
+                        value={summary?.by_type?.synthetic || 0} 
+                        color="#aa44ff"
+                        quality={summary?.synthetic_quality}
+                    />
+                </div>
+            </div>
+            
+            {/* 衰減預估 */}
+            {decayEstimate.high_decay > 0 && (
+                <div style={{ 
+                    padding: '6px 10px', 
+                    background: 'var(--accent-yellow)11', 
+                    borderRadius: '4px', 
+                    marginBottom: '10px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>📉 下季預估衰減</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--accent-yellow)', fontFamily: 'var(--font-mono)' }}>
+                        -{decayEstimate.high_decay || 0} TB
+                    </span>
+                </div>
+            )}
+            
+            {/* 灰色數據風險警告 */}
+            {grayWarning && (
+                <div style={{ 
+                    fontSize: '0.7rem', 
+                    color: 'var(--accent-red)', 
+                    marginBottom: '10px',
+                    padding: '6px',
+                    background: 'var(--accent-red)11',
+                    borderRadius: '4px'
+                }}>
+                    ⚠️ 灰色數據佔比過高 ({(grayRatio * 100).toFixed(0)}%)，監管審計風險增加
+                </div>
+            )}
 
             {/* 進行中任務 */}
             {processingTasks.length > 0 && (
@@ -872,6 +934,42 @@ function DataOverviewTab({ summary, report, processingTasks, contracts }) {
         </div>
     );
 }
+
+// 數據類型行顯示輔助組件（傳統模式用）
+function DataTypeRowLegacy({ icon, name, value, color, warning = false, quality = null }) {
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 8px',
+            background: warning ? 'var(--accent-yellow)08' : 'transparent',
+            borderRadius: '4px',
+            borderLeft: `2px solid ${color}`
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '0.75rem' }}>{icon}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{name}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ 
+                    fontSize: '0.8rem', 
+                    fontFamily: 'var(--font-mono)', 
+                    color: value > 0 ? color : 'var(--text-muted)',
+                    fontWeight: value > 0 ? 600 : 400
+                }}>
+                    {Math.floor(value)}
+                </span>
+                {quality !== null && value > 0 && (
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                        ({(quality * 100).toFixed(0)}%)
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
 
 // 採購標籤內容
 function DataPurchaseTab({ player, quantity, setQuantity, onAction, features }) {
