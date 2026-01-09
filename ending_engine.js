@@ -174,7 +174,7 @@ const EndingEngine = (function() {
     // ============================================
     /**
      * 獲取所有活躍的結局預警
-     * @returns {Array} 預警列表
+     * @returns {Array} 預警列表 (兼容 DashboardEngine.generateAlerts 格式)
      */
     function getActiveWarnings(player, rivals, globalParams) {
         const warnings = [];
@@ -194,14 +194,33 @@ const EndingEngine = (function() {
                     try {
                         const warningResult = ending.warning(player, rivals, globalParams);
                         if (warningResult && warningResult.active) {
+                            // 決定警示等級
+                            let level = 'warning';
+                            if (warningResult.severity === 'critical' || warningResult.turnsLeft <= 2) {
+                                level = 'danger';
+                            } else if (warningResult.severity === 'info') {
+                                level = 'info';
+                            }
+
+                            // 決定圖標
+                            let icon = ending.victory ? '🏆' : '⚠️';
+                            if (level === 'danger') icon = '🚨';
+                            if (warningResult.turnsLeft <= 1) icon = '💀';
+
                             warnings.push({
+                                // 結局預警專屬欄位
                                 endingId: ending.id,
                                 endingName: ending.name,
                                 endingType: ending.type,
                                 turnsLeft: warningResult.turnsLeft,
                                 condition: warningResult.condition,
-                                severity: warningResult.severity || 'warning',
-                                victory: ending.victory
+                                victory: ending.victory,
+                                
+                                // 兼容 DashboardEngine.generateAlerts 格式
+                                level: level,
+                                icon: icon,
+                                category: '結局預警',
+                                text: `${ending.name}：${warningResult.condition}（${warningResult.turnsLeft} 回合後）`
                             });
                         }
                     } catch (e) {
@@ -211,7 +230,7 @@ const EndingEngine = (function() {
             }
         }
 
-        // 按剩餘回合數排序
+        // 按剩餘回合數排序（最緊急的在前）
         warnings.sort((a, b) => a.turnsLeft - b.turnsLeft);
         return warnings;
     }
@@ -683,6 +702,56 @@ const EndingEngine = (function() {
     }
 
     // ============================================
+    // 將預警轉換為 Dashboard Alert 格式
+    // ============================================
+    function convertWarningsToAlerts(warnings) {
+        if (!warnings || warnings.length === 0) return [];
+
+        return warnings.map(warning => {
+            // 根據嚴重程度和剩餘回合數決定 alert level
+            let level = 'info';
+            let icon = '⚠️';
+
+            if (warning.severity === 'critical' || warning.turnsLeft <= 1) {
+                level = 'danger';
+                icon = '🚨';
+            } else if (warning.severity === 'warning' || warning.turnsLeft <= 3) {
+                level = 'warning';
+                icon = '⚠️';
+            } else {
+                level = 'info';
+                icon = 'ℹ️';
+            }
+
+            // 勝利結局用不同圖標
+            if (warning.victory) {
+                icon = warning.turnsLeft <= 2 ? '🏆' : '🎯';
+            }
+
+            return {
+                level: level,
+                icon: icon,
+                category: '結局預警',
+                text: `${warning.endingName}：${warning.condition}`,
+                turnsLeft: warning.turnsLeft,
+                endingId: warning.endingId,
+                endingType: warning.endingType,
+                isEndingWarning: true,
+                victory: warning.victory
+            };
+        });
+    }
+
+    /**
+     * 獲取結局預警的 Dashboard Alert 格式
+     * 供 DashboardEngine.generateAlerts 直接調用
+     */
+    function getEndingAlerts(player, rivals, globalParams) {
+        const warnings = getActiveWarnings(player, rivals, globalParams);
+        return convertWarningsToAlerts(warnings);
+    }
+
+    // ============================================
     // 公開 API
     // ============================================
     return {
@@ -697,6 +766,8 @@ const EndingEngine = (function() {
 
         // 預警系統
         getActiveWarnings: getActiveWarnings,
+        getEndingAlerts: getEndingAlerts,
+        convertWarningsToAlerts: convertWarningsToAlerts,
 
         // Doom Gauge (僅計算，不觸發結局)
         calculateDoomGauge: calculateDoomGauge,
@@ -730,6 +801,8 @@ const EndingEngine = (function() {
         checkEndingConditions: EndingEngine.checkEndingConditions,
         calculateDoomGauge: EndingEngine.calculateDoomGauge,
         getActiveWarnings: EndingEngine.getActiveWarnings,
+        getEndingAlerts: EndingEngine.getEndingAlerts,
+        convertWarningsToAlerts: EndingEngine.convertWarningsToAlerts,
         registerEnding: EndingEngine.registerEnding,
         checkConsecutiveCondition: EndingEngine.checkConsecutiveCondition,
         estimateTurnsToCondition: EndingEngine.estimateTurnsToCondition,

@@ -447,14 +447,97 @@
     };
 
     // ============================================
-    // 生成警示列表（從風險儀表板提取）
+    // 綜合風險儀表板
     // ============================================
     
-    DashboardEngine.generateAlerts = function(player, derived, rivals) {
+    DashboardEngine.calculateRiskDashboard = function(player, derived, rivals) {
+        const tier = player.mp_tier || 0;
+        
+        // 計算各類風險
+        const risks = [
+            calculateFinancialHealth(player, derived),
+            calculateOperationalStability(player, derived),
+            calculateTechRisk(player, derived, rivals),
+            calculateMarketPosition(player, derived, rivals),
+            calculateComplianceRisk(player, derived)
+        ];
+
+        // 計算總體風險分數 (加權平均)
+        const weights = [0.25, 0.20, 0.25, 0.15, 0.15];
+        const overallScore = risks.reduce((sum, risk, idx) => {
+            return sum + risk.score * weights[idx];
+        }, 0);
+
+        // 根據 Tier 調整風險評估
+        let tierAdjustment = 0;
+        if (tier >= 4) {
+            tierAdjustment = -5; // 高 Tier 容錯更高
+        } else if (tier === 0) {
+            tierAdjustment = 10; // 低 Tier 更脆弱
+        }
+
+        const adjustedScore = Math.min(100, Math.max(0, overallScore + tierAdjustment));
+
+        return {
+            overallScore: adjustedScore,
+            overallLevel: getRiskLevel(adjustedScore),
+            risks,
+            tier,
+            timestamp: Date.now()
+        };
+    };
+
+    // ============================================
+    // Doom Gauge 整合
+    // ============================================
+    
+    DashboardEngine.getDoomGauge = function(player) {
+        if (window.EndingEngine?.calculateDoomGauge) {
+            return window.EndingEngine.calculateDoomGauge(player);
+        }
+        
+        // Fallback 計算
+        const cash = player.cash || 0;
+        const debt = player.debt || 0;
+        const marketCap = player.market_cap || 100;
+        const entropy = player.entropy || 0;
+        const alignment = player.alignment || 50;
+        const compliance_risk = player.compliance_risk || 0;
+        const regulation = player.regulation || 0;
+        const loyalty = player.loyalty || 50;
+        const trust = player.trust || 0;
+
+        let commercial_ruin = 0;
+        if (cash < 0) {
+            commercial_ruin = Math.min(100, Math.abs(cash) / 5);
+        }
+        const debtRatio = debt / Math.max(1, marketCap);
+        commercial_ruin = Math.min(100, commercial_ruin + debtRatio * 50);
+
+        const internal_unraveling = Math.min(100,
+            entropy * 0.5 +
+            (100 - alignment) * 0.2 +
+            (100 - loyalty) * 0.3
+        );
+
+        const external_sanction = Math.min(100,
+            compliance_risk * 0.4 +
+            regulation * 0.4 +
+            (100 - trust) * 0.2
+        );
+
+        return { commercial_ruin, internal_unraveling, external_sanction };
+    };
+
+    // ============================================
+    // 警示生成 (整合結局預警)
+    // ============================================
+    
+    DashboardEngine.generateAlerts = function(player, derived, rivals, globalParams) {
         const alerts = [];
         const riskDashboard = DashboardEngine.calculateRiskDashboard(player, derived, rivals);
 
-        // 從各風險類別提取嚴重警示
+        // 1. 從各風險類別提取嚴重警示
         riskDashboard.risks.forEach(risk => {
             risk.factors.forEach(factor => {
                 if (factor.severity === 'danger') {
@@ -462,20 +545,105 @@
                         level: 'danger',
                         icon: risk.icon,
                         category: risk.name,
-                        text: factor.text
+                        text: factor.text,
+                        isRiskAlert: true
                     });
                 } else if (factor.severity === 'warning' && risk.score >= 50) {
                     alerts.push({
                         level: 'warning',
                         icon: risk.icon,
                         category: risk.name,
-                        text: factor.text
+                        text: factor.text,
+                        isRiskAlert: true
                     });
                 }
             });
         });
 
+        // 2. 整合結局預警 (來自 EndingEngine)
+        if (window.EndingEngine?.getEndingAlerts) {
+            const endingAlerts = window.EndingEngine.getEndingAlerts(player, rivals, globalParams);
+            if (endingAlerts && endingAlerts.length > 0) {
+                // 結局預警放在最前面（更重要）
+                alerts.unshift(...endingAlerts);
+            }
+        }
+
+        // 3. 添加 Doom Gauge 相關警示
+        const doomGauge = DashboardEngine.getDoomGauge(player);
+        
+        if (doomGauge.commercial_ruin >= 70) {
+            alerts.push({
+                level: doomGauge.commercial_ruin >= 85 ? 'danger' : 'warning',
+                icon: '💸',
+                category: '崩潰預警',
+                text: `商業崩潰風險：${doomGauge.commercial_ruin.toFixed(0)}%`,
+                isDoomWarning: true,
+                doomType: 'commercial_ruin',
+                doomValue: doomGauge.commercial_ruin
+            });
+        }
+        
+        if (doomGauge.internal_unraveling >= 70) {
+            alerts.push({
+                level: doomGauge.internal_unraveling >= 85 ? 'danger' : 'warning',
+                icon: '🔥',
+                category: '崩潰預警',
+                text: `內部瓦解風險：${doomGauge.internal_unraveling.toFixed(0)}%`,
+                isDoomWarning: true,
+                doomType: 'internal_unraveling',
+                doomValue: doomGauge.internal_unraveling
+            });
+        }
+        
+        if (doomGauge.external_sanction >= 70) {
+            alerts.push({
+                level: doomGauge.external_sanction >= 85 ? 'danger' : 'warning',
+                icon: '🚫',
+                category: '崩潰預警',
+                text: `外部制裁風險：${doomGauge.external_sanction.toFixed(0)}%`,
+                isDoomWarning: true,
+                doomType: 'external_sanction',
+                doomValue: doomGauge.external_sanction
+            });
+        }
+
+        // 4. 按優先級排序：結局預警 > Doom預警 > 風險警示
+        alerts.sort((a, b) => {
+            // 結局預警最優先
+            if (a.isEndingWarning && !b.isEndingWarning) return -1;
+            if (!a.isEndingWarning && b.isEndingWarning) return 1;
+            
+            // Doom預警次之
+            if (a.isDoomWarning && !b.isDoomWarning) return -1;
+            if (!a.isDoomWarning && b.isDoomWarning) return 1;
+            
+            // 同類型按嚴重程度排序
+            const levelOrder = { danger: 0, warning: 1, info: 2 };
+            return (levelOrder[a.level] || 2) - (levelOrder[b.level] || 2);
+        });
+
         return alerts;
+    };
+
+    // ============================================
+    // 獲取結局預警摘要 (供 UI 單獨顯示)
+    // ============================================
+    
+    DashboardEngine.getEndingWarningsSummary = function(player, rivals, globalParams) {
+        if (!window.EndingEngine?.getActiveWarnings) {
+            return { hasWarnings: false, warnings: [], criticalCount: 0 };
+        }
+
+        const warnings = window.EndingEngine.getActiveWarnings(player, rivals, globalParams);
+        const criticalCount = warnings.filter(w => w.severity === 'critical' || w.turnsLeft <= 2).length;
+
+        return {
+            hasWarnings: warnings.length > 0,
+            warnings: warnings,
+            criticalCount: criticalCount,
+            mostUrgent: warnings.length > 0 ? warnings[0] : null
+        };
     };
 
     // ============================================
@@ -483,6 +651,6 @@
     // ============================================
     
     window.DashboardEngine = DashboardEngine;
-    console.log('✓ Dashboard Engine loaded (with Risk Dashboard)');
+    console.log('✓ Dashboard Engine loaded (with Risk Dashboard + Ending Warnings)');
 
 })();
