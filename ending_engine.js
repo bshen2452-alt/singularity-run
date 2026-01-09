@@ -356,7 +356,7 @@ const EndingEngine = (function() {
             id: 'peer_reviewed',
             name: '春風化雨',
             type: '春風化雨 - Peer Reviewed',
-            msg: ENDINGS.mid_game?.peer_reviewed?.msg || '「學術的避風港？」\n\n你投了一整年的玩助金申請書最終被一所頂尖大學的院長看到，他發現你的伺劃書寫得好棒。\n現在你正在替他趕教學計畫。',
+            msg: ENDINGS.mid_game?.peer_reviewed?.msg || '「學術的避風港？」\n\n你投了一整年的獎助金申請書最終被一所頂尖大學的院長看到，他發現你的計劃書寫得好棒。\n現在你正在替他趕教學計畫。',
             victory: false,
             priority: 10,
             check: (player) => {
@@ -435,7 +435,7 @@ const EndingEngine = (function() {
             id: 'founder_to_fiver',
             name: '打工戰士',
             type: '打工戰士 - Founder to Fiver',
-            msg: ENDINGS.mid_game?.founder_to_fiver?.msg || '「失敗了失敗了失敗了失敗了失敗了」\n\n你證明了你個人是打不死的小強，甚至活得比你的公司還久。',
+            msg: ENDINGS.mid_game?.founder_to_fiver?.msg || '「失敗した失敗した失敗した失敗した」\n\n你證明了你個人是打不死的小強，甚至活得比你的公司還久。',
             victory: false,
             priority: 1,
             check: (player) => {
@@ -543,10 +543,11 @@ const EndingEngine = (function() {
 
         registerEnding('tier2', {
             id: 'the_long_afternoon',
-            name: '漫長午後',
-            type: '漫長午後 - The Long Afternoon',
-            msg: '「舒適區是最危險的地方。」\n\n你的公司在各項指標上都維持在「還行」的水平。\n沒有失敗，但也永遠不會成功。',
-            victory: false,
+            name: '長日未央',
+            type: '長日未央 - The Long Afternoon',
+            msg: '「沒有奇蹟，沒有滅亡。」\n\n你的 AI 成為世界基礎設施的一部分，沒有成神，也沒有帶來威脅。\n人類未來沒有被誰重新定義，
+但至少是由自己走下去。',
+            victory: true,
             priority: 5,
             check: (player) => {
                 if (player.mp_tier >= 3 || player.model_power >= 70) return false;
@@ -590,9 +591,9 @@ const EndingEngine = (function() {
 
         registerEnding('tier3', {
             id: 'content_purge',
-            name: '內容清洗',
-            type: '內容清洗 - Content Purge',
-            msg: '「你的 AI 被用來製造假新聞。」\n\n監管機構強制清除所有用戶生成內容，公司聲譽毀於一旦。',
+            name: '版權焦土',
+            type: '版權焦土 - Content Purge',
+            msg: '「根基的崩塌。」\n\n你在大規模版權訴訟被判敗訴。監管機構強制清除所有用戶生成內容，商業帝國化為數據灰燼。',
             victory: false,
             priority: 5,
             check: (player) => {
@@ -607,9 +608,9 @@ const EndingEngine = (function() {
         // === Tier 4 結局 ===
         registerEnding('tier4', {
             id: 'babel_rebirth',
-            name: '巴別重生',
-            type: '巴別重生 - Babel Rebirth',
-            msg: '「人類的語言再次統一。」\n\n你的多模態 AI 成為全球通用的溝通工具，打破了文化和語言的障礙。',
+            name: '天涯若比鄰',
+            type: '天涯若比鄰 - Babel Rebirth',
+            msg: '「一為全，全為一。」\n\n你的多模態 AI 能解讀所有感官數據，從此打破了文化和語言的隔閡。',
             victory: true,
             priority: 10,
             check: (player) => {
@@ -624,7 +625,8 @@ const EndingEngine = (function() {
             id: 'meme_war',
             name: '迷因戰爭',
             type: '迷因戰爭 - Meme War',
-            msg: '「你創造了完美的假訊息機器。」\n\n你的 AI 被用來製造和傳播虛假信息，引發全球資訊戰。',
+            msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑與混亂。
+。',
             victory: false,
             priority: 5,
             check: (player) => {
