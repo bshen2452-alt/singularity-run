@@ -593,7 +593,7 @@ const EndingEngine = (function() {
             id: 'content_purge',
             name: '版權焦土',
             type: '版權焦土 - Content Purge',
-            msg: '「根基的崩塌。」\n\n你在大規模版權訴訟被判敗訴。監管機構強制清除所有用戶生成內容，商業帝國化為數據灰燼。',
+            msg: '「根基的崩塌。」\n\n大規模版權訴訟被判敗訴，監管機構強制清除所有用戶生成內容，你的商業帝國化為數據灰燼。',
             victory: false,
             priority: 5,
             check: (player) => {
