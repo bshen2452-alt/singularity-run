@@ -783,7 +783,7 @@ function handleEndTurn(player, rivals, globalParams) {
         // ============================================
         if (newPlayer.cash < -100) {
             messages.push({
-                text: '現金少於 -$100M，企業破產！',
+                text: '現金少於 -$100M，企業即將破產！',
                 type: 'danger'
             });
         }
