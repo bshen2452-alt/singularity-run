@@ -1056,15 +1056,16 @@ const DataEngine = {
         return Object.entries(config.SYNTHESIS_METHODS || {})
             .filter(([id, method]) => {
                 // 檢查是否在解鎖列表中
-                if (!unlockedMethods.includes(id)) {
-                    // 特例：differential 需要額外研究且需 Lv3
-                    if (id === 'differential' && synthesisLevel >= 3) {
-                        if (method.unlock_research) {
-                            return player.unlocked_research?.includes(method.unlock_research);
-                        }
-                    }
-                    return false;
+                if (unlockedMethods.includes(id)) {
+                    return true;  // 修復：在解鎖列表中時返回 true
                 }
+                // 特例：differential 需要額外研究且需 Lv3
+                if (id === 'differential' && synthesisLevel >= 3) {
+                    if (method.unlock_research) {
+                        return player.unlocked_research?.includes(method.unlock_research);
+                    }
+                }
+                return false;
             })
             .map(([id, method]) => ({ id, ...method }));
     }
