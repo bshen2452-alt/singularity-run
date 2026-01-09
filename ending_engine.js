@@ -7,7 +7,7 @@
 // 3. 註冊式架構，易於擴展新結局
 // ============================================
 
-const EndingEngineV2 = (function() {
+const EndingEngine = (function() {
     'use strict';
 
     // ============================================
@@ -722,20 +722,20 @@ const EndingEngineV2 = (function() {
     'use strict';
 
     // 初始化結局註冊表
-    EndingEngineV2.init();
+    EndingEngine.init();
 
     // 註冊到全局
     window.EndingEngine = {
-        evaluate: EndingEngineV2.evaluate,
-        checkEndingConditions: EndingEngineV2.checkEndingConditions,
-        calculateDoomGauge: EndingEngineV2.calculateDoomGauge,
-        getActiveWarnings: EndingEngineV2.getActiveWarnings,
-        registerEnding: EndingEngineV2.registerEnding,
-        checkConsecutiveCondition: EndingEngineV2.checkConsecutiveCondition,
-        estimateTurnsToCondition: EndingEngineV2.estimateTurnsToCondition,
+        evaluate: EndingEngine.evaluate,
+        checkEndingConditions: EndingEngine.checkEndingConditions,
+        calculateDoomGauge: EndingEngine.calculateDoomGauge,
+        getActiveWarnings: EndingEngine.getActiveWarnings,
+        registerEnding: EndingEngine.registerEnding,
+        checkConsecutiveCondition: EndingEngine.checkConsecutiveCondition,
+        estimateTurnsToCondition: EndingEngine.estimateTurnsToCondition,
         // 保留舊接口兼容
         checkGameEnding: function(player, rivals) {
-            return EndingEngineV2.evaluate(player, rivals);
+            return EndingEngine.evaluate(player, rivals);
         }
     };
 
