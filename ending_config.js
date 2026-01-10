@@ -170,7 +170,7 @@ const EndingConfig = (function() {
                 id: 'gilded_cage',
                 name: '職人當家',
                 type: '職人當家 - Guilded Cage',
-                msg: '「誰愛幹誰幹。」\n\n你認為一技在手希望無窮，也認為興趣不能當飯吃。\n於是你緊抓著技術等待希望，工作也沒興趣了。',
+                msg: '「誰愛幹誰幹。」\n\n你認為一技在手希望無窮，也認為興趣不能當飯吃。\n於是你緊抓著技術苦等希望，工作也沒興趣了。',
                 victory: false,
                 priority: 5,
                 check: (player) => {
