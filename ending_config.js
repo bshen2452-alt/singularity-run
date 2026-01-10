@@ -303,7 +303,6 @@ const EndingConfig = (function() {
                         player.trust < 20 &&
                         player.community_size >= 10000 &&
                         player.engagement === 100 &&
-                        player.sentiment <= 30;
                 },
                 warning: (player) => {
                     // 預警邏輯：當信任度開始滑落且參與度過高（代表社群爭議多）時觸發
@@ -312,7 +311,7 @@ const EndingConfig = (function() {
                             active: true,
                             turnsLeft: 3,
                             condition: '社群出現嚴重分歧，碎片化風險極高',
-                            severity: player.sentiment < 40 ? 'critical' : 'warning'
+                            severity: player.trust < 30 ? 'critical' : 'warning'
                         };
                     }
                     return null;
