@@ -560,7 +560,7 @@ const EndingConfig = (function() {
                         player.route === 'OpenSource' &&
                         player.trust > 800 &&
                         player.community_size > 500000000 &&
-                        (player.community?.engagement || 0) >= 100 && // 修正：原稿為賦值符號，改為判斷符號
+                        (player.community?.engagement || 0) >= 90 && // 修正：原稿為賦值符號，改為判斷符號
                         (player.community?.sentiment || 0) > 90;
                 },
                 warning: (player) => {
