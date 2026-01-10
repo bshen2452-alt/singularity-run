@@ -523,7 +523,7 @@ const EndingConfig = (function() {
                 id: 'meme_war',
                 name: '迷因戰爭',
                 type: '迷因戰爭 - Meme War',
-                msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑。\n真理已死，剩下的只有無止盡的數位嘲諷與混亂。',
+                msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑。\n真理已死，剩下的只有無止盡的網軍嘴砲與罵戰。',
                 victory: false, // 這屬於一種失控的負面結局
                 priority: 8,
                 check: (player) => {
