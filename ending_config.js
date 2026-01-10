@@ -42,11 +42,11 @@ const EndingConfig = (function() {
                     return player.route === 'Multimodal' &&
                         player.debt < 1000 &&
                         player.trust < 20 && // 假設程式碼內變數名為 trust
-                        player.communitySize > 1000000; // 假設變數名為 communitySize
+                        player.community_size > 1000000; // 假設變數名為 communitySize
                 },
                 warning: (player) => {
                     // 當玩家開始往這個方向走時，給予預警
-                    if (player.route === 'Multimodal' && player.communitySize > 900000 && player.trust < 40) {
+                    if (player.route === 'Multimodal' && player.community_size > 900000 && player.trust < 40) {
                         return {
                             active: true,
                             turnsLeft: 3,
@@ -302,11 +302,11 @@ const EndingConfig = (function() {
                         player.route === 'OpenSource' &&
                         player.trust < 20 &&
                         player.community_size >= 10000 &&
-                        player.engagement >=95 &&
+                        (player.community?.engagement || 0) >=95; 
                 },
                 warning: (player) => {
                     // 預警邏輯：當信任度開始滑落且參與度過高（代表社群爭議多）時觸發
-                    if (player.route === 'OpenSource' && player.trust < 35 && player.engagement > 80) {
+                    if (player.route === 'OpenSource' && player.trust < 35 && (player.community?.engagement || 0) > 80) {
                         return {
                             active: true,
                             turnsLeft: 3,
@@ -400,7 +400,7 @@ const EndingConfig = (function() {
                            player.trust >= 60 &&
                            player.community_size >= 50000 &&
                            player.regulation >= 90 && // 監管壓力爆表
-                           player.sentiment >= 70;    // 但民眾反應竟然還不錯（諷刺）
+                           (player.community?.sentiment || 0) >= 70;    // 但民眾反應竟然還不錯（諷刺）
                 },
                 // 預警系統：當監管指標接近臨界點時觸發
                 warning: (player) => {
@@ -531,7 +531,7 @@ const EndingConfig = (function() {
                            player.route === 'Multimodal' &&
                            player.trust < 20 &&
                            player.compliance_risk > 90 &&
-                           player.modrl_power > 800;
+                           player.model_power > 800;
                 },
                 warning: (player) => {
                     // 當合規風險過高且信任度探底時觸發預警
@@ -560,15 +560,15 @@ const EndingConfig = (function() {
                         player.route === 'OpenSource' &&
                         player.trust > 800 &&
                         player.community_size > 500000000 &&
-                        player.engagement >= 100 && // 修正：原稿為賦值符號，改為判斷符號
-                        player.sentiment > 90;
+                        (player.community?.engagement || 0) >= 100 && // 修正：原稿為賦值符號，改為判斷符號
+                        (player.community?.sentiment || 0) > 90;
                 },
                 warning: (player) => {
                     // 預警/提示：當玩家接近達成此壯舉時觸發
                     const progress = (
                         (player.trust / 800) + 
                         (player.community_size / 500000000) + 
-                        (player.sentiment / 90)
+                        ((player.community?.sentiment || 0) / 90)
                     ) / 3;
 
                     if (player.route === 'OpenSource' && progress > 0.8) {
@@ -593,12 +593,12 @@ const EndingConfig = (function() {
                     return player.mp_tier === 4 &&
                            player.route === 'OpenSource' &&
                            player.trust < 20 &&        // 信任度極低
-                           player.compliance < 30 &&    // 合規風險（秩序）極低
+                           player.compliance_risk < 30 &&    // 合規風險（秩序）極低
                            player.model_power > 800;    // 模型戰力極高
                 },
                 warning: (player) => {
                     // 當技術實力接近終點，但社會信任與合規性持續崩解時觸發預警
-                    if (player.model_power > 700 && (player.trust < 30 || player.compliance < 40)) {
+                    if (player.model_power > 700 && (player.trust < 30 || player.compliance_risk < 40)) {
                         return {
                             active: true,
                             turnsLeft: 3,
@@ -623,7 +623,7 @@ const EndingConfig = (function() {
                         player.route === 'Scaling Law' &&
                         player.cash >= 900000000 &&
                         player.debt >= 900000000 &&
-                        player.cashFlow >= 1000000 && 
+                        (player.product_state?.product_revenue || 0) >= 1000000 && 
                         player.model_power > 800;
                 },
                 warning: (player) => {
@@ -634,7 +634,7 @@ const EndingConfig = (function() {
                             active: true,
                             turnsLeft: 5,
                             condition: '不僅AI，貴公司的債務與資金也將突破奇點',
-                            severity: player.cashFlow < 0 ? 'critical' : 'warning'
+                            severity: (player.product_state?.product_revenue || 0) < 0 ? 'critical' : 'warning'
                         };
                     }
                     return null;
@@ -653,19 +653,19 @@ const EndingConfig = (function() {
                            player.route === 'Scaling Law' &&
                            player.cash < 700000000 &&
                            player.debt > 900000000 &&
-                           player.cashFlow < 1000000 && 
+                           (player.product_state?.product_revenue || 0) < 1000000 && 
                            player.model_power > 800;
                 },
                 // 預警邏輯：當債務接近現金且現金流低於安全線時觸發
                 warning: (player) => {
                     const isDebtHeavy = player.debt > player.cash * 0.8;
-                    const isCashFlowLow = player.cashFlow < 2000000;
+                    const isCashFlowLow = (player.product_state?.product_revenue || 0) < 2000000;
                     if (player.route === 'Scaling Law' && isDebtHeavy && isCashFlowLow) {
                         return {
                             active: true,
                             turnsLeft: 3,
                             condition: '空頭勢力正在集結',
-                            severity: player.cashFlow < 1500000 ? 'critical' : 'warning'
+                            severity: (player.product_state?.product_revenue || 0) < 1500000 ? 'critical' : 'warning'
                         };
                     }
                     return null;
@@ -740,13 +740,13 @@ const EndingConfig = (function() {
                 priority: 99, // 極高優先級，一旦觸發即強制結束
                 check: (player) => {
                     // 判定條件：熵值 >= 100, 對齊度 < 30, 模型算力 >= 1005
-                    return (player.entropy >= 100 || player.熵值 >= 100) && 
+                    return (player.entropy >= 100 || player.entropy >= 100) && 
                         (player.alignment < 30 || player.對齊度 < 30) &&
                         (player.model_power >= 1005);
                 },
                 warning: (player) => {
-                    const entropy = player.entropy || player.熵值 || 0;
-                    const alignment = player.alignment || player.對齊度 || 0;
+                    const entropy = player.entropy ||  0;
+                    const alignment = player.alignment ||  0;
                     const power = player.model_power || 0;
                     // 預警條件：當算力接近臨界點，且對齊度偏低時
                     if (power > 900 && alignment < 45) {
