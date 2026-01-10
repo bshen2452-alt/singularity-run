@@ -89,7 +89,7 @@ const handleAction = useCallback((action, params = {}) => {
         return;
     }
     // 資產行動
-    else if (['buyPflops', 'rentCloud', 'cancelCloud', 'rentOutPflops', 'sellPflops', 'hireTalent', 'fireTalent', 'buyHighData', 'buyLowData', 'upgradeTech', 'investRival', 'scrapeData', 'synthesizeData', 'startCleaning', 'signDataContract'].includes(action)) {
+    else if (['buyPflops', 'rentCloud', 'cancelCloud', 'rentOutPflops', 'sellPflops', 'hireTalent', 'fireTalent', 'buyDataByType', 'scrapeData', 'upgradeTech', 'investRival', 'synthesizeData', 'startCleaning', 'signDataContract'].includes(action)) {
         result = GameEngine.executeAction('asset', action, context);
         handleResult(result);
         return;

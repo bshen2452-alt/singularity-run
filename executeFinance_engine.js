@@ -562,18 +562,60 @@ function executeFinance(player, actionId, params = {}) {
             break;
         }
         
-        case 'buyHighData': {
+        // ==========================================
+        // 統一數據購買（整合 buyHighData/buyLowData）
+        // ==========================================
+        case 'buyHighData':
+        case 'buyLowData':
+        case 'buyDataByType': {
+            const DataConfig = window.DataConfig;
             const quantity = params.quantity || 0;
-            if (quantity <= 0) {
+            
+            // 兼容舊 action
+            let dataType = params.dataType;
+            if (actionId === 'buyHighData' && !dataType) {
+                dataType = 'legal_high_broad';
+            } else if (actionId === 'buyLowData' && !dataType) {
+                dataType = 'legal_low';
+            }
+            
+            if (!dataType || quantity <= 0) {
                 return {
                     success: false,
                     player: player,
-                    message: '請指定購買數量',
+                    message: '請指定有效的數據類型和數量',
                     type: 'warning'
                 };
             }
             
-            const cost = quantity * COSTS.HIGH_DATA_UNIT_PRICE;
+            // 獲取數據類型配置
+            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
+            if (!typeConfig) {
+                return {
+                    success: false,
+                    player: player,
+                    message: `未知的數據類型: ${dataType}`,
+                    type: 'danger'
+                };
+            }
+            
+            // 只允許購買合法數據
+            if (typeConfig.compliance !== 'legal') {
+                return {
+                    success: false,
+                    player: player,
+                    message: '只能購買合規數據，灰色數據需透過爬蟲獲取',
+                    type: 'warning'
+                };
+            }
+            
+            // 計算價格
+            let unitPrice = typeConfig.base_price;
+            if (unitPrice === undefined) {
+                unitPrice = (typeConfig.quality === 'high') ? COSTS.HIGH_DATA_UNIT_PRICE : COSTS.LOW_DATA_UNIT_PRICE;
+            }
+            const cost = quantity * unitPrice;
+            
             if (newPlayer.cash < cost) {
                 return {
                     success: false,
@@ -584,41 +626,28 @@ function executeFinance(player, actionId, params = {}) {
             }
             
             newPlayer.cash -= cost;
-            newPlayer.high_data += quantity;
-            newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + 1 * (quantity / 50));
-            newPlayer.compliance_risk = Math.min(100, (newPlayer.compliance_risk || 0) + 3 * (quantity / 100));
             
-            message = `採購高級數據 +${quantity}`;
-            messageType = 'success';
-            break;
-        }
-        
-        case 'buyLowData': {
-            const quantity = params.quantity || 0;
-            if (quantity <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '請指定購買數量',
-                    type: 'warning'
-                };
+            // 更新數據存儲
+            if (!newPlayer.data_inventory) {
+                newPlayer.data_inventory = {};
+            }
+            newPlayer.data_inventory[dataType] = (newPlayer.data_inventory[dataType] || 0) + quantity;
+            
+            // 同步到舊字段並處理副作用
+            if (typeConfig.quality === 'high') {
+                newPlayer.high_data = (newPlayer.high_data || 0) + quantity;
+                const trustGain = 1 * (quantity / 50);
+                const riskGain = 3 * (quantity / 100);
+                newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + trustGain);
+                newPlayer.compliance_risk = Math.min(100, (newPlayer.compliance_risk || 0) + riskGain);
+                message = `採購 ${typeConfig.name} +${quantity}，信任度+${trustGain.toFixed(1)}`;
+            } else {
+                newPlayer.low_data = (newPlayer.low_data || 0) + quantity;
+                const entropyGain = 2 * (quantity / 100);
+                newPlayer.entropy = Math.min(100, (newPlayer.entropy || 0) + entropyGain);
+                message = `採購 ${typeConfig.name} +${quantity}，熵值+${entropyGain.toFixed(1)}`;
             }
             
-            const cost = quantity * COSTS.LOW_DATA_UNIT_PRICE;
-            if (newPlayer.cash < cost) {
-                return {
-                    success: false,
-                    player: player,
-                    message: `現金不足，需要 $${cost.toFixed(1)}M`,
-                    type: 'danger'
-                };
-            }
-            
-            newPlayer.cash -= cost;
-            newPlayer.low_data += quantity;
-            newPlayer.entropy = Math.min(100, (newPlayer.entropy || 0) + 2 * (quantity / 100));
-            
-            message = `採購低級數據 +${quantity}`;
             messageType = 'success';
             break;
         }

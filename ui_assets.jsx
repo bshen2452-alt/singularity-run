@@ -613,7 +613,7 @@ function DataPurchaseTier1({ player, quantity, setQuantity, onAction }) {
                     <GlowButton 
                         variant="warning" 
                         size="small" 
-                        onClick={() => onAction('buyHighData', { quantity })} 
+                        onClick={() => onAction('buyDataByType', { dataType: 'legal_high_broad', quantity })}
                         disabled={player.cash < quantity * highPrice || !capacityCheck.canPurchase}
                     >
                         高品質 (${highPrice}M)
@@ -621,7 +621,7 @@ function DataPurchaseTier1({ player, quantity, setQuantity, onAction }) {
                     <GlowButton 
                         variant="primary" 
                         size="small" 
-                        onClick={() => onAction('buyLowData', { quantity })} 
+                        onClick={() => onAction('buyDataByType', { dataType: 'legal_low', quantity })}
                         disabled={player.cash < quantity * lowPrice || !capacityCheck.canPurchase}
                     >
                         低品質 (${lowPrice}M)
@@ -988,10 +988,10 @@ function DataPurchaseTab({ player, quantity, setQuantity, onAction, features }) 
                         <input type="number" value={quantity} onChange={(e) => setQuantity(parseFloat(e.target.value) || 1)} min={1}
                             style={{ width: '100%', padding: '4px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.8rem' }} />
                     </div>
-                    <GlowButton variant="warning" size="small" onClick={() => onAction('buyHighData', { quantity })} disabled={player.cash < quantity * highPrice}>
+                    <GlowButton variant="warning" size="small" onClick={() => onAction('buyDataByType', { dataType: 'legal_high_broad', quantity })} disabled={player.cash < quantity * highPrice}>
                         高品質 (${highPrice}M)
                     </GlowButton>
-                    <GlowButton variant="primary" size="small" onClick={() => onAction('buyLowData', { quantity })} disabled={player.cash < quantity * lowPrice}>
+                    <GlowButton variant="primary" size="small" onClick={() => onAction('buyDataByType', { dataType: 'legal_low', quantity })} disabled={player.cash < quantity * lowPrice}>
                         低品質 (${lowPrice}M)
                     </GlowButton>
                 </div>

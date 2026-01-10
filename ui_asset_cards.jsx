@@ -1444,6 +1444,135 @@ function DataTypeRow({ icon, name, value, color, warning = false, quality = null
 }
 
 // ============================================
+// 帶有採購/爬蟲按鈕的數據類型行組件
+// ============================================
+
+function DataTypeRowWithAction({ 
+    typeId,
+    icon, 
+    name, 
+    value, 
+    color, 
+    warning = false, 
+    quality = null,
+    actionType = null,  // 'purchase' | 'scrape' | null
+    actionPrice = 0,
+    scrapeRisk = '',    // 'low' | 'high'
+    onAction,
+    disabled = false,
+    grayForbidden = false
+}) {
+    const { GlowButton } = window.Components || {};
+    
+    // 決定按鈕樣式
+    const getButtonVariant = () => {
+        if (actionType === 'purchase') return 'primary';
+        if (actionType === 'scrape') {
+            return scrapeRisk === 'high' ? 'danger' : 'warning';
+        }
+        return 'secondary';
+    };
+    
+    // 決定按鈕文字
+    const getButtonText = () => {
+        if (actionType === 'purchase') {
+            return `$${actionPrice}M`;
+        }
+        if (actionType === 'scrape') {
+            return scrapeRisk === 'high' ? '⚠爬取' : '爬取';
+        }
+        return '';
+    };
+    
+    // 是否顯示按鈕
+    const showButton = actionType && !(actionType === 'scrape' && grayForbidden);
+    const isDisabled = disabled;
+    
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '6px 8px',
+            background: warning ? 'var(--accent-yellow)08' : 'var(--bg-secondary)',
+            borderRadius: '6px',
+            borderLeft: `3px solid ${color}`,
+            marginBottom: '4px'
+        }}>
+            {/* 左側：圖標與名稱 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1', minWidth: 0 }}>
+                <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>{icon}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+                    {actionType === 'scrape' && (
+                        <span style={{ 
+                            fontSize: '0.55rem', 
+                            color: scrapeRisk === 'high' ? 'var(--accent-red)' : 'var(--accent-yellow)' 
+                        }}>
+                            {scrapeRisk === 'high' ? '⚠高風險' : '🔹低風險'}
+                        </span>
+                    )}
+                    {actionType === 'purchase' && (
+                        <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+                            單價 ${actionPrice}M/TB
+                        </span>
+                    )}
+                </div>
+            </div>
+            
+            {/* 中間：數量 */}
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px',
+                minWidth: '50px',
+                justifyContent: 'center',
+                flexShrink: 0
+            }}>
+                <span style={{ 
+                    fontSize: '0.85rem', 
+                    fontFamily: 'var(--font-mono)', 
+                    color: value > 0 ? color : 'var(--text-muted)',
+                    fontWeight: value > 0 ? 600 : 400
+                }}>
+                    {Math.floor(value)}
+                </span>
+                {quality !== null && value > 0 && (
+                    <span style={{ fontSize: '0.5rem', color: 'var(--text-muted)' }}>
+                        ({(quality * 100).toFixed(0)}%)
+                    </span>
+                )}
+            </div>
+            
+            {/* 右側：操作按鈕 */}
+            <div style={{ minWidth: '65px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+                {showButton && (
+                    GlowButton ? (
+                        <GlowButton 
+                            variant={getButtonVariant()} 
+                            size="small" 
+                            onClick={() => onAction(typeId, actionType)}
+                            disabled={isDisabled}
+                            style={{ fontSize: '0.6rem', padding: '2px 6px' }}
+                        >
+                            {getButtonText()}
+                        </GlowButton>
+                    ) : (
+                        <button 
+                            onClick={() => onAction(typeId, actionType)}
+                            disabled={isDisabled}
+                            style={{ fontSize: '0.6rem', padding: '2px 6px' }}
+                        >
+                            {getButtonText()}
+                        </button>
+                    )
+                )}
+            </div>
+        </div>
+    );
+}
+
+// ============================================
 // 數據卡片（始終開放）- 整合完整功能
 // ============================================
 
@@ -1579,54 +1708,6 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                         </div>
                     </div>
                     
-                    {/* 6種數據類型詳細顯示 */}
-                    <div style={{ padding: '10px', background: 'var(--bg-tertiary)', borderRadius: '6px', marginBottom: '10px' }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>📦 數據庫存明細</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-                            {/* 合規數據 */}
-                            <DataTypeRow 
-                                icon="💎" 
-                                name="優質通用" 
-                                value={summary.by_type?.legal_high_broad || 0} 
-                                color="#00f5ff"
-                            />
-                            <DataTypeRow 
-                                icon="📊" 
-                                name="專業領域" 
-                                value={summary.by_type?.legal_high_focused || 0} 
-                                color="#44aaff"
-                            />
-                            <DataTypeRow 
-                                icon="📁" 
-                                name="基礎合規" 
-                                value={summary.by_type?.legal_low || 0} 
-                                color="#88aa88"
-                            />
-                            {/* 灰色數據 */}
-                            <DataTypeRow 
-                                icon="🔶" 
-                                name="敏感高值" 
-                                value={summary.by_type?.gray_high || 0} 
-                                color="#ffaa00"
-                                warning={true}
-                            />
-                            <DataTypeRow 
-                                icon="🕷️" 
-                                name="爬蟲採集" 
-                                value={summary.by_type?.gray_low || 0} 
-                                color="#aa6600"
-                                warning={true}
-                            />
-                            {/* 合成數據 */}
-                            <DataTypeRow 
-                                icon="🧬" 
-                                name="合成數據" 
-                                value={summary.by_type?.synthetic || 0} 
-                                color="#aa44ff"
-                                quality={summary.synthetic_quality}
-                            />
-                        </div>
-                    </div>
                     
                     {/* 衰減預估 (Tier 2+) */}
                     {tier >= 2 && decayEstimate.high_decay > 0 && (
@@ -1678,105 +1759,157 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
             {/* 數據採購（Tier 0-1 或 Tier2+ 採購標籤） */}
             {(tier < 2 || activeTab === 'purchase') && (
                 <div style={{ marginBottom: '12px' }}>
-                    {/* 第三方購買 */}
+                    {/* 購買數量設定 */}
                     {tier >= 1 && (
-                        <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--bg-tertiary)', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                                📦 第三方購買
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>數量:</span>
-                                <input
-                                    type="number"
-                                    value={purchaseQty}
-                                    onChange={(e) => setPurchaseQty(Math.max(10, parseInt(e.target.value) || 10))}
-                                    min={10}
-                                    step={10}
-                                    style={{
-                                        width: '70px',
-                                        padding: '4px 6px',
-                                        background: 'var(--bg-secondary)',
-                                        border: '1px solid var(--border-color)',
-                                        borderRadius: '4px',
-                                        color: 'var(--text-primary)',
-                                        fontFamily: 'var(--font-mono)',
-                                        fontSize: '0.75rem'
-                                    }}
-                                />
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>TB</span>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
-                                {GlowButton ? (
-                                    <>
-                                        <GlowButton variant="warning" size="small" onClick={() => onAction('buyHighData', { quantity: purchaseQty })} disabled={player.cash < purchaseQty * highPrice || !capacityCheck.canPurchase}>
-                                            高品質 (${highPrice}M/TB)
-                                        </GlowButton>
-                                        <GlowButton variant="primary" size="small" onClick={() => onAction('buyLowData', { quantity: purchaseQty })} disabled={player.cash < purchaseQty * lowPrice || !capacityCheck.canPurchase}>
-                                            低品質 (${lowPrice}M/TB)
-                                        </GlowButton>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button onClick={() => onAction('buyHighData', { quantity: purchaseQty })}>高品質</button>
-                                        <button onClick={() => onAction('buyLowData', { quantity: purchaseQty })}>低品質</button>
-                                    </>
-                                )}
-                            </div>
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            marginBottom: '12px',
+                            padding: '8px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '6px'
+                        }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>單次交易量:</span>
+                            <input
+                                type="number"
+                                value={purchaseQty}
+                                onChange={(e) => setPurchaseQty(Math.max(10, parseInt(e.target.value) || 10))}
+                                min={10}
+                                step={10}
+                                style={{
+                                    width: '70px',
+                                    padding: '4px 6px',
+                                    background: 'var(--bg-secondary)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '4px',
+                                    color: 'var(--text-primary)',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '0.75rem'
+                                }}
+                            />
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>TB</span>
                             {!capacityCheck.canPurchase && (
-                                <div style={{ fontSize: '0.65rem', color: 'var(--accent-red)', marginTop: '4px' }}>
+                                <span style={{ fontSize: '0.6rem', color: 'var(--accent-red)', marginLeft: 'auto' }}>
                                     🚨 空間不足
-                                </div>
+                                </span>
                             )}
                         </div>
                     )}
                     
-                    {/* 灰色爬蟲 */}
-                    {!grayForbidden && (
-                        <div style={{ 
-                            padding: '10px', 
-                            background: 'var(--accent-yellow)08', 
-                            borderRadius: '6px',
-                            border: '1px solid var(--accent-yellow)22',
-                            marginBottom: '10px'
-                        }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-yellow)', marginBottom: '6px' }}>
-                                🕷️ 網路爬蟲（免費但有風險）
-                            </div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                                爬取公開網站數據，可快速累積資源但會增加監管風險。
-                            </div>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                                {GlowButton ? (
-                                    <>
-                                        <GlowButton variant="secondary" size="small" onClick={() => onAction('scrapeData', { intensity: 1 })} style={{ flex: 1 }}>低調</GlowButton>
-                                        <GlowButton variant="secondary" size="small" onClick={() => onAction('scrapeData', { intensity: 2 })} style={{ flex: 1 }}>積極</GlowButton>
-                                        <GlowButton variant="danger" size="small" onClick={() => onAction('scrapeData', { intensity: 3 })} disabled={tier < 1} style={{ flex: 1, opacity: tier < 1 ? 0.5 : 1 }}>
-                                            {tier < 1 ? '🔒' : ''} 瘋狂
-                                        </GlowButton>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button onClick={() => onAction('scrapeData', { intensity: 1 })} style={{ flex: 1 }}>低調</button>
-                                        <button onClick={() => onAction('scrapeData', { intensity: 2 })} style={{ flex: 1 }}>積極</button>
-                                        <button onClick={() => onAction('scrapeData', { intensity: 3 })} disabled={tier < 1} style={{ flex: 1 }}>瘋狂</button>
-                                    </>
-                                )}
-                            </div>
+                    {/* 整合數據類型與採購/爬蟲按鈕 */}
+                    <div style={{ marginBottom: '12px' }}>
+                        {/* 合法數據 - 購買按鈕 */}
+                        <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)', marginBottom: '6px', fontWeight: 600 }}>
+                            ✓ 合規數據（購買）
                         </div>
-                    )}
-                    
-                    {grayForbidden && (
-                        <div style={{ 
-                            fontSize: '0.7rem', 
-                            color: 'var(--accent-red)', 
-                            padding: '6px',
-                            background: 'var(--accent-red)11',
-                            borderRadius: '4px',
-                            marginBottom: '10px'
-                        }}>
-                            🚫 您的技術路線禁止使用灰色數據
+                        <DataTypeRowWithAction
+                            typeId="legal_high_broad"
+                            icon="💎"
+                            name="優質通用"
+                            value={summary.by_type?.legal_high_broad || 0}
+                            color="#00f5ff"
+                            actionType={tier >= 1 ? 'purchase' : null}
+                            actionPrice={4}
+                            onAction={(typeId, actionType) => {
+                                onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
+                            }}
+                            disabled={player.cash < purchaseQty * 5 || !capacityCheck.canPurchase}
+                        />
+                        <DataTypeRowWithAction
+                            typeId="legal_high_focused"
+                            icon="📊"
+                            name="專業領域"
+                            value={summary.by_type?.legal_high_focused || 0}
+                            color="#44aaff"
+                            actionType={tier >= 1 ? 'purchase' : null}
+                            actionPrice={8}
+                            onAction={(typeId, actionType) => {
+                                onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
+                            }}
+                            disabled={player.cash < purchaseQty * 4 || !capacityCheck.canPurchase}
+                        />
+                        <DataTypeRowWithAction
+                            typeId="legal_low"
+                            icon="📁"
+                            name="基礎合規"
+                            value={summary.by_type?.legal_low || 0}
+                            color="#88aa88"
+                            actionType={tier >= 1 ? 'purchase' : null}
+                            actionPrice={1}
+                            onAction={(typeId, actionType) => {
+                                onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
+                            }}
+                            disabled={player.cash < purchaseQty * 1 || !capacityCheck.canPurchase}
+                        />
+                        
+                        {/* 灰色數據 - 爬蟲按鈕 */}
+                        <div style={{ fontSize: '0.7rem', color: 'var(--accent-yellow)', marginTop: '12px', marginBottom: '6px', fontWeight: 600 }}>
+                            ⚠ 灰色數據（爬蟲）
                         </div>
-                    )}
+                        {!grayForbidden ? (
+                            <>
+                                <DataTypeRowWithAction
+                                    typeId="gray_high"
+                                    icon="🔶"
+                                    name="敏感高值"
+                                    value={summary.by_type?.gray_high || 0}
+                                    color="#ffaa00"
+                                    warning={true}
+                                    actionType="scrape"
+                                    scrapeRisk="high"
+                                    onAction={(typeId, actionType) => {
+                                        onAction('scrapeData', { dataType: typeId, intensity: 2 });
+                                    }}
+                                    grayForbidden={grayForbidden}
+                                />
+                                <DataTypeRowWithAction
+                                    typeId="gray_low"
+                                    icon="🕷️"
+                                    name="爬蟲採集"
+                                    value={summary.by_type?.gray_low || 0}
+                                    color="#aa6600"
+                                    warning={true}
+                                    actionType="scrape"
+                                    scrapeRisk="low"
+                                    onAction={(typeId, actionType) => {
+                                        onAction('scrapeData', { dataType: typeId, intensity: 1 });
+                                    }}
+                                    grayForbidden={grayForbidden}
+                                />
+                            </>
+                        ) : (
+                            <div style={{ 
+                                fontSize: '0.7rem', 
+                                color: 'var(--accent-red)', 
+                                padding: '8px',
+                                background: 'var(--accent-red)11',
+                                borderRadius: '4px'
+                            }}>
+                                🚫 您的技術路線禁止使用灰色數據
+                            </div>
+                        )}
+                        
+                        {/* 合成數據 - 無按鈕 */}
+                        <div style={{ fontSize: '0.7rem', color: 'var(--accent-purple)', marginTop: '12px', marginBottom: '6px', fontWeight: 600 }}>
+                            🧬 合成數據（無法購買）
+                        </div>
+                        <DataTypeRowWithAction
+                            typeId="synthetic"
+                            icon="🧬"
+                            name="合成數據"
+                            value={summary.by_type?.synthetic || 0}
+                            color="#aa44ff"
+                            quality={summary.synthetic_quality}
+                            actionType={null}
+                            onAction={() => {}}
+                        />
+                        {tier < 2 && (
+                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center' }}>
+                                Tier 2 解鎖合成功能
+                            </div>
+                        )}
+                    </div>
                     
                     {/* Tier 解鎖提示 */}
                     {tier < 1 && (

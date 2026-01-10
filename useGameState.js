@@ -35,7 +35,7 @@ const ACTION_ROUTES = {
     
     // 資產行動組 [修復2 - 添加fireTalent]
     asset: {
-        actions: ['buyPflops', 'rentCloud', 'cancelCloud', 'rentOutPflops', 'sellPflops', 'hireTalent', 'fireTalent', 'buyHighData', 'buyLowData', 'upgradeTech', 'investRival', 'scrapeData', 'synthesizeData', 'startCleaning', 'signDataContract'],
+        actions: ['buyPflops', 'rentCloud', 'cancelCloud', 'rentOutPflops', 'sellPflops', 'hireTalent', 'fireTalent', 'buyDataByType', 'upgradeTech', 'investRival', 'scrapeData', 'synthesizeData', 'startCleaning', 'signDataContract'],
         engine: () => window.AssetEngine,
         executor: (engine, player, action, globalParams, params) => {
             return engine.executeAssetAction(player, action, params, globalParams);

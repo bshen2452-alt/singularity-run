@@ -308,18 +308,65 @@ function executeAssetAction(player, actionId, params = {}, globalParams = { P_GP
             break;
         }
         
-        case 'buyHighData': {
+
+        // ==========================================
+        // 統一數據購買（buyDataByType 整合 buyHighData/buyLowData）
+        // ==========================================
+        
+        case 'buyHighData':
+        case 'buyLowData':
+        case 'buyDataByType': {
+            const DataInt = window.DataIntegration;
+            const DataConfig = window.DataConfig;
             const quantity = parseFloat(params.quantity || 0);
-            if (quantity <= 0) {
+            
+            // 兼容舊 action：自動轉換為對應的數據類型
+            let dataType = params.dataType;
+            if (actionId === 'buyHighData' && !dataType) {
+                dataType = 'legal_high_broad';
+            } else if (actionId === 'buyLowData' && !dataType) {
+                dataType = 'legal_low';
+            }
+            
+            if (!dataType || quantity <= 0) {
                 return {
                     success: false,
                     player: player,
-                    message: '請指定有效的購買數量',
+                    message: '請指定有效的數據類型和數量',
                     type: 'warning'
                 };
             }
             
-            const unitPrice = COSTS.HIGH_DATA_UNIT_PRICE;
+            // 獲取數據類型配置
+            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
+            if (!typeConfig) {
+                return {
+                    success: false,
+                    player: player,
+                    message: `未知的數據類型: ${dataType}`,
+                    type: 'danger'
+                };
+            }
+            
+            // 只允許購買合法數據
+            if (typeConfig.compliance !== 'legal') {
+                return {
+                    success: false,
+                    player: player,
+                    message: '只能購買合規數據，灰色數據需透過爬蟲獲取',
+                    type: 'warning'
+                };
+            }
+            
+            // 計算價格（優先使用 DataConfig，後備使用 COSTS）
+            let unitPrice = typeConfig.base_price;
+            if (unitPrice === undefined) {
+                if (typeConfig.quality === 'high') {
+                    unitPrice = COSTS.HIGH_DATA_UNIT_PRICE || 2;
+                } else {
+                    unitPrice = COSTS.LOW_DATA_UNIT_PRICE || 0.5;
+                }
+            }
             const totalCost = quantity * unitPrice;
             
             if (newPlayer.cash < totalCost) {
@@ -331,55 +378,175 @@ function executeAssetAction(player, actionId, params = {}, globalParams = { P_GP
                 };
             }
             
+            // 如果有 DataIntegration，使用它來處理
+            if (DataInt && typeof DataInt.purchaseDataByType === 'function') {
+                const result = DataInt.purchaseDataByType(newPlayer, dataType, quantity);
+                if (result.success) {
+                    // 補充原 buyHighData/buyLowData 的副作用
+                    if (typeConfig.quality === 'high') {
+                        const trustGain = 1 * (quantity / 50);
+                        const riskGain = 3 * (quantity / 100);
+                        result.player.trust = Math.min(100, (result.player.trust || 0) + trustGain);
+                        result.player.compliance_risk = Math.min(100, (result.player.compliance_risk || 0) + riskGain);
+                        result.message += `，信任度+${trustGain.toFixed(1)}，合規風險+${riskGain.toFixed(1)}`;
+                    } else if (typeConfig.quality === 'low') {
+                        const entropyGain = 2 * (quantity / 100);
+                        result.player.entropy = Math.min(100, (result.player.entropy || 0) + entropyGain);
+                        result.message += `，熵值+${entropyGain.toFixed(1)}`;
+                    }
+                    return {
+                        success: true,
+                        player: result.player,
+                        message: result.message,
+                        type: 'success'
+                    };
+                } else {
+                    return {
+                        success: false,
+                        player: player,
+                        message: result.message,
+                        type: 'warning'
+                    };
+                }
+            }
+            
+            // 後備：直接處理
             newPlayer.cash -= totalCost;
-            newPlayer.high_data += quantity;
             
-            // 高質量數據的效果
-            const trustGain = 1 * (quantity / 50);
-            const riskGain = 3 * (quantity / 100);
+            // 初始化數據存儲
+            if (!newPlayer.data_inventory) {
+                newPlayer.data_inventory = {};
+            }
+            newPlayer.data_inventory[dataType] = (newPlayer.data_inventory[dataType] || 0) + quantity;
             
-            newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + trustGain);
-            newPlayer.compliance_risk = Math.min(100, (newPlayer.compliance_risk || 0) + riskGain);
+            // 同步到舊字段並處理副作用
+            if (dataType === 'legal_high_broad' || dataType === 'legal_high_focused') {
+                newPlayer.high_data = (newPlayer.high_data || 0) + quantity;
+                const trustGain = 1 * (quantity / 50);
+                const riskGain = 3 * (quantity / 100);
+                newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + trustGain);
+                newPlayer.compliance_risk = Math.min(100, (newPlayer.compliance_risk || 0) + riskGain);
+                message = `採購 ${typeConfig.name} +${quantity} TB，花費 $${totalCost.toFixed(1)}M，信任度+${trustGain.toFixed(1)}，合規風險+${riskGain.toFixed(1)}`;
+            } else if (dataType === 'legal_low') {
+                newPlayer.low_data = (newPlayer.low_data || 0) + quantity;
+                const entropyGain = 2 * (quantity / 100);
+                newPlayer.entropy = Math.min(100, (newPlayer.entropy || 0) + entropyGain);
+                message = `採購 ${typeConfig.name} +${quantity} TB，花費 $${totalCost.toFixed(1)}M，熵值+${entropyGain.toFixed(1)}`;
+            } else {
+                message = `採購 ${typeConfig.name} +${quantity} TB，花費 $${totalCost.toFixed(1)}M`;
+            }
             
-            message = `採購高級數據 +${quantity}，花費 $${totalCost.toFixed(1)}M，信任度+${trustGain.toFixed(1)}，合規風險+${riskGain.toFixed(1)}`;
             messageType = 'success';
             break;
         }
         
-        case 'buyLowData': {
-            const quantity = parseFloat(params.quantity || 0);
-            if (quantity <= 0) {
+        case 'scrapeData': {
+            const DataInt = window.DataIntegration;
+            const DataConfig = window.DataConfig;
+            const dataType = params.dataType;
+            const intensity = params.intensity || 1;
+            
+            if (!dataType) {
                 return {
                     success: false,
                     player: player,
-                    message: '請指定有效的購買數量',
+                    message: '請指定數據類型',
                     type: 'warning'
                 };
             }
             
-            const unitPrice = COSTS.LOW_DATA_UNIT_PRICE;
-            const totalCost = quantity * unitPrice;
-            
-            if (newPlayer.cash < totalCost) {
+            // 獲取數據類型配置
+            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
+            if (!typeConfig) {
                 return {
                     success: false,
                     player: player,
-                    message: `現金不足，需要 $${totalCost.toFixed(1)}M`,
+                    message: `未知的數據類型: ${dataType}`,
                     type: 'danger'
                 };
             }
             
-            newPlayer.cash -= totalCost;
-            newPlayer.low_data += quantity;
+            // 只允許爬取灰色數據
+            if (typeConfig.compliance !== 'gray') {
+                return {
+                    success: false,
+                    player: player,
+                    message: '只能爬取灰色數據，合規數據需透過購買獲得',
+                    type: 'warning'
+                };
+            }
             
-            // 低質量數據的效果（增加熵值）
-            const entropyGain = 2 * (quantity / 100);
-            newPlayer.entropy = Math.min(100, (newPlayer.entropy || 0) + entropyGain);
+            // 檢查路線是否禁止灰色數據
+            const routeMod = DataConfig?.ROUTE_MODIFIERS?.[newPlayer.route] || {};
+            if (routeMod.gray_data_forbidden) {
+                return {
+                    success: false,
+                    player: player,
+                    message: '您的技術路線禁止使用灰色數據',
+                    type: 'warning'
+                };
+            }
             
-            message = `採購低級數據 +${quantity}，花費 $${totalCost.toFixed(1)}M，熵值+${entropyGain.toFixed(1)}`;
+            // 如果有 DataIntegration，使用它來處理
+            if (DataInt && typeof DataInt.scrapeData === 'function') {
+                const result = DataInt.scrapeData(newPlayer, dataType, intensity);
+                if (result.success) {
+                    return {
+                        success: true,
+                        player: result.player,
+                        message: result.message,
+                        type: result.discovered ? 'warning' : 'success'
+                    };
+                } else {
+                    return {
+                        success: false,
+                        player: player,
+                        message: result.message,
+                        type: 'warning'
+                    };
+                }
+            }
+            
+            // 後備：使用現有的 scrapeData 邏輯
+            if (DataInt && typeof DataInt.executeScraping === 'function') {
+                const result = DataInt.executeScraping(newPlayer, intensity);
+                if (result.success) {
+                    return {
+                        success: true,
+                        player: result.player,
+                        message: result.message,
+                        type: result.discovered ? 'warning' : 'success'
+                    };
+                } else {
+                    return {
+                        success: false,
+                        player: player,
+                        message: result.message,
+                        type: 'warning'
+                    };
+                }
+            }
+            
+            // 最後後備：簡單處理
+            const baseAmount = dataType === 'gray_high' ? 20 : 50;
+            const amount = baseAmount * intensity;
+            const riskIncrease = dataType === 'gray_high' ? 5 * intensity : 2 * intensity;
+            
+            // 初始化數據存儲
+            if (!newPlayer.data_inventory) {
+                newPlayer.data_inventory = {};
+            }
+            newPlayer.data_inventory[dataType] = (newPlayer.data_inventory[dataType] || 0) + amount;
+            
+            // 增加風險
+            newPlayer.compliance_risk = Math.min(100, (newPlayer.compliance_risk || 0) + riskIncrease);
+            newPlayer.regulation = Math.min(100, (newPlayer.regulation || 0) + 2);
+            
+            message = `爬取 ${typeConfig.name} +${amount} TB，合規風險 +${riskIncrease}`;
             messageType = 'success';
             break;
         }
+
         
         case 'upgradeTech': {
             const tech = params.tech;
@@ -536,29 +703,8 @@ function executeAssetAction(player, actionId, params = {}, globalParams = { P_GP
             }
             break;
         }
-
-        // ==========================================
-        // 數據系統操作（Tier 1+）
-        // ==========================================
         
-        case 'scrapeData': {
-            const DataInt = window.DataIntegration;
-            if (!DataInt) {
-                return { success: false, player: player, message: '數據系統未載入', type: 'danger' };
-            }
-            
-            const intensity = params.intensity || 1;
-            const result = DataInt.executeScraping(newPlayer, intensity);
-            
-            if (result.success) {
-                newPlayer = result.player;
-                message = result.message;
-                messageType = result.discovered ? 'warning' : 'success';
-            } else {
-                return { success: false, player: player, message: result.message, type: 'warning' };
-            }
-            break;
-        }
+        
         
         case 'synthesizeData': {
             const DataInt = window.DataIntegration;
@@ -690,15 +836,28 @@ function canAffordAssetAction(player, actionId, params, globalParams = {}) {
             return player.cash >= (costs[type] || 0);
         }
         
-        case 'buyHighData': {
+        case 'buyHighData':
+        case 'buyLowData':
+        case 'buyDataByType': {
+            const DataConfig = window.DataConfig;
             const quantity = params.quantity || 0;
-            const totalCost = quantity * COSTS.HIGH_DATA_UNIT_PRICE;
-            return player.cash >= totalCost;
-        }
-        
-        case 'buyLowData': {
-            const quantity = params.quantity || 0;
-            const totalCost = quantity * COSTS.LOW_DATA_UNIT_PRICE;
+            let dataType = params.dataType;
+            
+            // 兼容舊 action
+            if (actionId === 'buyHighData' && !dataType) {
+                dataType = 'legal_high_broad';
+            } else if (actionId === 'buyLowData' && !dataType) {
+                dataType = 'legal_low';
+            }
+            
+            // 獲取價格
+            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
+            let unitPrice = typeConfig?.base_price;
+            if (unitPrice === undefined) {
+                unitPrice = (dataType && dataType.includes('high')) ? COSTS.HIGH_DATA_UNIT_PRICE : COSTS.LOW_DATA_UNIT_PRICE;
+            }
+            
+            const totalCost = quantity * unitPrice;
             return player.cash >= totalCost;
         }
         
@@ -737,14 +896,29 @@ function estimateAssetActionCost(actionId, params, globalParams = {}) {
             return costs[type] || 0;
         }
         
-        case 'buyHighData': {
-            const quantity = params.quantity || 1;
-            return quantity * COSTS.HIGH_DATA_UNIT_PRICE;
-        }
-        
-        case 'buyLowData': {
-            const quantity = params.quantity || 1;
-            return quantity * COSTS.LOW_DATA_UNIT_PRICE;
+        case 'buyHighData':
+        case 'buyLowData':
+        case 'buyDataByType': {
+            const DataConfig = window.DataConfig;
+            const quantity = params.quantity || 0;
+            let dataType = params.dataType;
+            
+            // 兼容舊 action
+            if (actionId === 'buyHighData' && !dataType) {
+                dataType = 'legal_high_broad';
+            } else if (actionId === 'buyLowData' && !dataType) {
+                dataType = 'legal_low';
+            }
+            
+            // 獲取價格
+            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
+            let unitPrice = typeConfig?.base_price;
+            if (unitPrice === undefined) {
+                unitPrice = (dataType && dataType.includes('high')) ? COSTS.HIGH_DATA_UNIT_PRICE : COSTS.LOW_DATA_UNIT_PRICE;
+            }
+            
+            const totalCost = quantity * unitPrice;
+            return player.cash >= totalCost;
         }
         
         case 'upgradeTech':
