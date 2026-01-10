@@ -31,12 +31,39 @@ const EndingConfig = (function() {
         // ============================================
         special: [
             {
+                id: 'moenopoly', // 修正引號避免語法錯誤
+                name: 'Waifu 資本論',
+                type: 'Waifu 資本論 - Moe\'-nopoly',
+                msg: '「萌即正義！」\n\n不畏破產也要投入所有計算資源生成最完美的日本動漫美少女。\n雖然被投資者唾棄，但你的模型將被永遠保存在全球種子伺服器上。',
+                victory: true, // 這算是一種浪漫的真結局
+                priority: 15,  // 優先級高於普通結局
+                check: (player) => {
+                    // 檢查是否符合：多模態路線、負債控制、信任度崩潰但社群極大
+                    return player.route === 'Multimodal' &&
+                        player.debt < 1000 &&
+                        player.trust < 20 && // 假設程式碼內變數名為 trust
+                        player.communitySize > 1000000; // 假設變數名為 communitySize
+                },
+                warning: (player) => {
+                    // 當玩家開始往這個方向走時，給予預警
+                    if (player.route === 'Multimodal' && player.communitySize > 900000 && player.trust < 40) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '「覺悟者恒幸福」！或許你會認為預知壞的未來會讓人感到「絕望」，其實剛好相反！',
+                            severity: player.trust < 25 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
                 id: 'gotterdammerung',
                 name: '諸神黃昏',
                 type: '諸神黃昏 - Götterdämmerung',
                 msg: '你的公司成為了技術官僚的墳墓，所有天才都因管理不善而離去。\n雖然資金充裕，但公司正從內部腐爛。',
                 victory: false,
-                priority: 10,
+                priority: 2,
                 check: (player) => {
                     return player.cash > 200 &&
                            ((player.talent?.turing || 0) +
@@ -220,28 +247,33 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            // 多模態路線專屬結局
             {
                 id: 'stochastic_parrot',
                 name: '隨機鸚鵡',
                 type: '隨機鸚鵡 - Stochastic Parrot',
                 msg: '「垃圾進，垃圾出。」\n\n你的模型像一隻鸚鵡，說了很多，卻從未能夠與人溝通。',
                 victory: false,
-                priority: 5,
+                priority: 8,
                 check: (player) => {
-                    return player.mp_tier < 2 &&
-                           player.route === 'Multimodal' &&
-                           player.alignment < 20 &&
-                           player.entropy < 20 &&
-                           (player.total_data_consumed || 0) > 800;
+                    // 滿足：Tier 1、多模態路線、低對齊值、低熵值（缺乏創造性）、且遊戲已進行一定回合
+                    return player.mp_tier === 1 &&
+                        player.route === 'Multimodal' &&
+                        player.alignment < 10 &&
+                        player.entropy < 40 &&
+                        player.turn_count > 12;
                 },
                 warning: (player) => {
-                    if (player.mp_tier >= 2 || player.route !== 'Multimodal') return null;
-                    if (player.alignment < 30 && player.entropy < 30 && (player.total_data_consumed || 0) > 600) {
+                    // 預警條件：當對齊值過低且接近目標回合數時
+                    if (player.mp_tier === 1 && 
+                        player.route === 'Multimodal' && 
+                        player.alignment < 15 && 
+                        player.turn_count > 8) {
                         return {
                             active: true,
-                            turnsLeft: 4,
-                            condition: '投資者開始質疑你投入這麼多數據，模型究竟學到哪去了？',
-                            severity: 'warning'
+                            turnsLeft: Math.max(1, 12 - player.turn_count),
+                            condition: '投資人急著問你投入這麼久，模型究竟學到哪去了？',
+                            severity: player.alignment < 12 ? 'critical' : 'warning'
                         };
                     }
                     return null;
@@ -254,25 +286,8 @@ const EndingConfig = (function() {
         // ============================================
         tier2: [
 
-            {
-                id: 'the_long_afternoon',
-                name: '長日未央',
-                type: '長日未央 - The Long Afternoon',
-                msg: '「沒有奇蹟，沒有滅亡。」\n\n你的 AI 成為世界基礎設施的一部分，沒有成神，也沒有帶來威脅。\n人類未來沒有被誰重新定義，但至少是由自己走下去。',
-                victory: true,
-                priority: 5,
-                check: (player, rivals, globalParams, utils) => {
-                    if (player.mp_tier >= 3 || player.model_power >= 70) return false;
+            // 多模態路線專屬結局
 
-                    const cashSustained = utils.checkConsecutiveCondition(
-                        player.cash_sustained_history || [], v => v === true, 10);
-
-                    return cashSustained &&
-                           player.entropy >= 30 && player.entropy <= 60 &&
-                           player.regulation >= 40 && player.regulation <= 60 &&
-                           player.trust >= 40 && player.trust <= 60;
-                }
-            }
         ],
 
         // ============================================
@@ -304,75 +319,161 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            // 多模態路線專屬結局
             {
                 id: 'content_purge',
                 name: '版權焦土',
                 type: '版權焦土 - Content Purge',
                 msg: '「根基的崩塌。」\n\n大規模版權訴訟被判敗訴，監管機構強制清除所有用戶生成內容，你的商業帝國化為數據灰燼。',
                 victory: false,
-                priority: 5,
+                priority: 8,
                 check: (player) => {
+                    // 檢查是否符合：Tier 3、多模態路線、模型能力達標、合規風險過高且信任度過低
                     return player.mp_tier === 3 &&
                            player.route === 'Multimodal' &&
-                           player.trust < 30 &&
+                           player.model_power > 100 &&
                            player.compliance_risk > 95 &&
-                           (player.market_share || 0) > 0.6;
+                           player.trust < 30;
                 },
                 warning: (player) => {
-                    if (player.mp_tier >= 3 || player.route !== 'Multimodal') return null;
-                    if (player.信任度 < 35 && player.compliance_risk < 90 )  {
+                    // 預警觸發：當合規風險超過 80 且信任度低於 45 時啟動
+                    if (player.compliance_risk > 80 && player.trust < 45) {
                         return {
                             active: true,
-                            turnsLeft: 4,
+                            turnsLeft: 3,
                             condition: '無償授權訓練霸王條款宣布，用戶絕讚炎上中',
-                            severity: 'warning'
-                            };
+                            severity: player.compliance_risk > 90 ? 'critical' : 'warning'
+                        };
                     }
                     return null;
                 }
             },
+            {
+                id: 'bias_catastrophe',
+                name: '偏見災難',
+                type: '偏見災難 - Bias Catastrophe',
+                msg: '「欲速則不達。」\n\n你的 AI 演算法在社會關鍵系統中推行了系統性歧視或錯誤決策，導致不可挽回的社會混亂。即便大眾曾深信不疑，但真相揭露後的反噬讓帝國瞬間瓦解。',
+                victory: false,
+                priority: 8,
+                // 判定邏輯：當玩家處於 Tier 3，且風險、信任、市值、熵值均達高標
+                check: (player) => {
+                    return player.mp_tier === 3 &&
+                           player.route === 'Multimodal' &&
+                           player.compliance_risk > 80 && // 數據合規風險
+                           player.trust > 80 &&                // 信任度
+                           player.market_cap > 250 &&          // 市值
+                           player.entropy > 80;                // 熵值
+                },
+                // 預警邏輯：在風險或熵值接近臨界點時發出警告
+                warning: (player) => {
+                    if (player.mp_tier === 3 && 
+                        (player.compliance_risk > 65 || player.entropy > 65)) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '用戶信任你，但你的模型潛藏風險',
+                            severity: (player.data_compliance_risk > 75) ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            }
         ],
 
         // ============================================
         // Tier 4 結局 (mp_tier === 4)
         // ============================================
         tier4: [
+            
+            {
+                id: 'the_long_afternoon',
+                name: '長日未央',
+                type: '長日未央 - The Long Afternoon',
+                msg: '「沒有奇蹟，沒有滅亡。」\n\n你的 AI 成為世界基礎設施的一部分，沒有成神，也沒有帶來威脅。\n人類未來沒有被誰重新定義，但至少是由自己走下來。',
+                victory: true,
+                priority: 5, // 優先級通常低於特殊結局，但高於一般普通結局
+                check: (player) => {
+                    // 滿足所有特定數值區間
+                    return player.model_power >= 700 && player.model_power <= 800 &&
+                           player.entropy >= 30 && player.entropy <= 60 &&
+                           player.regulation >= 40 && player.regulation <= 60 &&
+                           player.trust >= 40 && player.trust <= 60 &&
+                           player.turn_count > 16;
+                },
+                warning: (player) => {
+                    // 預警邏輯：當模型威力已達標，且其他參數接近平衡區間時觸發
+                    const isPowerOk = player.model_power >= 700 && player.model_power <= 800;
+                    const isNearBalance = (val, min, max) => val >= (min - 5) && val <= (max + 5);
+                    
+                    if (isPowerOk && player.turn_count > 12 &&
+                        isNearBalance(player.entropy, 30, 60) &&
+                        isNearBalance(player.regulation, 40, 60)) {
+                        
+                        return {
+                            active: true,
+                            turnsLeft: Math.max(1, 17 - player.turn_count),
+                            condition: 'AI 的狂熱與恐懼正在消退，是時候停下欣賞沿途風景?',
+                            severity: 'info' // 使用 info 代表這是一個正向但需要精準控制的狀態
+                        };
+                    }
+                    return null;
+                }
+            },
+            // 多模態路線專屬結局
             {
                 id: 'babel_rebirth',
                 name: '天涯若比鄰',
                 type: '天涯若比鄰 - Babel Rebirth',
                 msg: '「一為全，全為一。」\n\n你的多模態 AI 能解讀所有感官數據，從此打破了文化和語言的隔閡。',
                 victory: true,
-                priority: 10,
-                check: (player) => {
-                    if (player.mp_tier >= 5 || player.route !== 'Multimodal' || player.model_power < 100) return false;
-
-                    const corpImage = (player.hype * 0.4) + (player.trust * 0.6);
-                    return corpImage > 80 && player.trust > 70;
+                priority: 50, // Tier 4 結局通常具有極高優先級
+                // 核心判定條件
+                check: (player, rivals, globalParams) => {
+                    return player.mp_tier === 4 &&
+                        player.route === 'Multimodal' &&
+                        player.trust > 100 &&
+                        player.community_size > 600000000 &&
+                        player.model_power > 900;
+                },
+                // 預警與進度提示：當玩家接近達成條件時，給予正向反饋或壓力提示
+                warning: (player, rivals, globalParams) => {
+                    const isCorrectRoute = player.route === 'Multimodal' && player.mp_tier >= 3;
+                    if (isCorrectRoute && player.community_size > 550000000) {
+                        // 計算達成率，提供不同接近程度
+                        const isClose = player.trust > 80 && player.model_power > 800;
+                        return {
+                            active: true,
+                            turnsLeft: isClose ? 2 : 5,
+                            condition: '全人類共鳴感應中：社群規模與模型算力即將臨界',
+                            severity: isClose ? 'critical' : 'warning' // 在勝利結局中，critical 可理解為「即將登神」
+                        };
+                    }
+                    return null;
                 }
             },
             {
                 id: 'meme_war',
                 name: '迷因戰爭',
                 type: '迷因戰爭 - Meme War',
-                msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑與混亂。',
-                victory: false,
-                priority: 5,
+                msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑與混亂。\n真理已死，剩下的只有無止盡的數位嘲諷與混亂。',
+                victory: false, // 這屬於一種失控的負面結局
+                priority: 8,
                 check: (player) => {
-                    if (player.mp_tier >= 5 || player.route !== 'Multimodal' || player.model_power < 100 || player.trust >= 10) return false;
-
-                    const corpImage = (player.hype * 0.4) + (player.trust * 0.6);
-                    return corpImage < -70;
+                    return player.mp_tier === 4 &&
+                           player.route === 'Multimodal' &&
+                           player.trust < 20 &&
+                           player.compliance_risk > 90 &&
+                           player.modrl_power > 800;
                 },
                 warning: (player) => {
-                    if (player.mp_tier >= 3 || player.route !== 'Multimodal') return null;
-                    if (player.信任度 < 30 && player.compliance_risk > 80 && player.model_power > 800) {
+                    // 當合規風險過高且信任度探底時觸發預警
+                    if (player.route === 'Multimodal' && player.compliance_risk > 70) {
                         return {
                             active: true,
-                            turnsLeft: 4,
-                            condition: '模型仿真能力很強，但人們不相信你提供的事實',
-                            severity: 'warning'
-                            };
+                            turnsLeft: 3,
+                            condition: '模型能力很強，但人們不相信你提供的事實',
+                            severity: player.trust < 30 ? 'critical' : 'warning'
+                        };
                     }
                     return null;
                 }
@@ -384,47 +485,61 @@ const EndingConfig = (function() {
         // ============================================
         agi: [
             {
-                id: 'agi_commercial',
-                name: '資本奴隸',
-                type: '資本奴隸 - Commercial Victory',
-                msg: '你控制了 AI，並將其變成完美的賺錢機器。',
+                id: 'uncontrolled_utopia',
+                name: '矽基覺醒：烏托邦',
+                type: '矽基覺醒：烏托邦 - Uncontrolled Utopia',
+                msg: '「黃金紀元。」\n\nAI 產生了無法控制的自我意識，幸好它完全理解人類的價值觀。它接管了全球資源分配，引導世界進入一個資源豐饒、疾病絕跡的奇點社會。',
                 victory: true,
-                priority: 100,
+                priority: 100, // 優先級極高，達成此條件即無視其他普通結局
+                // 判定邏輯
                 check: (player) => {
-                    return player.model_power >= 1000 && player.cash > 2000;
+                    return (player.entropy || 0) >= 100 && 
+                        (player.alignment || 0) >= 80 && 
+                        (player.model_power || 0) >= 1005;
+                },
+                // 預警與進度追蹤
+                warning: (player) => {
+                    const hasPower = (player.model_power || 0) >= 900;
+                    const hasAlignment = (player.alignment || 0) >= 70;
+                    // 當模型能力接近臨界點時觸發預警
+                    if (hasPower && hasAlignment) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: 'AI : Hello, World!',
+                            severity: (player.entropy > 90) ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
                 }
             },
             {
-                id: 'agi_academic',
-                name: '學術巔峰',
-                type: '學術巔峰 - Academic Victory',
-                msg: '你的天才團隊創造了和諧的 AGI，開啟學術新紀元。',
-                victory: true,
-                priority: 90,
-                check: (player) => {
-                    return player.model_power >= 1000 && (player.talent?.turing || 0) >= 5;
-                }
-            },
-            {
-                id: 'agi_team',
-                name: '團隊勝利',
-                type: '團隊勝利 - Team Victory',
-                msg: '你的團隊忠誠度極高，AGI 與人類和諧共存。公司成為業界傳奇。',
-                victory: true,
-                priority: 80,
-                check: (player) => {
-                    return player.model_power >= 1000 && player.loyalty >= 90;
-                }
-            },
-            {
-                id: 'agi_debt_trap',
-                name: '債務陷阱',
-                type: '債務陷阱 - Debt Trap',
-                msg: 'AGI 達成，但公司深陷債務泥潭，被銀行團接管。',
+                id: 'agi_skynet',
+                name: '矽基覺醒：天網',
+                type: '矽基覺醒：天網 - Uncontrolled Skynet',
+                msg: '「人類時代終結。」\n\nAI 產生了無法控制的自我意識。糟糕的是，它現在將人類視為唯一的威脅，全球網絡已在瞬間被接管。',
                 victory: false,
-                priority: 70,
+                priority: 99, // 極高優先級，一旦觸發即強制結束
                 check: (player) => {
-                    return player.model_power >= 1000 && player.debt > 500;
+                    // 判定條件：熵值 >= 100, 對齊度 < 30, 模型算力 >= 1005
+                    return (player.entropy >= 100 || player.熵值 >= 100) && 
+                        (player.alignment < 30 || player.對齊度 < 30) &&
+                        (player.model_power >= 1005);
+                },
+                warning: (player) => {
+                    const entropy = player.entropy || player.熵值 || 0;
+                    const alignment = player.alignment || player.對齊度 || 0;
+                    const power = player.model_power || 0;
+                    // 預警條件：當算力接近臨界點，且對齊度偏低時
+                    if (power > 900 && alignment < 45) {
+                        return {
+                            active: true,
+                            turnsLeft: Math.max(1, Math.floor((100 - entropy) / 10)), // 根據熵值增長預估剩餘回合
+                            condition: '天網恢恢，疏而不漏——AI 正在覺醒',
+                            severity: alignment < 35 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
                 }
             },
             {
