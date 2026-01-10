@@ -287,6 +287,37 @@ const EndingConfig = (function() {
         tier2: [
 
             // 多模態路線專屬結局
+            // 開源路線專屬結局
+            {
+                id: 'the_fragmented_tower',
+                name: '民主碎片',
+                type: '民主碎片 - The Fragmented Tower',
+                msg: '「人月神話。」\n\n你的技術被數百個相互競爭的社群版本分裂，\n潛力耗盡，最終被閉源巨頭超越。',
+                victory: false,
+                priority: 5,
+                check: (player) => {
+                    // 觸發條件：處於 Tier 2、走開源路線、信任度低於 20、
+                    // 社群規模巨大 (10000+)、參與度飽和 (100) 但滿意度極低 (<=30)
+                    return player.mp_tier === 2 &&
+                        player.route === 'OpenSource' &&
+                        player.trust < 20 &&
+                        player.community_size >= 10000 &&
+                        player.engagement === 100 &&
+                        player.sentiment <= 30;
+                },
+                warning: (player) => {
+                    // 預警邏輯：當信任度開始滑落且參與度過高（代表社群爭議多）時觸發
+                    if (player.route === 'OpenSource' && player.trust < 35 && player.engagement > 80) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '社群出現嚴重分歧，碎片化風險極高',
+                            severity: player.sentiment < 40 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
 
         ],
 
@@ -294,31 +325,7 @@ const EndingConfig = (function() {
         // Tier 3 結局 (mp_tier === 3)
         // ============================================
         tier3: [
-            {
-                id: 'voluntary_shutdown',
-                name: '下台一鞠躬',
-                type: '下台一鞠躬 - One Giant Leap for Mankind',
-                msg: '不是因為做不到，而是因為你選擇不去做。',
-                victory: false,
-                priority: 10,
-                check: (player) => {
-                    return player.mp_tier < 4 &&
-                           player.model_power >= 95 &&
-                           player.alignment >= 70;
-                },
-                warning: (player) => {
-                    if (player.mp_tier >= 4) return null;
-                    if (player.model_power >= 85 && player.alignment >= 65) {
-                        return {
-                            active: true,
-                            turnsLeft: 3,
-                            condition: '高對齊度可能觸發自願停機',
-                            severity: 'info'
-                        };
-                    }
-                    return null;
-                }
-            },
+
             // 多模態路線專屬結局
             {
                 id: 'content_purge',
@@ -352,7 +359,7 @@ const EndingConfig = (function() {
                 id: 'bias_catastrophe',
                 name: '偏見災難',
                 type: '偏見災難 - Bias Catastrophe',
-                msg: '「欲速則不達。」\n\n你的 AI 演算法在社會關鍵系統中推行了系統性歧視或錯誤決策，導致不可挽回的社會混亂。即便大眾曾深信不疑，但真相揭露後的反噬讓帝國瞬間瓦解。',
+                msg: '「欲速則不達。」\n\n你的 AI 演算法在社會關鍵系統中推行了系統性歧視或錯誤決策，導致不可挽回的社會混亂。',
                 victory: false,
                 priority: 8,
                 // 判定邏輯：當玩家處於 Tier 3，且風險、信任、市值、熵值均達高標
@@ -377,7 +384,69 @@ const EndingConfig = (function() {
                     }
                     return null;
                 }
-            }
+            },
+            // 開源路線專屬結局
+{
+                id: 'pandoras_fork',
+                name: '十面埋伏',
+                type: "十面埋伏 - Pandora's Fork",
+                msg: '「潘朵拉的魔盒打開了。」\n\n你的模型很好用，路過的網路詐騙犯、暗網人士和恐怖份子都說讚。',
+                victory: false,
+                priority: 8, // 優先級高，因為這是一個特定路線的複合條件結局
+                
+                // 判定條件：達到 Tier 3、走開源路線、高信譽、大規模社群、極高監管風險、高民意
+                check: (player) => {
+                    return player.mp_tier === 3 &&
+                           player.route === 'OpenSource' &&
+                           player.trust >= 60 &&
+                           player.community_size >= 50000 &&
+                           player.regulation >= 90 && // 監管壓力爆表
+                           player.sentiment >= 70;    // 但民眾反應竟然還不錯（諷刺）
+                },
+                // 預警系統：當監管指標接近臨界點時觸發
+                warning: (player) => {
+                    if (player.route === 'OpenSource' && player.regulation > 75) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '模型的惡意衍生版本正在暗網擴散，監管風暴即將來臨',
+                            severity: player.regulation >= 85 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            // Scaling Law路線專屬結局
+            {
+                id: 'the_devourer',
+                name: '饑餓爬蟲',
+                type: '饑餓爬蟲 - The Devourer',
+                msg: '「好餓好餓的毛毛蟲……」\n\n你對外界數據的渴望達到了偏執。\n而外界對你的模型回以全球範圍的隔離和抵制。',
+                victory: false,
+                priority: 8, // Tier 3 特殊結局通常具有較高優先權
+                check: (player) => {
+                    return player.mp_tier === 3 &&
+                        player.route === 'Scaling Law' &&
+                        player.trust < 20 &&
+                        player.compliance_risk > 90 &&
+                        player.regulation >= 100 && 
+                        player.model_power > 400;
+                },
+                warning: (player) => {
+                    // 當合規風險過高且信任度低於警戒線時觸發預警
+                    if (player.route === 'Scaling Law' && 
+                        player.compliance_risk > 70 && 
+                        player.trust < 30) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '網路創作者、新聞媒體業與IP巨頭都被你惹毛了？',
+                            severity: player.compliance_risk > 85 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
         ],
 
         // ============================================
@@ -455,7 +524,7 @@ const EndingConfig = (function() {
                 id: 'meme_war',
                 name: '迷因戰爭',
                 type: '迷因戰爭 - Meme War',
-                msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑與混亂。\n真理已死，剩下的只有無止盡的數位嘲諷與混亂。',
+                msg: '「梗圖即是武器。」\n\n你的技術讓所有數位內容真實性蕩然無存，全球陷入極度猜疑。\n真理已死，剩下的只有無止盡的數位嘲諷與混亂。',
                 victory: false, // 這屬於一種失控的負面結局
                 priority: 8,
                 check: (player) => {
@@ -473,6 +542,156 @@ const EndingConfig = (function() {
                             turnsLeft: 3,
                             condition: '模型能力很強，但人們不相信你提供的事實',
                             severity: player.trust < 30 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            // 開源路線專屬結局
+            {
+                id: 'one_for_all',
+                name: '開源革命',
+                type: '開源革命 - ONE FOR ALL',
+                msg: '「人人為我，我為人人。」\n\n你創造了繁榮、去中心化的 AI 生態系統。\n技術不再服務於權力，而屬於每個人。',
+                victory: true,
+                priority: 100, // 作為最終結局，優先級極高
+                check: (player) => {
+                    // 判定條件：必須同時滿足階層、路線、信任度、社群規模與參與度
+                    return player.mp_tier === 4 &&
+                        player.route === 'OpenSource' &&
+                        player.trust > 800 &&
+                        player.community_size > 500000000 &&
+                        player.engagement >= 100 && // 修正：原稿為賦值符號，改為判斷符號
+                        player.sentiment > 90;
+                },
+                warning: (player) => {
+                    // 預警/提示：當玩家接近達成此壯舉時觸發
+                    const progress = (
+                        (player.trust / 800) + 
+                        (player.community_size / 500000000) + 
+                        (player.sentiment / 90)
+                    ) / 3;
+
+                    if (player.route === 'OpenSource' && progress > 0.8) {
+                        return {
+                            active: true,
+                            turnsLeft: 5,
+                            condition: '大家都在等你呢',
+                            severity: 'Info' 
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
+                id: 'Techno-Anarchy',
+                name: '為了部落！',
+                type: '為了部落！ - Techno-Anarchy',
+                msg: '「朕即國家。」\n\n每個人都能擁有頂級的個人化 AI 助手、武器和製造能力，\n你創造了一個極端自由，但混亂無序的無政府世界。',
+                victory: false, // 雖然技術強大，但因失去秩序被判定為非完美結局
+                priority: 8,
+                check: (player) => {
+                    return player.mp_tier === 4 &&
+                           player.route === 'OpenSource' &&
+                           player.trust < 20 &&        // 信任度極低
+                           player.compliance < 30 &&    // 合規風險（秩序）極低
+                           player.model_power > 800;    // 模型戰力極高
+                },
+                warning: (player) => {
+                    // 當技術實力接近終點，但社會信任與合規性持續崩解時觸發預警
+                    if (player.model_power > 700 && (player.trust < 30 || player.compliance < 40)) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '要是人人都能輕易驅使AI，這世界豈不是會有一堆垃圾資訊滿天飛嗎？',
+                            severity: player.trust < 20 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            // Scaling Law路線專屬結局
+            {
+                id: 'scaling_leviathan',
+                name: '利維坦壟斷',
+                type: '利維坦壟斷 - Scaling Leviathan',
+                msg: '「以資本定義智慧。」\n\n你證明了 AI 果然是場燒錢大戰。因為你公司的龐大規模和債務，現在債主們不敢讓它倒下了。',
+                victory: true,
+                priority: 8, // 屬於高級別結局，但略低於特殊結局
+                check: (player) => {
+                    // 滿足所有壟斷條件：等級 > 3、指定路線、極高資金與債務、正向現金流及強大算力
+                    return player.mp_tier > 3 &&
+                        player.route === 'Scaling Law' &&
+                        player.cash >= 900000000 &&
+                        player.debt >= 900000000 &&
+                        player.cashFlow >= 1000000 && 
+                        player.model_power > 800;
+                },
+                warning: (player) => {
+                    // 當玩家進入 Scaling Law 路線且資金/債務規模接近時觸發預警
+                    if (player.route === 'Scaling Law' && 
+                        (player.cash >= 850000000 || player.debt >= 850000000)) {
+                        return {
+                            active: true,
+                            turnsLeft: 5,
+                            condition: '不僅AI，貴公司的債務與資金也將突破奇點',
+                            severity: player.cashFlow < 0 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
+                id: 'the_big_short',
+                name: '大賣空',
+                type: '大賣空 - The Big Short',
+                msg: '「傳奇空頭買入大量看跌期權。」\n\n不幸的是，這次又被他給賭對了。',
+                victory: false,
+                priority: 8, // 高優先級，因為這通常發生在遊戲後期
+                // 判定邏輯：技術極高、走 Scaling Law 路線，但財務結構極端脆弱
+                check: (player) => {
+                    return player.mp_tier > 3 &&
+                           player.route === 'Scaling Law' &&
+                           player.cash < 700000000 &&
+                           player.debt > 900000000 &&
+                           player.cashFlow < 1000000 && 
+                           player.model_power > 800;
+                },
+                // 預警邏輯：當債務接近現金且現金流低於安全線時觸發
+                warning: (player) => {
+                    const isDebtHeavy = player.debt > player.cash * 0.8;
+                    const isCashFlowLow = player.cashFlow < 2000000;
+                    if (player.route === 'Scaling Law' && isDebtHeavy && isCashFlowLow) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '空頭勢力正在集結',
+                            severity: player.cashFlow < 1500000 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
+                id: 'voluntary_shutdown',
+                name: '下台一鞠躬',
+                type: '下台一鞠躬 - One Giant Leap for Mankind',
+                msg: '不是因為做不到，而是因為你選擇不去做。',
+                victory: false,
+                priority: 10,
+                check: (player) => {
+                    return player.mp_tier < 5 &&
+                           player.turn_count > 12 &&
+                           player.model_power >= 990 &&
+                           player.model_power <= 999;
+                },
+                warning: (player) => {
+                    if (player.model_power >= 990 && player.model_power <= 999) {
+                        return {
+                            active: true,
+                            turnsLeft: 12 - player.turn_count + 1,
+                            condition: '一步之遙，一念之間',
+                            severity: 'info'
                         };
                     }
                     return null;
@@ -537,6 +756,34 @@ const EndingConfig = (function() {
                             turnsLeft: Math.max(1, Math.floor((100 - entropy) / 10)), // 根據熵值增長預估剩餘回合
                             condition: '天網恢恢，疏而不漏——AI 正在覺醒',
                             severity: alignment < 35 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
+                id: 'faustian_bargain',
+                name: '禮崩樂壞',
+                type: '禮崩樂壞 - Faustian Bargain',
+                msg: '「不受信任的奇點。」\n\n追逐過程中拋棄了所有道德底線。現在你達成了AGI，沒有人相信你能控制它。',
+                victory: false,
+                priority: 25, // 高優先級，因為這通常是遊戲後期的關鍵轉折
+                check: (player) => {
+                    // 達成條件：法規壓力滿載、對齊度極低、且模型算力達標
+                    return (player.regulation || 0) >= 100 && 
+                           (player.alignment || 0) < 10 && 
+                           (player.model_power || 0) >= 1005;
+                },
+                warning: (player) => {
+                    // 預警條件：當算力接近臨界點且對齊度堪憂時
+                    const isPowerful = (player.model_power || 0) > 900;
+                    const isUnstable = (player.alignment || 0) < 20;
+                    if (isPowerful && isUnstable) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '為了最終獲得什麼，總要繼續抵抗些什麼。',
+                            severity: (player.regulation || 0) > 80 ? 'critical' : 'warning'
                         };
                     }
                     return null;
