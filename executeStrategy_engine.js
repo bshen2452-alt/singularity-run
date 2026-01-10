@@ -92,11 +92,89 @@ function executeStrategy(player, actionId, globalParams, params = {}) {
             const entropyChg = 5 + (actualGrowth * 0.2);
             newPlayer.entropy = Math.min(100, newPlayer.entropy + entropyChg);
 
-            // 數據消耗
-            const dataConsumed = Math.min(newPlayer.low_data, actualGrowth * 5 * 0.7);
-            newPlayer.low_data = Math.max(0, newPlayer.low_data - dataConsumed);
+            // ============================================
+            // 數據消耗：隨MP提升而增加（模擬AI訓練數據困難）
+            // ============================================
+            const DataInt = window.DataIntegration;
+            const DataConf = window.DataConfig?.RESEARCH_CONSUMPTION || {};
+            const mpScaling = DataConf.mp_scaling || {};
+            
+            // 計算基礎消耗量
+            const baseConsumption = mpScaling.base_consumption_per_mp || 3.0;
+            const scalingFactor = mpScaling.mp_scaling_factor || 0.08;
+            const maxMult = mpScaling.max_multiplier || 4.0;
+            const minConsumption = mpScaling.min_consumption || 1;
+            
+            // 根據當前MP計算消耗倍率：1 + scalingFactor * sqrt(MP)
+            const currentMP = newPlayer.model_power || 0;
+            let consumptionMultiplier = 1 + scalingFactor * Math.sqrt(currentMP);
+            consumptionMultiplier = Math.min(consumptionMultiplier, maxMult);
+            
+            // 檢查是否接近里程碑門檻，增加額外消耗
+            const tierThresholds = mpScaling.tier_thresholds || {};
+            for (const [tier, config] of Object.entries(tierThresholds)) {
+                const threshold = config.mp;
+                // 如果距離門檻很近（10點以內），應用額外消耗
+                if (currentMP >= threshold - 10 && currentMP < threshold) {
+                    consumptionMultiplier *= config.consumption_boost || 1.0;
+                    break;
+                }
+            }
+            
+            // 計算最終消耗量
+            let dataToConsume = Math.max(minConsumption, Math.floor(actualGrowth * baseConsumption * consumptionMultiplier));
+            
+            // 整合 DataIntegration（如果可用）
+            let dataConsumed = 0;
+            let consumptionEfficiency = 1.0;
+            let dataMessage = '';
+            
+            if (DataInt && typeof DataInt.consumeDataForResearch === 'function') {
+                // 使用統一數據接口
+                const consumeResult = DataInt.consumeDataForResearch(newPlayer, dataToConsume);
+                
+                if (consumeResult.success) {
+                    newPlayer = consumeResult.player || newPlayer;
+                    // 計算消耗量（從consumed對象或默認為dataToConsume）
+                    if (consumeResult.consumed) {
+                        dataConsumed = Object.values(consumeResult.consumed).reduce((s, v) => s + v, 0);
+                    } else {
+                        dataConsumed = dataToConsume;
+                    }
+                    consumptionEfficiency = consumeResult.efficiency || 1.0;
+                    
+                    // 應用數據品質對MP的微調（高品質數據有額外加成）
+                    if (consumptionEfficiency > 1.0) {
+                        const bonusMP = actualGrowth * (consumptionEfficiency - 1.0) * 0.2;
+                        newPlayer.model_power = Math.min(1000, newPlayer.model_power + bonusMP);
+                    }
+                    
+                    dataMessage = `, 數據 -${dataConsumed}`;
+                } else {
+                    // 數據不足警告
+                    dataMessage = ' (數據不足)';
+                }
+            } else {
+                // 回退：使用舊的 low_data/high_data 系統
+                const availableLow = newPlayer.low_data || 0;
+                const availableHigh = newPlayer.high_data || 0;
+                const availableTotal = availableLow + availableHigh;
+                
+                dataConsumed = Math.min(availableTotal, dataToConsume);
+                
+                // 優先消耗 low_data
+                const lowUsed = Math.min(availableLow, dataConsumed);
+                newPlayer.low_data = Math.max(0, availableLow - lowUsed);
+                
+                const highUsed = dataConsumed - lowUsed;
+                if (highUsed > 0) {
+                    newPlayer.high_data = Math.max(0, availableHigh - highUsed);
+                }
+                
+                dataMessage = dataConsumed > 0 ? `, 數據 -${dataConsumed}` : '';
+            }
 
-            message = `研發推進！MP +${actualGrowth.toFixed(1)}, 熵值 +${entropyChg.toFixed(1)}${cappedMessage}`;
+            message = `研發推進！MP +${actualGrowth.toFixed(1)}, 熵值 +${entropyChg.toFixed(1)}${dataMessage}${cappedMessage}`;
             messageType = cappedMessage ? 'warning' : 'success';
             break;
         }

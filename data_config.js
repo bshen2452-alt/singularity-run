@@ -539,6 +539,25 @@ const DataConfig = {
         compliance_effects: {
             legal: { compliance_risk: 0, trust: 0 },
             gray: { compliance_risk: 2, trust: -1 }
+        },
+        // ==========================================
+        // MP 成長的數據消耗曲線（模擬AI訓練的數據困難）
+        // 公式：baseConsumption * (1 + mpScaling * sqrt(currentMP))
+        // 低 MP 時消耗少，高 MP 時消耗快速增長但有上限
+        // ==========================================
+        mp_scaling: {
+            base_consumption_per_mp: 3.0,    // 每1點MP成長基礎消耗3單位數據
+            mp_scaling_factor: 0.08,         // MP影響係數（sqrt曲線）
+            max_multiplier: 4.0,             // 最大消耗倍率（防止過於困難）
+            min_consumption: 1,              // 最小消耗量
+            // 里程碑跳變：每個Tier門檻前消耗略增
+            tier_thresholds: {
+                1: { mp: 25, consumption_boost: 1.1 },
+                2: { mp: 60, consumption_boost: 1.2 },
+                3: { mp: 120, consumption_boost: 1.3 },
+                4: { mp: 200, consumption_boost: 1.5 },
+                5: { mp: 350, consumption_boost: 1.8 }
+            }
         }
     },
 
