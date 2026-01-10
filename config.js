@@ -580,7 +580,7 @@ const EVENT_POOL = {
 // 功能解鎖系統配置
 const TIER_UNLOCK_CONFIG = {
     1: {
-        title: 'Tier 1 解鎖：發展自身商品',
+        title: 'Tier 1 解鎖：發展自身產品',
         icon: '🌐',
         color: 'var(--accent-cyan)',
         features: [
@@ -589,7 +589,7 @@ const TIER_UNLOCK_CONFIG = {
             { name: '算力規劃', icon: '⚙️', desc: '可調整算力分配策略：優先社群、優先研發、平衡分配、自動雲端' }
 
         ],
-        futureHint: '未來將開放：API 訂閱管理、社群活動系統'
+        futureHint: '未來將開放：進入實體空間'
     },
     2: {
         title: 'Tier 2 解鎖：進入實體空間',
@@ -597,28 +597,28 @@ const TIER_UNLOCK_CONFIG = {
         color: 'var(--accent-yellow)',
         features: [
             { name: '空間電力', icon: '🏢', desc: '擁有足夠空間與電力供應，才能穩定發展' },
-            { name: '策略藍圖', icon: '🪙', desc: '應用各種營運策略，降低風險或者強化收益' },
-            { name: '數據管理', icon: '📚', desc: '當模型愈加強大，數據成為須管理的稀缺資源' }
+            { name: '策略藍圖', icon: '🪙', desc: '應用各種營運策略，降低風險或強化收益' },
+            { name: '數據管理', icon: '📚', desc: '訓練更強大的模型，數據成為須管理的稀缺資源' }
         ],
-        futureHint: '未來將開放：綠色能源投資、衛星數據中心'
+        futureHint: '未來將開放：設施升級與規模化'
     },
     3: {
-        title: 'Tier 3 解鎖：區域與監管',
-        icon: '🌍',
+        title: 'Tier 3 解鎖：設施升級與規模化',
+        icon: '🏛️',
         color: 'var(--accent-green)',
         features: [
-            { name: '區域擴張', icon: '🗺️', desc: '可在不同地區設立分部，分散監管風險' },
-            { name: '遊說系統', icon: '🏛️', desc: '可透過遊說降低監管壓力，但消耗現金與信任' }
+            { name: '設施升級', icon: '🏭', desc: '技術升級以增強現有設施，促進使用效率' },
+            { name: '擴大事業', icon: '🏢', desc: '穩定營運後，建立部門/子公司以擴大事業範圍' }
         ],
-        futureHint: '未來將開放：國際合規認證、政府合約投標'
+        futureHint: '未來將開放：區域與監管'
     },
     4: {
-        title: 'Tier 4 解鎖：對齊度研究',
-        icon: '🎯',
+        title: 'Tier 4 解鎖：區域與監管',
+        icon: '🌍',
         color: 'var(--accent-magenta)',
         features: [
-            { name: '對齊實驗室', icon: '🔬', desc: '可建立專門的對齊研究團隊，加速對齊度提升' },
-            { name: '倫理委員會', icon: '⚖️', desc: '可設立倫理委員會，提升公眾信任但降低研發速度' }
+            { name: '區域擴張', icon: '🗺️', desc: '可在不同地區設立分部，分散風險並捕捉機會' },
+            { name: '遊說系統', icon: '🏛️', desc: '可透過遊說降低監管壓力，但消耗現金與信任' }
         ],
         futureHint: '未來將開放：對齊度認證、公開透明度報告'
     },
