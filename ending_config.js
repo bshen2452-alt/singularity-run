@@ -302,7 +302,7 @@ const EndingConfig = (function() {
                         player.route === 'OpenSource' &&
                         player.trust < 20 &&
                         player.community_size >= 10000 &&
-                        player.engagement === 100 &&
+                        player.engagement >=95 &&
                 },
                 warning: (player) => {
                     // 預警邏輯：當信任度開始滑落且參與度過高（代表社群爭議多）時觸發
