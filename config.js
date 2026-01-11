@@ -101,7 +101,7 @@ const TECH_ROUTES = {
     },
     "Efficiency": {
         name: "效率優化",
-        description: "DeepMind 風格：專利授權，降成增效。",
+        description: "DeepMind 風格：專利授權，降本增效。",
         icon: "⚡",
         color: "#00ff88",
         specialAction: "核心算法專利授權",
