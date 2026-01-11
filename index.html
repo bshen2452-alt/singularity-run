@@ -833,11 +833,25 @@ function DoomGauge({ name, value, consecutive, player, rivals }) {
 
 // 結局畫面
 function EndingScreen({ ending, victory, player, onRestart }) {
+    // 解析 ending.msg：將「」內的文字凸顯，與後續文字分行
+    const renderEndingMsg = (msg) => {
+        if (!msg) return null;
+        const match = msg.match(/^「([^」]+)」\s*([\s\S]*)$/);
+        if (match) {
+            const quote = match[1];
+            const rest = match[2].trim();
+            return React.createElement(React.Fragment, null,
+                React.createElement('p', { style: { fontSize: '1.5rem', fontFamily: 'var(--font-display)', color: victory ? 'var(--accent-green)' : 'var(--accent-magenta)', marginBottom: '16px', fontWeight: '600' } }, '「' + quote + '」'),
+                rest && React.createElement('p', { style: { fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: 1.8, whiteSpace: 'pre-line' } }, rest)
+            );
+        }
+        return React.createElement('p', { style: { fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: 1.8, whiteSpace: 'pre-line' } }, msg);
+    };
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: '6rem', marginBottom: '24px', animation: 'pulse-glow 2s infinite' }}>{victory ? '🏆' : '💀'}</div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', color: victory ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: '16px' }}>{ending.type}</h1>
-            <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: 1.8, marginBottom: '32px' }}>{ending.msg}</p>
+            <div style={{ marginBottom: '32px', maxWidth: '600px' }}>{renderEndingMsg(ending.msg)}</div>
             <div style={{ background: 'var(--bg-card)', padding: '24px 32px', borderRadius: '12px', marginBottom: '32px' }}>
                 <h3 style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>最終數據</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>

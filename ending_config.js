@@ -120,22 +120,26 @@ const EndingConfig = (function() {
                 id: 'peer_reviewed',
                 name: '春風化雨',
                 type: '春風化雨 - Peer Reviewed',
-                msg: '「學術的避風港？」\n\n你投了一整年的獎助金申請書最終被一所頂尖大學的院長看到，他發現你的計劃書寫得好棒。\n現在你正在替他趕教學計畫。',
+                msg: '「學術的避風港？」\n\n你投了整年的獎助金申請書最終被一所頂尖大學的院長看到，他發現你的計劃書寫得好棒。\n現在你正在替他趕教學計畫。',
                 victory: false,
-                priority: 10,
+                priority: 5,
+                // 判定條件：MP 等級為 0、資金極低、回合數過半，且擁有多位頂尖人才
                 check: (player) => {
-                    return player.mp_tier === 0 &&
-                           player.cash < 5 &&
-                           (player.talent?.turing || 0) >= 2;
+                    const turingCount = player.talent?.turing || 0;
+                    return player.mp_tier === 0 && 
+                        player.cash < 5 && 
+                        player.turn_count > 4 && 
+                        turingCount >= 2;
                 },
+                // 預警系統：當資金開始見底且空有大師時觸發
                 warning: (player) => {
-                    if (player.mp_tier !== 0) return null;
-                    if (player.cash < 10 && player.cash >= 5 && (player.talent?.turing || 0) >= 2) {
+                    const turingCount = player.talent?.turing || 0;
+                    if (player.mp_tier === 0 && player.cash < 15 && turingCount >= 2) {
                         return {
                             active: true,
-                            turnsLeft: Math.ceil((player.cash - 5) / 2) + 1,
-                            condition: '現金即將低於 $5M，且擁有 2+ 圖靈級人才',
-                            severity: 'warning'
+                            turnsLeft: 3,
+                            condition: '我們接到了您的申請，想請問您有沒有興趣挑戰新的機會?',
+                            severity: player.cash < 20 ? 'critical' : 'warning'
                         };
                     }
                     return null;
@@ -145,7 +149,7 @@ const EndingConfig = (function() {
                 id: 'clothes_man',
                 name: '國王新衣',
                 type: '國王新衣 - Clothes make the man',
-                msg: '「只是套了一件衣服。」\n\n一位資深工程師在GitHub貼了 5 行程式碼，證明你的「創新模型」只是在調用某大廠 API。\n你的公司成為科技圈最大笑柄。',
+                msg: '「只是套了一件衣服。」\n\n一位資深工程師用 5 行程式碼證明你的「創新模型」只是在調用某大廠 API。\n你的公司成為科技圈最大笑柄。',
                 victory: false,
                 priority: 10,
                 check: (player) => {
@@ -343,7 +347,7 @@ const EndingConfig = (function() {
                 },
                 warning: (player) => {
                     // 預警觸發：當合規風險超過 80 且信任度低於 45 時啟動
-                    if (player.compliance_risk > 80 && player.trust < 45) {
+                    if (player.route === 'Multimodal' && player.compliance_risk > 80 && player.trust < 45) {
                         return {
                             active: true,
                             turnsLeft: 3,
@@ -372,7 +376,7 @@ const EndingConfig = (function() {
                 },
                 // 預警邏輯：在風險或熵值接近臨界點時發出警告
                 warning: (player) => {
-                    if (player.mp_tier === 3 &&  player.route === 'Multimodal' &&  
+                    if (player.route === 'Multimodal' &&  
                         (player.compliance_risk > 65 || player.entropy > 65)) {
                         return {
                             active: true,
