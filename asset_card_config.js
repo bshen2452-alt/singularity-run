@@ -177,9 +177,9 @@ const AssetCardConfig = {
             description: '建立數據交易能力',
             benefit_summary: '數據變現 ↑', cost_summary: '隱私風險 ↑',
             levels: [
-                { level: 1, name: '內部數據目錄', benefits: { data_reuse: 1.2 }, costs: { compliance_overhead: 0.05 }, upgrade_cost: { cash: 25, turns: 1 } },
-                { level: 2, name: '數據交易平台', benefits: { data_monetization: true, external_data_access: true }, costs: { compliance_overhead: 0.15 }, upgrade_cost: { cash: 90, turns: 2 } },
-                { level: 3, name: '聯邦數據網路', benefits: { cross_org_training: true, data_network_effect: 1.5 }, costs: { compliance_overhead: 0.25 }, upgrade_cost: { cash: 200, turns: 3 } }
+                { level: 1, name: '內部數據目錄', benefits: { data_reuse: 1.2, sell_enabled: ['legal_low'] }, costs: { compliance_overhead: 0.05 }, upgrade_cost: { cash: 25, turns: 1 } },
+                { level: 2, name: '數據交易平台', benefits: { data_monetization: true, external_data_access: true, sell_enabled: ['legal_low', 'legal_high_broad'] }, costs: { compliance_overhead: 0.15 }, upgrade_cost: { cash: 90, turns: 2 } },
+                { level: 3, name: '聯邦數據網路', benefits: { cross_org_training: true, data_network_effect: 1.5, sell_enabled: ['legal_low', 'legal_high_broad', 'legal_high_focused'] }, costs: { compliance_overhead: 0.25 }, upgrade_cost: { cash: 200, turns: 3 } }
             ],
             conflicts_with: ['data.privacy']
         },

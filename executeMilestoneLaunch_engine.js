@@ -286,7 +286,7 @@ function executeMilestoneLaunch(player, tier) {
 
         return {
             success: false,
-            message: `❌ 里程碑 Tier ${tier} (${data.name}) 發布失敗！資源已消耗，下次成本增加 50%`,
+            message: `❌ 里程碑 Tier ${tier} (${data.name}) 發布失敗！資源已消耗，下次成本增加 10%`,
             updatedPlayer,
             type: 'danger',
             globalBonus: null

@@ -478,6 +478,33 @@ const DataConfig = {
         }
     },
 
+        // ==========================================
+    // 數據販賣配置（需 marketplace 研發解鎖）
+    // ==========================================
+    SELL_OPTIONS: {
+        // 售價設定（購買價的折扣）
+        price_multiplier: 0.6,                 // 售價為購買價的60%
+        min_amount: 10,                        // 最低販賣量
+        // 各類型售價（由低到高）
+        type_prices: {
+            legal_low: 0.6,                    // $0.6M/TB (購買價 $1M)
+            legal_high_broad: 3.0,             // $3.0M/TB (購買價 $5M)
+            legal_high_focused: 2.4            // $2.4M/TB (購買價 $4M)
+        },
+        // 販賣效果
+        effects: {
+            compliance_risk_reduction_per_100: 2,   // 每販賣100TB降低合規風險2點
+            regulation_increase_per_sale: 1,        // 每次販賣增加監管壓力1點
+            trust_loss_per_sale: 0                  // 販賣不影響信任度
+        },
+        // 解鎖條件（依 marketplace 等級）
+        unlock_by_marketplace_level: {
+            1: ['legal_low'],                       // Lv1: 僅可販賣 legal_low
+            2: ['legal_low', 'legal_high_broad'],   // Lv2: 可販賣 legal_low + legal_high_broad
+            3: ['legal_low', 'legal_high_broad', 'legal_high_focused']  // Lv3: 全部可販賣
+        }
+    },
+
     // ==========================================
     // 路線特化配置
     // ==========================================

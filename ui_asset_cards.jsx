@@ -1444,7 +1444,7 @@ function DataTypeRow({ icon, name, value, color, warning = false, quality = null
 }
 
 // ============================================
-// 帶有採購/爬蟲按鈕的數據類型行組件
+// 帶有採購/爬蟲/販賣按鈕的數據類型行組件
 // ============================================
 
 function DataTypeRowWithAction({ 
@@ -1460,7 +1460,12 @@ function DataTypeRowWithAction({
     scrapeRisk = '',    // 'low' | 'high'
     onAction,
     disabled = false,
-    grayForbidden = false
+    grayForbidden = false,
+    // 販賣相關
+    canSell = false,
+    sellPrice = 0,
+    onSell,
+    sellDisabled = false
 }) {
     const { GlowButton } = window.Components || {};
     
@@ -1484,7 +1489,7 @@ function DataTypeRowWithAction({
         return '';
     };
     
-    // 是否顯示按鈕
+    // 是否顯示主按鈕
     const showButton = actionType && !(actionType === 'scrape' && grayForbidden);
     const isDisabled = disabled;
     
@@ -1514,7 +1519,7 @@ function DataTypeRowWithAction({
                     )}
                     {actionType === 'purchase' && (
                         <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
-                            單價 ${actionPrice}M/TB
+                            買${actionPrice}M {canSell ? `/ 賣$${sellPrice}M` : ''}
                         </span>
                     )}
                 </div>
@@ -1545,7 +1550,8 @@ function DataTypeRowWithAction({
             </div>
             
             {/* 右側：操作按鈕 */}
-            <div style={{ minWidth: '65px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+            <div style={{ minWidth: canSell ? '120px' : '65px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0, gap: '4px' }}>
+                {/* 主操作按鈕（購買/爬蟲） */}
                 {showButton && (
                     GlowButton ? (
                         <GlowButton 
@@ -1564,6 +1570,29 @@ function DataTypeRowWithAction({
                             style={{ fontSize: '0.6rem', padding: '2px 6px' }}
                         >
                             {getButtonText()}
+                        </button>
+                    )
+                )}
+                
+                {/* 販賣按鈕 */}
+                {canSell && onSell && (
+                    GlowButton ? (
+                        <GlowButton 
+                            variant="success" 
+                            size="small" 
+                            onClick={() => onSell(typeId)}
+                            disabled={sellDisabled || value < 10}
+                            style={{ fontSize: '0.6rem', padding: '2px 6px' }}
+                        >
+                            賣出
+                        </GlowButton>
+                    ) : (
+                        <button 
+                            onClick={() => onSell(typeId)}
+                            disabled={sellDisabled || value < 10}
+                            style={{ fontSize: '0.6rem', padding: '2px 6px' }}
+                        >
+                            賣出
                         </button>
                     )
                 )}
@@ -1615,6 +1644,14 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
     
     // 檢查是否解鎖合成技術（synthesis Lv.1+）
     const hasSynthesis = (playerUpgrades.synthesis || 0) >= 1;
+
+    // 檢查販賣功能解鎖（marketplace 升級等級）
+    const DataEng = window.DataEngine;
+    const marketplaceLevel = playerUpgrades.marketplace || 0;
+    const sellableTypes = DataEng ? DataEng.getSellableDataTypes(player) : [];
+    const sellConfig = dataConfig.SELL_OPTIONS || {};
+    const canSellType = (typeId) => sellableTypes.includes(typeId);
+    const getSellPrice = (typeId) => sellConfig.type_prices?.[typeId] || 0;
     
     // 數據價格
     const COSTS = window.GameConfig?.COSTS || {};
@@ -1801,7 +1838,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                     <div style={{ marginBottom: '12px' }}>
                         {/* 合法數據 - 購買按鈕 */}
                         <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)', marginBottom: '6px', fontWeight: 600 }}>
-                            ✓ 合規數據（購買）
+                            ✓ 合規數據（購買{marketplaceLevel > 0 ? '/販賣' : ''}）
                         </div>
                         <DataTypeRowWithAction
                             typeId="legal_high_broad"
@@ -1810,11 +1847,17 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                             value={summary.by_type?.legal_high_broad || 0}
                             color="#00f5ff"
                             actionType={tier >= 1 ? 'purchase' : null}
-                            actionPrice={4}
+                            actionPrice={5}
                             onAction={(typeId, actionType) => {
                                 onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
                             }}
                             disabled={player.cash < purchaseQty * 5 || !capacityCheck.canPurchase}
+                            canSell={canSellType('legal_high_broad')}
+                            sellPrice={getSellPrice('legal_high_broad')}
+                            onSell={(typeId) => {
+                                onAction('sellDataByType', { dataType: typeId, quantity: purchaseQty });
+                            }}
+                            sellDisabled={(summary.by_type?.legal_high_broad || 0) < purchaseQty}
                         />
                         <DataTypeRowWithAction
                             typeId="legal_high_focused"
@@ -1823,11 +1866,17 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                             value={summary.by_type?.legal_high_focused || 0}
                             color="#44aaff"
                             actionType={tier >= 1 ? 'purchase' : null}
-                            actionPrice={8}
+                            actionPrice={4}
                             onAction={(typeId, actionType) => {
                                 onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
                             }}
                             disabled={player.cash < purchaseQty * 4 || !capacityCheck.canPurchase}
+                            canSell={canSellType('legal_high_focused')}
+                            sellPrice={getSellPrice('legal_high_focused')}
+                            onSell={(typeId) => {
+                                onAction('sellDataByType', { dataType: typeId, quantity: purchaseQty });
+                            }}
+                            sellDisabled={(summary.by_type?.legal_high_focused || 0) < purchaseQty}
                         />
                         <DataTypeRowWithAction
                             typeId="legal_low"
@@ -1841,6 +1890,12 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                                 onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
                             }}
                             disabled={player.cash < purchaseQty * 1 || !capacityCheck.canPurchase}
+                            canSell={canSellType('legal_low')}
+                            sellPrice={getSellPrice('legal_low')}
+                            onSell={(typeId) => {
+                                onAction('sellDataByType', { dataType: typeId, quantity: purchaseQty });
+                            }}
+                            sellDisabled={(summary.by_type?.legal_low || 0) < purchaseQty}
                         />
                         
                         {/* 灰色數據 - 爬蟲按鈕 */}
@@ -1859,7 +1914,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                                     actionType="scrape"
                                     scrapeRisk="high"
                                     onAction={(typeId, actionType) => {
-                                        onAction('scrapeData', { dataType: typeId, intensity: 2 });
+                                        onAction('scrapeDataByType', { dataType: typeId, intensity: 2 });
                                     }}
                                     grayForbidden={grayForbidden}
                                 />
@@ -1873,7 +1928,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                                     actionType="scrape"
                                     scrapeRisk="low"
                                     onAction={(typeId, actionType) => {
-                                        onAction('scrapeData', { dataType: typeId, intensity: 1 });
+                                        onAction('scrapeDataByType', { dataType: typeId, intensity: 1 });
                                     }}
                                     grayForbidden={grayForbidden}
                                 />
@@ -2279,6 +2334,7 @@ window.AssetCardComponents = {
     TalentCard,
     DataCard,
     DataTypeRow,
+    DataTypeRowWithAction,
     DepartmentUnlockHint,
     AssetCardsPanel
 };

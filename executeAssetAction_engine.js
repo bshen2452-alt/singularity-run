@@ -547,6 +547,91 @@ function executeAssetAction(player, actionId, params = {}, globalParams = { P_GP
             break;
         }
 
+                case 'sellDataByType': {
+            const DataEngine = window.DataEngine;
+            const DataConfig = window.DataConfig;
+            const dataType = params.dataType;
+            const quantity = parseFloat(params.quantity || 0);
+            
+            if (!dataType || quantity <= 0) {
+                return {
+                    success: false,
+                    player: player,
+                    message: '請指定有效的數據類型和數量',
+                    type: 'warning'
+                };
+            }
+            
+            // 使用 DataEngine 處理販賣邏輯
+            if (DataEngine && typeof DataEngine.sellData === 'function') {
+                const result = DataEngine.sellData(newPlayer, dataType, quantity);
+                if (result.success) {
+                    return {
+                        success: true,
+                        player: result.player,
+                        message: result.message,
+                        type: 'success'
+                    };
+                } else {
+                    return {
+                        success: false,
+                        player: player,
+                        message: result.message,
+                        type: 'warning'
+                    };
+                }
+            }
+            
+            // 後備處理
+            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
+            if (!typeConfig) {
+                return {
+                    success: false,
+                    player: player,
+                    message: `未知的數據類型: ${dataType}`,
+                    type: 'danger'
+                };
+            }
+            
+            // 檢查庫存
+            const currentAmount = newPlayer.data_inventory?.[dataType] || 0;
+            if (currentAmount < quantity) {
+                return {
+                    success: false,
+                    player: player,
+                    message: `庫存不足（現有 ${currentAmount} TB）`,
+                    type: 'warning'
+                };
+            }
+            
+            // 計算收益
+            const sellConfig = DataConfig?.SELL_OPTIONS || {};
+            const unitPrice = sellConfig.type_prices?.[dataType] || (typeConfig.base_price * 0.6);
+            const revenue = unitPrice * quantity;
+            
+            // 執行販賣
+            if (!newPlayer.data_inventory) newPlayer.data_inventory = {};
+            newPlayer.data_inventory[dataType] -= quantity;
+            newPlayer.cash += revenue;
+            
+            // 同步舊字段
+            if (dataType === 'legal_high_broad' || dataType === 'legal_high_focused') {
+                newPlayer.high_data = Math.max(0, (newPlayer.high_data || 0) - quantity);
+            } else if (dataType === 'legal_low') {
+                newPlayer.low_data = Math.max(0, (newPlayer.low_data || 0) - quantity);
+            }
+            
+            // 販賣效果
+            const riskReduction = Math.floor(quantity / 100) * 2;
+            newPlayer.compliance_risk = Math.max(0, (newPlayer.compliance_risk || 0) - riskReduction);
+            newPlayer.regulation = Math.min(100, (newPlayer.regulation || 0) + 1);
+            
+            message = `販賣 ${typeConfig.name} ${quantity} TB，獲得 $${revenue.toFixed(1)}M`;
+            messageType = 'success';
+            break;
+        }
+
+
         
         case 'upgradeTech': {
             const tech = params.tech;

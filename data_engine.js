@@ -249,6 +249,148 @@ const DataEngine = {
         };
     },
 
+        /**
+     * 檢查是否可販賣指定類型數據
+     * @param {Object} player - 玩家狀態
+     * @param {string} dataType - 數據類型
+     * @returns {Object} { canSell, reason, marketplaceLevel }
+     */
+    canSellData(player, dataType) {
+        const config = window.DataConfig || {};
+        const assetConfig = window.AssetCardConfig || {};
+        
+        // 獲取 marketplace 升級等級
+        const upgrades = player.asset_upgrades || {};
+        const marketplaceLevel = upgrades.data?.marketplace || 0;
+        
+        if (marketplaceLevel === 0) {
+            return { 
+                canSell: false, 
+                reason: '需先研發「數據市集」技術', 
+                marketplaceLevel: 0 
+            };
+        }
+        
+        // 檢查該等級是否解鎖該類型販賣
+        const sellConfig = config.SELL_OPTIONS || {};
+        const unlockByLevel = sellConfig.unlock_by_marketplace_level || {};
+        const allowedTypes = unlockByLevel[marketplaceLevel] || [];
+        
+        if (!allowedTypes.includes(dataType)) {
+            return { 
+                canSell: false, 
+                reason: `數據市集 Lv.${marketplaceLevel} 尚未解鎖此類型販賣`,
+                marketplaceLevel,
+                needLevel: Object.entries(unlockByLevel).find(([lv, types]) => types.includes(dataType))?.[0] || 3
+            };
+        }
+        
+        return { canSell: true, marketplaceLevel };
+    },
+
+    /**
+     * 獲取可販賣的數據類型列表
+     * @param {Object} player - 玩家狀態
+     * @returns {Array} 可販賣的數據類型ID列表
+     */
+    getSellableDataTypes(player) {
+        const config = window.DataConfig || {};
+        const upgrades = player.asset_upgrades || {};
+        const marketplaceLevel = upgrades.data?.marketplace || 0;
+        
+        if (marketplaceLevel === 0) return [];
+        
+        const sellConfig = config.SELL_OPTIONS || {};
+        const unlockByLevel = sellConfig.unlock_by_marketplace_level || {};
+        return unlockByLevel[marketplaceLevel] || [];
+    },
+
+    /**
+     * 獲取數據販賣價格
+     * @param {string} dataType - 數據類型
+     * @returns {number} 單位售價
+     */
+    getDataSellPrice(dataType) {
+        const config = window.DataConfig || {};
+        const sellConfig = config.SELL_OPTIONS || {};
+        return sellConfig.type_prices?.[dataType] || 0;
+    },
+
+    /**
+     * 販賣數據
+     * @param {Object} player - 玩家狀態
+     * @param {string} dataType - 數據類型
+     * @param {number} amount - 販賣數量
+     * @returns {Object} { success, player, message, revenue }
+     */
+    sellData(player, dataType, amount) {
+        const config = window.DataConfig || {};
+        const typeConfig = config.DATA_TYPES?.[dataType];
+        const sellConfig = config.SELL_OPTIONS || {};
+
+        if (!typeConfig) {
+            return { success: false, message: '無效的數據類型' };
+        }
+
+        // 檢查是否可販賣
+        const canSellResult = this.canSellData(player, dataType);
+        if (!canSellResult.canSell) {
+            return { success: false, message: canSellResult.reason };
+        }
+
+        // 初始化數據狀態
+        player = this.initializePlayerDataState(player);
+
+        // 檢查庫存
+        const currentAmount = player.data_state.inventory[dataType] || 0;
+        if (currentAmount < amount) {
+            return { success: false, message: `庫存不足（現有 ${currentAmount} TB）` };
+        }
+
+        // 最低販賣量檢查
+        const minAmount = sellConfig.min_amount || 10;
+        if (amount < minAmount) {
+            return { success: false, message: `最低販賣量為 ${minAmount} TB` };
+        }
+
+        // 計算收益
+        const unitPrice = this.getDataSellPrice(dataType);
+        const revenue = unitPrice * amount;
+
+        // 執行販賣
+        player.data_state.inventory[dataType] -= amount;
+        player.cash += revenue;
+
+        // 應用販賣效果
+        const effects = sellConfig.effects || {};
+        
+        // 降低合規風險（數據量減少）
+        const riskReduction = Math.floor(amount / 100) * (effects.compliance_risk_reduction_per_100 || 2);
+        player.compliance_risk = Math.max(0, (player.compliance_risk || 0) - riskReduction);
+        
+        // 增加監管壓力（販賣行為本身）
+        const regulationIncrease = effects.regulation_increase_per_sale || 1;
+        player.regulation = Math.min(100, (player.regulation || 0) + regulationIncrease);
+
+        // 更新統計
+        if (!player.data_state.statistics.total_sold) {
+            player.data_state.statistics.total_sold = 0;
+        }
+        player.data_state.statistics.total_sold += amount;
+
+        // 同步舊系統
+        this.syncLegacyData(player);
+
+        return {
+            success: true,
+            player,
+            message: `販賣 ${typeConfig.name} ${amount} TB，獲得 $${revenue.toFixed(1)}M，合規風險 -${riskReduction}，監管壓力 +${regulationIncrease}`,
+            revenue,
+            riskReduction,
+            regulationIncrease
+        };
+    },
+
     /**
      * 執行灰色爬蟲
      * @param {Object} player - 玩家狀態
