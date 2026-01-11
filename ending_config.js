@@ -513,7 +513,7 @@ const EndingConfig = (function() {
                             active: true,
                             turnsLeft: isClose ? 2 : 5,
                             condition: '全人類共鳴感應中：社群規模與模型算力即將臨界',
-                            severity: isClose ? 'critical' : 'warning' // 在勝利結局中，critical 可理解為「即將登神」
+                            severity: isClose ? 'critical' : 'info' // 在勝利結局中，critical 可理解為「即將登神」
                         };
                     }
                     return null;
@@ -725,7 +725,7 @@ const EndingConfig = (function() {
                             active: true,
                             turnsLeft: 3,
                             condition: 'AI : Hello, World!',
-                            severity: (player.entropy > 90) ? 'critical' : 'warning'
+                            severity: (player.entropy > 90) ? 'critical' : 'info'
                         };
                     }
                     return null;
@@ -781,7 +781,7 @@ const EndingConfig = (function() {
                         return {
                             active: true,
                             turnsLeft: 3,
-                            condition: '為了最終獲得什麼，總要繼續抵抗些什麼。',
+                            condition: '為了獲得聖杯，總要繼續抵抗全世界。',
                             severity: (player.regulation || 0) > 80 ? 'critical' : 'warning'
                         };
                     }

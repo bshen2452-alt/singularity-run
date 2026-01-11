@@ -1914,7 +1914,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                                     actionType="scrape"
                                     scrapeRisk="high"
                                     onAction={(typeId, actionType) => {
-                                        onAction('scrapeDataByType', { dataType: typeId, intensity: 2 });
+                                        onAction('scrapeData', { dataType: typeId, intensity: 2 });
                                     }}
                                     grayForbidden={grayForbidden}
                                 />
@@ -1928,7 +1928,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                                     actionType="scrape"
                                     scrapeRisk="low"
                                     onAction={(typeId, actionType) => {
-                                        onAction('scrapeDataByType', { dataType: typeId, intensity: 1 });
+                                        onAction('scrapeData', { dataType: typeId, intensity: 1 });
                                     }}
                                     grayForbidden={grayForbidden}
                                 />
