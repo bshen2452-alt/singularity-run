@@ -251,7 +251,7 @@ function executeFinance(player, actionId, params = {}) {
             const effects = actionConfig.effects;
             const cashGain = effects.cash * bonusMultiplier;
             
-            if (actionConfig.requiresIPO && !newPlayer.is_public && !newPlayer.equity_state?.is_public) {
+            if (actionConfig.requiresIPO && !newPlayer.equity_state.is_public && !newPlayer.equity_state?.is_public) {
                 return {
                     success: false,
                     player: player,
@@ -341,9 +341,19 @@ function executeFinance(player, actionId, params = {}) {
             const cashGain = marketCap * (effects.cash_multiplier || 0.25) * ipoMultiplier;
             
             newPlayer.cash += cashGain;
-            newPlayer.is_public = true;
+            newPlayer.equity_state.is_public = true;
             newPlayer.hype = Math.min(100, (newPlayer.hype || 0) + (effects.hype || 0));
             newPlayer.regulation = Math.min(100, (newPlayer.regulation || 0) + (effects.regulation || 0));
+
+            // 同時更新 equity_state.is_public（確保 UI 判斷一致性）
+            if (newPlayer.equity_state) {
+                newPlayer.equity_state.is_public = true;
+                newPlayer.equity_state.ipo_details = {
+                    quarter: newPlayer.quarter || 1,
+                    cash_raised: ipoAmount,
+                    market_cap_at_ipo: newPlayer.market_cap || 500
+                };
+            }
             
             // 初始化股權狀態
             if (!newPlayer.equity_state) {
@@ -376,7 +386,7 @@ function executeFinance(player, actionId, params = {}) {
             }
             
             // Fallback
-            if (!newPlayer.is_public && !newPlayer.equity_state?.is_public) {
+            if (!newPlayer.equity_state.is_public && !newPlayer.equity_state?.is_public) {
                 return { success: false, player, message: '需要先完成IPO', type: 'warning' };
             }
             
@@ -406,7 +416,7 @@ function executeFinance(player, actionId, params = {}) {
             }
             
             // Fallback
-            if (!newPlayer.is_public && !newPlayer.equity_state?.is_public) {
+            if (!newPlayer.equity_state.is_public && !newPlayer.equity_state?.is_public) {
                 return { success: false, player, message: '需要先完成IPO', type: 'warning' };
             }
             

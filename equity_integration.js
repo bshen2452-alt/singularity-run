@@ -244,7 +244,7 @@
             
             if (Math.abs(impliedFounderShares - currentFounder) > 0.5) {
                 const delta = currentFounder - impliedFounderShares;
-                if (newPlayer.equity_state.is_public) {
+                if (newPlayer.is_public) {
                     newPlayer.equity_state.founder_shares = impliedFounderShares;
                     newPlayer.equity_state.public_shares += delta;
                 } else {

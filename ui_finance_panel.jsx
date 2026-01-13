@@ -410,7 +410,6 @@ const FinancePanelUI = {
     // ==========================================
     // 3. 財務行動區
     // ==========================================
-
     renderFinanceActions(player, globalParams, onAction, mpTier, isPublic) {
         return React.createElement('div', {
             className: 'finance-actions',
@@ -427,11 +426,101 @@ const FinancePanelUI = {
             // Pre-IPO 階段 (Tier 0-1)
             !isPublic && this.renderPreIPOActions(player, globalParams, onAction, mpTier),
 
+            // Tier1+ 債務操作（IPO前後皆可見）
+            mpTier >= 1 && !isPublic && this.renderDebtSection(player, globalParams, onAction),
+
             // IPO 階段 (Tier 2+)
             mpTier >= 2 && !isPublic && this.renderIPOSection(player, globalParams, onAction),
 
             // Post-IPO 階段
             isPublic && this.renderPostIPOActions(player, globalParams, onAction)
+        );
+    },
+
+    // ==========================================
+    // 債務操作區塊（Tier1+ 可用，僅IPO前顯示）
+    // ==========================================
+
+    renderDebtSection(player, globalParams, onAction) {
+        const cooldowns = player.finance_cooldowns || {};
+        const creditInfo = window.CreditEngine?.getCreditRatingInfo(player, globalParams) || {};
+
+        return React.createElement('div', {
+            style: {
+                background: 'rgba(255,213,0,0.05)',
+                border: '1px solid rgba(255,213,0,0.2)',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginTop: '1rem'
+            }
+        },
+            React.createElement('div', {
+                style: { 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '0.75rem'
+                }
+            },
+                React.createElement('h4', {
+                    style: { margin: 0, fontSize: '0.9rem', color: 'var(--accent-yellow)' }
+                }, '💳 債務融資'),
+                creditInfo.rating && React.createElement('span', {
+                    style: { 
+                        fontSize: '0.75rem', 
+                        color: creditInfo.ratingConfig?.color || 'var(--text-secondary)',
+                        padding: '0.2rem 0.5rem',
+                        background: 'rgba(255,255,255,0.05)',
+                        borderRadius: '4px'
+                    }
+                }, `信用 ${creditInfo.rating}`)
+            ),
+
+            React.createElement('div', {
+                style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }
+            },
+                // 發行公司債
+                this.renderActionButton({
+                    id: 'corporateBond',
+                    name: '發行公司債',
+                    icon: '📜',
+                    description: `發債成本: ${((creditInfo.bondPremium || 0) * 100).toFixed(0)}%溢價`,
+                    effect: `+$80M, +$${Math.round(80 * (1 + (creditInfo.bondPremium || 0)))}M債務`,
+                    available: !creditInfo.junkBondOnly && (cooldowns.corporateBond || 0) <= 0,
+                    cooldown: cooldowns.corporateBond || 0,
+                    color: '#ffd000',
+                    disabled: creditInfo.junkBondOnly
+                }, onAction),
+
+                // 償還債務
+                this.renderActionButton({
+                    id: 'repayDebt',
+                    name: '償還債務',
+                    icon: '💵',
+                    description: '償還部分或全部債務',
+                    effect: `當前: $${(player.debt || 0).toFixed(0)}M`,
+                    available: player.debt > 0 && player.cash > 0,
+                    cooldown: 0,
+                    color: '#44ff88'
+                }, onAction)
+            ),
+
+            // 垃圾債（僅當信用評級較低時顯示）
+            creditInfo.junkBondOnly && React.createElement('div', {
+                style: { marginTop: '0.5rem' }
+            },
+                this.renderActionButton({
+                    id: 'junkBond',
+                    name: '垃圾債券',
+                    icon: '⚠️',
+                    description: '高利率緊急融資',
+                    effect: '+$200M, +$280M債務, Hype-5',
+                    available: (cooldowns.junkBond || 0) <= 0,
+                    cooldown: cooldowns.junkBond || 0,
+                    color: '#ff4444',
+                    warning: true
+                }, onAction)
+            )
         );
     },
 
@@ -785,7 +874,7 @@ const FinancePanelUI = {
                         name: '發行公司債',
                         icon: '📜',
                         description: `發債成本: ${((creditInfo.bondPremium || 0) * 100).toFixed(0)}%溢價`,
-                        effect: `+$80M 現金, +$${Math.round(80 * (1 + (creditInfo.bondPremium || 0)))}M 債務`,
+                        effect: `+$80M, +$${Math.round(80 * (1 + (creditInfo.bondPremium || 0)))}M債務`,
                         available: !creditInfo.junkBondOnly && (cooldowns.corporateBond || 0) <= 0,
                         cooldown: cooldowns.corporateBond || 0,
                         color: '#ffd000',
@@ -796,9 +885,9 @@ const FinancePanelUI = {
                     this.renderActionButton({
                         id: 'repayDebt',
                         name: '償還債務',
-                        icon: '💳',
+                        icon: '💵',
                         description: '償還部分或全部債務',
-                        effect: `當前債務: $${(player.debt || 0).toFixed(0)}M`,
+                        effect: `當前: $${(player.debt || 0).toFixed(0)}M`,
                         available: player.debt > 0 && player.cash > 0,
                         cooldown: 0,
                         color: '#44ff88'
