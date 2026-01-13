@@ -163,7 +163,7 @@ const EndingConfig = (function() {
                         return {
                             active: true,
                             turnsLeft: 3,
-                            condition: 'Model Power 過低但 Hype 過高，可能被戳穿',
+                            condition: '比起你的模型進展，你個人似乎更加引人注目？',
                             severity: player.hype > 80 ? 'critical' : 'warning'
                         };
                     }
@@ -668,7 +668,7 @@ const EndingConfig = (function() {
                         return {
                             active: true,
                             turnsLeft: 3,
-                            condition: '空頭勢力正在集結',
+                            condition: '讓你陷入困境的通常不是你不了解的，而是你自認為太了解的。',
                             severity: (player.product_state?.product_revenue || 0) < 1500000 ? 'critical' : 'warning'
                         };
                     }
