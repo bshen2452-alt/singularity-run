@@ -376,7 +376,7 @@ const EndingConfig = (function() {
                 },
                 // 預警邏輯：在風險或熵值接近臨界點時發出警告
                 warning: (player) => {
-                    if (player.route === 'Multimodal' &&  
+                    if (player.route === 'Multimodal' && player.mp_tier === 3 && 
                         (player.compliance_risk > 65 || player.entropy > 65)) {
                         return {
                             active: true,
