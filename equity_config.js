@@ -87,7 +87,7 @@
             SCALE_OPTIONS: {
                 small: {
                     id: 'small',
-                    name: '小規模 IPO',
+                    name: '精選募資案',
                     description: '保守發行，維持較高控制權',
                     icon: '📉',
                     dilution: 0.10,          // 稀釋10%
@@ -97,7 +97,7 @@
                 },
                 medium: {
                     id: 'medium',
-                    name: '中規模 IPO',
+                    name: '戰略型擴張募資',
                     description: '平衡資金與控制權',
                     icon: '📊',
                     dilution: 0.20,          // 稀釋20%
@@ -107,7 +107,7 @@
                 },
                 large: {
                     id: 'large',
-                    name: '大規模 IPO',
+                    name: '指標性上市公募',
                     description: '積極融資，大幅稀釋股權',
                     icon: '📈',
                     dilution: 0.35,          // 稀釋35%
