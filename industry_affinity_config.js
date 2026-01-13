@@ -88,7 +88,7 @@ const IndustryAffinityConfig = {
             description: '學術機構與研究社群',
             related_etf: null,
             affects: ['talent_cost', 'research_efficiency', 'collaboration_bonus'],
-            key_players: ['頂尖大學', '研究機構', 'OpenAI/Anthropic']
+            key_players: ['頂尖大學', '研究機構', '基金會']
         }
     },
 

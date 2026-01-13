@@ -1,6 +1,8 @@
 // ============================================
-// 財務執行引擎
+// 財務執行引擎 (Finance Engine)
 // ============================================
+// 設計：純函數式，僅接收數據參數/返回計算結果
+// 功能：執行財務行動，整合信用評級與股權機制
 
 /**
  * 執行財務行動
@@ -15,26 +17,30 @@ function executeFinance(player, actionId, params = {}) {
     let message = '';
     let messageType = 'info';
     
-    const { COSTS, FINANCE_ACTIONS } = GameConfig;
+    // 支持 window.GameConfig 或全局 GameConfig
+    const config = window.GameConfig || (typeof GameConfig !== 'undefined' ? GameConfig : null);
+    const FINANCE_ACTIONS = config?.FINANCE_ACTIONS;
+    const COSTS = config?.COSTS;
+    
+    if (!FINANCE_ACTIONS) {
+        console.error('FINANCE_ACTIONS not found in GameConfig');
+        return { success: false, player, message: '遊戲配置未載入', type: 'danger' };
+    }
     
     // 初始化財務系統
-    if (!newPlayer.finance_cooldowns) {
-        newPlayer.finance_cooldowns = {};
-    }
-    if (!newPlayer.poc_contracts) {
-        newPlayer.poc_contracts = [];
-    }
-    if (!newPlayer.industry_contracts) {
-        newPlayer.industry_contracts = [];
-    }
-    if (!newPlayer.rival_investments) {
-        newPlayer.rival_investments = {};
-    }
+    if (!newPlayer.finance_cooldowns) newPlayer.finance_cooldowns = {};
+    if (!newPlayer.poc_contracts) newPlayer.poc_contracts = [];
+    if (!newPlayer.industry_contracts) newPlayer.industry_contracts = [];
+    if (!newPlayer.rival_investments) newPlayer.rival_investments = {};
     
     // Junior人才加成計算
     const juniorCount = newPlayer.talent?.junior || 0;
     const juniorBonus = Math.min(juniorCount * 0.05, 0.25);
     const bonusMultiplier = 1 + juniorBonus;
+    
+    // 獲取信用評級資訊
+    const globalParams = params.globalParams || {};
+    const creditInfo = window.CreditEngine?.getCreditRatingInfo(newPlayer, globalParams) || {};
     
     // 查找行動配置
     let actionConfig = null;
@@ -45,7 +51,7 @@ function executeFinance(player, actionId, params = {}) {
         }
     }
     
-    if (!actionConfig || !actionId){
+    if (!actionConfig || !actionId) {
         return {
             success: false,
             player: player,
@@ -59,8 +65,8 @@ function executeFinance(player, actionId, params = {}) {
         return {
             success: false,
             player: player,
-            message: (actionConfig.name || actionId) + " 配置錯誤",
-            type: "danger"
+            message: (actionConfig.name || actionId) + ' 配置錯誤',
+            type: 'danger'
         };
     }
 
@@ -76,6 +82,10 @@ function executeFinance(player, actionId, params = {}) {
     
     // 執行財務行動
     switch (actionId) {
+        // ==========================================
+        // Tier 0 - 基礎行動
+        // ==========================================
+        
         case 'founderWork': {
             const effects = actionConfig.effects;
             const cashGain = effects.cash * bonusMultiplier;
@@ -90,7 +100,6 @@ function executeFinance(player, actionId, params = {}) {
         
         case 'pocContract': {
             const effects = actionConfig.effects;
-            // 安全取得收入值（支援兩種欄位名稱）
             const baseCash = effects.cash_per_quarter || effects.cash || 0;
             const incomePerQuarter = baseCash * bonusMultiplier;
             
@@ -165,385 +174,270 @@ function executeFinance(player, actionId, params = {}) {
                 };
             }
             
-            const debtReduction = juniorCount * 3; // Junior人才減免
-            const finalDebt = Math.max(0, effects.debt - debtReduction);
+            // 根據信用評級調整債務
+            const bondPremium = creditInfo.bondPremium || 0;
+            const baseDebt = effects.debt || (effects.cash * 1.5);
+            const actualDebt = baseDebt * (1 + bondPremium);
             
             newPlayer.cash += effects.cash;
-            newPlayer.debt += finalDebt;
+            newPlayer.debt = (newPlayer.debt || 0) + actualDebt;
             
-            message = `緊急貸款！現金 +$${effects.cash}M，債務 +$${finalDebt}M`;
+            message = `緊急貸款！現金 +$${effects.cash}M，債務 +$${actualDebt.toFixed(0)}M`;
             messageType = 'danger';
             break;
         }
         
-        case 'fundraise': {
-            const effects = actionConfig.effects;
-            const cashGain = effects.cash * bonusMultiplier;
+        case 'repayDebt': {
+            const repayAmount = params.amount || Math.min(newPlayer.cash, newPlayer.debt || 0);
             
-            newPlayer.cash += cashGain;
-            newPlayer.hype = (newPlayer.hype || 0) + effects.hype;
-            newPlayer.regulation = (newPlayer.regulation || 0) + effects.regulation;
-            newPlayer.stock_dilution = (newPlayer.stock_dilution || 1) * effects.stock_dilution;
+            if (repayAmount <= 0 || newPlayer.cash < repayAmount) {
+                return {
+                    success: false,
+                    player: player,
+                    message: '現金不足以償還債務',
+                    type: 'warning'
+                };
+            }
             
-            message = `融資成功！現金 +$${cashGain.toFixed(0)}M`;
+            if ((newPlayer.debt || 0) <= 0) {
+                return {
+                    success: false,
+                    player: player,
+                    message: '沒有需要償還的債務',
+                    type: 'info'
+                };
+            }
+            
+            const actualRepay = Math.min(repayAmount, newPlayer.debt);
+            newPlayer.cash -= actualRepay;
+            newPlayer.debt = Math.max(0, (newPlayer.debt || 0) - actualRepay);
+            
+            message = `償還債務 $${actualRepay.toFixed(0)}M，剩餘債務 $${newPlayer.debt.toFixed(0)}M`;
             messageType = 'success';
             break;
         }
+
+        // ==========================================
+        // Tier 1 - 債券類（整合信用評級）
+        // ==========================================
         
         case 'corporateBond': {
             const effects = actionConfig.effects;
             const cashGain = effects.cash * bonusMultiplier;
             
-            // 計算信用溢價
-            let bondPremium = 0;
-            const CreditEng = window.CreditEngine || {};
-            if (CreditEng.getCreditRatingInfo) {
-                const creditInfo = CreditEng.getCreditRatingInfo(newPlayer, params.globalParams);
-                bondPremium = creditInfo.bondPremium || 0;
-                if (creditInfo.junkBondOnly) {
-                    return {
-                        success: false,
-                        player: player,
-                        message: '信用評級過低，只能發行垃圾債券',
-                        type: 'warning'
-                    };
-                }
+            // 信用評級影響
+            const bondPremium = creditInfo.bondPremium || 0;
+            
+            if (creditInfo.junkBondOnly) {
+                return {
+                    success: false,
+                    player: player,
+                    message: '信用評級過低，只能發行垃圾債券',
+                    type: 'warning'
+                };
             }
             
             const actualDebt = effects.debt * (1 + bondPremium);
             newPlayer.cash += cashGain;
             newPlayer.debt = (newPlayer.debt || 0) + actualDebt;
             
-            const premiumText = bondPremium > 0 ? ' (含信用溢價)' : '';
-            message = '公司債發行！現金 +$' + cashGain.toFixed(0) + 'M，債務 +$' + actualDebt.toFixed(0) + 'M' + premiumText;
-            messageType = 'warning';
-            break;
-        }
-
-        case 'junkBond': {
-            const effects = actionConfig.effects;
-            const cashGain = effects.cash * bonusMultiplier;
-            
-            let bondPremium2 = 0;
-            const CreditEng2 = window.CreditEngine || {};
-            if (CreditEng2.getCreditRatingInfo) {
-                const creditInfo2 = CreditEng2.getCreditRatingInfo(newPlayer, params.globalParams);
-                bondPremium2 = (creditInfo2.bondPremium || 0) * 0.5;
-            }
-            
-            const actualDebt2 = effects.debt * (1 + bondPremium2);
-            newPlayer.cash += cashGain;
-            newPlayer.debt = (newPlayer.debt || 0) + actualDebt2;
-            newPlayer.hype = Math.max(0, (newPlayer.hype || 0) - 5);
-            
-            message = '垃圾債發行！現金 +$' + cashGain.toFixed(0) + 'M，債務 +$' + actualDebt2.toFixed(0) + 'M，Hype -5';
-            messageType = 'danger';
-            break;
-        }
-        
-
-        case 'absLoan': {
-            const effects = actionConfig.effects;
-            const absAmount = params.amount || 1;
-            const maxPflops = newPlayer.pflops - (newPlayer.locked_pflops || 0);
-            const actualAmount = Math.min(absAmount, maxPflops);
-            
-            if (actualAmount <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '沒有可用算力進行抵押',
-                    type: 'danger'
-                };
-            }
-            
-            const cashGain = actualAmount * effects.cash_per_pflops;
-            const debtGain = actualAmount * effects.debt_per_pflops;
-            
-            newPlayer.cash += cashGain;
-            newPlayer.debt = (newPlayer.debt || 0) + debtGain;
-            newPlayer.locked_pflops = (newPlayer.locked_pflops || 0) + actualAmount;
-            
-            message = `ABS貸款！現金 +$${cashGain.toFixed(0)}M，鎖定${actualAmount}PFLOPS`;
-            messageType = 'warning';
-            break;
-        }
-        
-        case 'ipo': {
-            if (newPlayer.is_public) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '公司已經上市',
-                    type: 'warning'
-                };
-            }
-            
-            const effects = actionConfig.effects;
-            
-            // 整合信用評級對IPO的影響
-            let ipoMultiplier = 1.0;
-            const CreditEngIPO = window.CreditEngine || {};
-            if (CreditEngIPO.getCreditRatingInfo) {
-                const creditInfoIPO = CreditEngIPO.getCreditRatingInfo(newPlayer, params.globalParams);
-                ipoMultiplier = creditInfoIPO.ipoMultiplier || 1.0;
-                if (!creditInfoIPO.canIPO || ipoMultiplier <= 0) {
-                    return {
-                        success: false,
-                        player: player,
-                        message: '信用評級過低（' + creditInfoIPO.rating + '），無法進行IPO',
-                        type: 'danger'
-                    };
-                }
-            }
-            
-            const ipoAmount = (newPlayer.market_cap || 500) * effects.cash_multiplier * ipoMultiplier * bonusMultiplier;
-            
-            newPlayer.cash += ipoAmount;
-            newPlayer.hype = (newPlayer.hype || 0) + effects.hype;
-            newPlayer.regulation = (newPlayer.regulation || 0) + (effects.regulation || 0);
-            newPlayer.is_public = true;
-            
-            const ratingBonus = ipoMultiplier > 1 ? ' (信用加成)' : (ipoMultiplier < 1 ? ' (信用折扣)' : '');
-            message = 'IPO上市成功！獲得 $' + ipoAmount.toFixed(0) + 'M' + ratingBonus + '，股票功能開啟！';
-            messageType = 'success';
-            break;
-        }
-        
-        case 'stockIssue': {
-            if (!newPlayer.is_public) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '公司尚未上市，無法增發新股',
-                    type: 'warning'
-                };
-            }
-            
-            const effects = actionConfig.effects;
-            const issueAmount = (newPlayer.market_cap || 500) * effects.cash_multiplier;
-            
-            newPlayer.cash += issueAmount;
-            newPlayer.stock_dilution = (newPlayer.stock_dilution || 1) * effects.stock_dilution;
-            newPlayer.hype = Math.max(0, (newPlayer.hype || 0) + effects.hype);
-            
-            message = `增發新股！現金 +$${issueAmount.toFixed(0)}M`;
-            messageType = 'success';
-            break;
-        }
-        
-        case 'stockBuyback': {
-            if (!newPlayer.is_public) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '公司尚未上市，無法回購股票',
-                    type: 'warning'
-                };
-            }
-            
-            const effects = actionConfig.effects;
-            if (newPlayer.cash < effects.cash_cost) {
-                return {
-                    success: false,
-                    player: player,
-                    message: `現金不足，需要 $${effects.cash_cost}M`,
-                    type: 'danger'
-                };
-            }
-            
-            const hypeBonus = juniorCount * 3;
-            
-            newPlayer.cash -= effects.cash_cost;
-            newPlayer.hype = (newPlayer.hype || 0) + effects.hype + hypeBonus;
-            newPlayer.stock_dilution = (newPlayer.stock_dilution || 1) * effects.stock_dilution;
-            
-            message = `股票回購！Hype +${effects.hype + hypeBonus}`;
+            const premiumText = bondPremium > 0 ? ` (含${(bondPremium * 100).toFixed(0)}%信用溢價)` : '';
+            message = `發行公司債！現金 +$${cashGain.toFixed(0)}M，債務 +$${actualDebt.toFixed(0)}M${premiumText}`;
             messageType = 'success';
             break;
         }
         
         case 'convertibleBond': {
-            if (!newPlayer.is_public) {
+            const effects = actionConfig.effects;
+            const cashGain = effects.cash * bonusMultiplier;
+            
+            if (actionConfig.requiresIPO && !newPlayer.is_public && !newPlayer.equity_state?.is_public) {
                 return {
                     success: false,
                     player: player,
-                    message: '公司尚未上市，無法發行可轉債',
+                    message: '需要先完成IPO才能發行可轉債',
                     type: 'warning'
                 };
             }
             
-            const effects = actionConfig.effects;
-            const cashGain = effects.cash * bonusMultiplier;
+            const bondPremium = creditInfo.bondPremium || 0;
+            const actualDebt = effects.debt * (1 + bondPremium * 0.7); // 可轉債溢價較低
             
             newPlayer.cash += cashGain;
-            newPlayer.debt = (newPlayer.debt || 0) + effects.debt;
-            newPlayer.stock_dilution = (newPlayer.stock_dilution || 1) * effects.stock_dilution;
+            newPlayer.debt = (newPlayer.debt || 0) + actualDebt;
             
-            message = `可轉債發行！現金 +$${cashGain.toFixed(0)}M`;
+            // 股權稀釋效果
+            if (effects.stock_dilution && newPlayer.equity_state) {
+                const dilutionPercent = (effects.stock_dilution - 1) * 100;
+                newPlayer.equity_state.founder_shares *= (2 - effects.stock_dilution);
+                newPlayer.equity_state = normalizeEquityShares(newPlayer.equity_state);
+            }
+            
+            message = `發行可轉債！現金 +$${cashGain.toFixed(0)}M，債務 +$${actualDebt.toFixed(0)}M`;
+            messageType = 'success';
+            break;
+        }
+        
+        case 'absLoan': {
+            const effects = actionConfig.effects;
+            const pflops = newPlayer.pflops || 0;
+            const availablePflops = pflops - (newPlayer.locked_pflops || 0);
+            
+            if (availablePflops <= 0) {
+                return {
+                    success: false,
+                    player: player,
+                    message: '沒有可用算力作為抵押',
+                    type: 'danger'
+                };
+            }
+            
+            const cashGain = availablePflops * effects.cash_per_pflops * bonusMultiplier;
+            const debtGain = availablePflops * effects.debt_per_pflops;
+            
+            newPlayer.cash += cashGain;
+            newPlayer.debt = (newPlayer.debt || 0) + debtGain;
+            newPlayer.locked_pflops = pflops; // 全部鎖定
+            
+            message = `ABS貸款！現金 +$${cashGain.toFixed(0)}M，債務 +$${debtGain.toFixed(0)}M`;
             messageType = 'warning';
             break;
         }
         
-        case 'acquisition': {
+        case 'junkBond': {
             const effects = actionConfig.effects;
-            const costReduction = juniorCount * 10;
-            const finalCost = Math.max(0, effects.cash_cost - costReduction);
+            const cashGain = effects.cash * bonusMultiplier;
             
-            if (newPlayer.cash < finalCost) {
-                return {
-                    success: false,
-                    player: player,
-                    message: `現金不足，需要 $${finalCost}M`,
-                    type: 'danger'
-                };
-            }
+            // 垃圾債的溢價計算
+            const bondPremium = creditInfo.bondPremium || 0;
+            const junkPremium = Math.max(bondPremium * 0.5, 0.2); // 垃圾債至少有20%溢價
+            const actualDebt = effects.debt * (1 + junkPremium);
             
-            newPlayer.cash -= finalCost;
-            newPlayer.model_power = (newPlayer.model_power || 0) + effects.mp_boost;
-            newPlayer.talent.senior = (newPlayer.talent.senior || 0) + effects.senior;
-            newPlayer.talent.junior = (newPlayer.talent.junior || 0) + effects.junior;
+            newPlayer.cash += cashGain;
+            newPlayer.debt = (newPlayer.debt || 0) + actualDebt;
+            newPlayer.hype = Math.max(0, (newPlayer.hype || 0) - 5);
             
-            message = `併購成功！MP +${effects.mp_boost}，獲得 ${effects.senior}名資深、${effects.junior}名初級人才`;
-            messageType = 'success';
+            message = `發行垃圾債券！現金 +$${cashGain.toFixed(0)}M，債務 +$${actualDebt.toFixed(0)}M ⚠️高風險`;
+            messageType = 'danger';
             break;
         }
+
+        // ==========================================
+        // Tier 2 - 股票類（委託給EquityEngine）
+        // ==========================================
         
-        case 'industryContract': {
+        case 'ipo': {
+            // 委託給股權引擎處理
+            if (window.EquityEngine?.executeIPO) {
+                const scale = params.scale || 'medium';
+                const pricing = params.pricing || 'low';
+                return window.EquityEngine.executeIPO(newPlayer, scale, pricing);
+            }
+            
+            // Fallback: 使用舊邏輯
             const effects = actionConfig.effects;
-            const revenueBonus = effects.revenue_bonus * bonusMultiplier;
+            const marketCap = newPlayer.market_cap || 100;
+            const ipoMultiplier = creditInfo.ipoMultiplier || 1;
+            const cashGain = marketCap * (effects.cash_multiplier || 0.25) * ipoMultiplier;
             
-            newPlayer.revenue_bonus = (newPlayer.revenue_bonus || 0) + revenueBonus;
-            newPlayer.trust = (newPlayer.trust || 0) + effects.trust;
+            newPlayer.cash += cashGain;
+            newPlayer.is_public = true;
+            newPlayer.hype = Math.min(100, (newPlayer.hype || 0) + (effects.hype || 0));
+            newPlayer.regulation = Math.min(100, (newPlayer.regulation || 0) + (effects.regulation || 0));
             
-            newPlayer.industry_contracts.push({
-                remaining: effects.duration,
-                bonus: revenueBonus
-            });
+            // 初始化股權狀態
+            if (!newPlayer.equity_state) {
+                newPlayer.equity_state = {
+                    founder_shares: 80,
+                    investor_shares: 0,
+                    public_shares: 20,
+                    is_public: true,
+                    stock_price: marketCap / 100,
+                    stock_price_history: [],
+                    total_dilution: 20,
+                    total_raised: cashGain
+                };
+            } else {
+                newPlayer.equity_state.is_public = true;
+                newPlayer.equity_state.public_shares = 20;
+                newPlayer.equity_state.founder_shares -= 20;
+            }
             
-            message = `產業合約簽訂！收入加成 +$${revenueBonus.toFixed(0)}M/季，持續${effects.duration}季`;
+            message = `IPO成功！募資 $${cashGain.toFixed(0)}M`;
             messageType = 'success';
             break;
         }
         
-        case 'repayDebt': {
-            const repayAmt = Math.min(params.amount || 0, newPlayer.cash, newPlayer.debt);
-            
-            if (repayAmt <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '無法償還債務，檢查金額、現金或債務',
-                    type: 'warning'
-                };
+        case 'stockIssue': {
+            // 委託給股權引擎處理
+            if (window.EquityEngine?.executeStockIssue) {
+                const size = params.size || 'small';
+                return window.EquityEngine.executeStockIssue(newPlayer, size);
             }
             
-            newPlayer.cash -= repayAmt;
-            newPlayer.debt -= repayAmt;
-            
-            // 償還債務時解鎖部分算力
-            if (newPlayer.locked_pflops > 0 && newPlayer.debt > 0) {
-                const unlock = Math.min(repayAmt / 20, newPlayer.locked_pflops);
-                newPlayer.locked_pflops = Math.max(0, newPlayer.locked_pflops - unlock);
+            // Fallback
+            if (!newPlayer.is_public && !newPlayer.equity_state?.is_public) {
+                return { success: false, player, message: '需要先完成IPO', type: 'warning' };
             }
             
-            message = `償還債務 $${repayAmt.toFixed(1)}M`;
+            const effects = actionConfig.effects;
+            const marketCap = newPlayer.market_cap || 100;
+            const stockMult = creditInfo.stockIssueMultiplier || 1;
+            const cashGain = marketCap * (effects.cash_multiplier || 0.12) * stockMult;
+            
+            newPlayer.cash += cashGain;
+            
+            if (newPlayer.equity_state) {
+                const dilution = 5;
+                newPlayer.equity_state.founder_shares = Math.max(10, newPlayer.equity_state.founder_shares - dilution);
+                newPlayer.equity_state.public_shares += dilution;
+            }
+            
+            message = `增發新股！募資 $${cashGain.toFixed(0)}M`;
             messageType = 'success';
             break;
         }
         
-        case 'buyPflops': {
-            const quantity = params.quantity || 0;
-            if (quantity <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '請指定購買數量',
-                    type: 'warning'
-                };
+        case 'stockBuyback': {
+            // 委託給股權引擎處理
+            if (window.EquityEngine?.executeStockBuyback) {
+                const size = params.size || 'small';
+                return window.EquityEngine.executeStockBuyback(newPlayer, size);
             }
             
-            const cost = quantity * COSTS.PFLOPS_UNIT_PRICE * (globalParams?.P_GPU || 1);
+            // Fallback
+            if (!newPlayer.is_public && !newPlayer.equity_state?.is_public) {
+                return { success: false, player, message: '需要先完成IPO', type: 'warning' };
+            }
+            
+            const effects = actionConfig.effects;
+            const cost = effects.cash_cost || 80;
+            
             if (newPlayer.cash < cost) {
-                return {
-                    success: false,
-                    player: player,
-                    message: `現金不足，需要 $${cost.toFixed(1)}M`,
-                    type: 'danger'
-                };
+                return { success: false, player, message: `現金不足，需要 $${cost}M`, type: 'danger' };
             }
             
             newPlayer.cash -= cost;
-            newPlayer.pflops += quantity;
+            newPlayer.hype = Math.min(100, (newPlayer.hype || 0) + (effects.hype || 0));
             
-            message = `採購 ${quantity} PFLOPS！`;
+            if (newPlayer.equity_state) {
+                const buyback = 2;
+                newPlayer.equity_state.public_shares = Math.max(0, newPlayer.equity_state.public_shares - buyback);
+                newPlayer.equity_state.founder_shares += buyback;
+            }
+            
+            message = `股票回購！花費 $${cost}M，Hype +${effects.hype || 0}`;
             messageType = 'success';
             break;
         }
+
+        // ==========================================
+        // Tier 3 - 商業功能
+        // ==========================================
         
-        case 'rentCloud': {
-            const quantity = params.quantity || 0;
-            if (quantity <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '請指定租賃數量',
-                    type: 'warning'
-                };
-            }
-            
-            newPlayer.cloud_pflops += quantity;
-            message = `租賃雲端算力 +${quantity} PFLOPS`;
-            messageType = 'info';
-            break;
-        }
-        
-        case 'sellPflops': {
-            const quantity = params.quantity || 0;
-            if (quantity <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '請指定出售數量',
-                    type: 'warning'
-                };
-            }
-            
-            const sellable = newPlayer.pflops - (newPlayer.locked_pflops || 0) - 
-                           (newPlayer.rented_pflops_contracts?.reduce((s, c) => s + c.amount, 0) || 0);
-            const qty = Math.min(quantity, sellable);
-            
-            if (qty <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '沒有可出售的算力',
-                    type: 'warning'
-                };
-            }
-            
-            const gain = qty * COSTS.PFLOPS_UNIT_PRICE * COSTS.PFLOPS_RESALE_RATE;
-            newPlayer.cash += gain;
-            newPlayer.pflops -= qty;
-            
-            message = `出售 ${qty} PFLOPS，獲得 $${gain.toFixed(1)}M`;
-            messageType = 'success';
-            break;
-        }
-        
-        case 'hireTalent': {
-            const type = params.type;
-            if (!['turing', 'senior', 'junior'].includes(type)) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '無效的人才類型',
-                    type: 'danger'
-                };
-            }
-            
-            const costs = { turing: 50, senior: 10, junior: 2 };
-            const cost = costs[type];
+        case 'acquisition': {
+            const effects = actionConfig.effects;
+            const cost = effects.cash_cost || 120;
             
             if (newPlayer.cash < cost) {
                 return {
@@ -555,101 +449,74 @@ function executeFinance(player, actionId, params = {}) {
             }
             
             newPlayer.cash -= cost;
-            newPlayer.talent[type] = (newPlayer.talent[type] || 0) + 1;
+            newPlayer.model_power = (newPlayer.model_power || 0) + (effects.mp_boost || 0);
             
-            message = `招聘 ${type} +1`;
+            if (!newPlayer.talent) newPlayer.talent = {};
+            newPlayer.talent.senior = (newPlayer.talent.senior || 0) + (effects.senior || 0);
+            newPlayer.talent.junior = (newPlayer.talent.junior || 0) + (effects.junior || 0);
+            
+            message = `併購成功！MP +${effects.mp_boost || 0}，獲得人才`;
+            messageType = 'success';
+            break;
+        }
+        
+        case 'industryContract': {
+            const effects = actionConfig.effects;
+            
+            // 檢查可用算力
+            const availablePflops = newPlayer.pflops - (newPlayer.locked_pflops || 0);
+            if (availablePflops < (effects.pflops_lock || 0)) {
+                return {
+                    success: false,
+                    player: player,
+                    message: `可用算力不足，需要 ${effects.pflops_lock} PFLOPS`,
+                    type: 'danger'
+                };
+            }
+            
+            const incomePerQuarter = (effects.cash_per_quarter || 25) * bonusMultiplier;
+            
+            newPlayer.industry_contracts.push({
+                remaining: effects.duration || 6,
+                bonus: incomePerQuarter
+            });
+            newPlayer.revenue_bonus = (newPlayer.revenue_bonus || 0) + incomePerQuarter;
+            newPlayer.locked_pflops = (newPlayer.locked_pflops || 0) + (effects.pflops_lock || 0);
+            
+            message = `簽訂產業合約！每季收入 +$${incomePerQuarter.toFixed(0)}M，持續${effects.duration || 6}季`;
+            messageType = 'success';
+            break;
+        }
+        
+        case 'licensingDeal': {
+            const effects = actionConfig.effects;
+            const cashGain = effects.cash * bonusMultiplier;
+            
+            newPlayer.cash += cashGain;
+            newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + (effects.trust || 0));
+            
+            message = `技術授權成功！現金 +$${cashGain.toFixed(0)}M，信任度 +${effects.trust || 0}`;
             messageType = 'success';
             break;
         }
         
         // ==========================================
-        // 統一數據購買（整合 buyHighData/buyLowData）
+        // 戰略融資（委託給EquityEngine）
         // ==========================================
-        case 'buyHighData':
-        case 'buyLowData':
-        case 'buyDataByType': {
-            const DataConfig = window.DataConfig;
-            const quantity = params.quantity || 0;
-            
-            // 兼容舊 action
-            let dataType = params.dataType;
-            if (actionId === 'buyHighData' && !dataType) {
-                dataType = 'legal_high_broad';
-            } else if (actionId === 'buyLowData' && !dataType) {
-                dataType = 'legal_low';
+        
+        case 'strategicFunding': {
+            if (window.EquityEngine?.executeStrategicFunding) {
+                const fundingType = params.fundingType;
+                const investorProfile = params.investorProfile || 'tech_vc';
+                return window.EquityEngine.executeStrategicFunding(newPlayer, fundingType, investorProfile);
             }
             
-            if (!dataType || quantity <= 0) {
-                return {
-                    success: false,
-                    player: player,
-                    message: '請指定有效的數據類型和數量',
-                    type: 'warning'
-                };
-            }
-            
-            // 獲取數據類型配置
-            const typeConfig = DataConfig?.DATA_TYPES?.[dataType];
-            if (!typeConfig) {
-                return {
-                    success: false,
-                    player: player,
-                    message: `未知的數據類型: ${dataType}`,
-                    type: 'danger'
-                };
-            }
-            
-            // 只允許購買合法數據
-            if (typeConfig.compliance !== 'legal') {
-                return {
-                    success: false,
-                    player: player,
-                    message: '只能購買合規數據，灰色數據需透過爬蟲獲取',
-                    type: 'warning'
-                };
-            }
-            
-            // 計算價格
-            let unitPrice = typeConfig.base_price;
-            if (unitPrice === undefined) {
-                unitPrice = (typeConfig.quality === 'high') ? COSTS.HIGH_DATA_UNIT_PRICE : COSTS.LOW_DATA_UNIT_PRICE;
-            }
-            const cost = quantity * unitPrice;
-            
-            if (newPlayer.cash < cost) {
-                return {
-                    success: false,
-                    player: player,
-                    message: `現金不足，需要 $${cost.toFixed(1)}M`,
-                    type: 'danger'
-                };
-            }
-            
-            newPlayer.cash -= cost;
-            
-            // 更新數據存儲
-            if (!newPlayer.data_inventory) {
-                newPlayer.data_inventory = {};
-            }
-            newPlayer.data_inventory[dataType] = (newPlayer.data_inventory[dataType] || 0) + quantity;
-            
-            // 同步到舊字段並處理副作用
-            if (typeConfig.quality === 'high') {
-                newPlayer.high_data = (newPlayer.high_data || 0) + quantity;
-                const trustGain = 1 * (quantity / 50);
-                const riskGain = 3 * (quantity / 100);
-                newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + trustGain);
-                newPlayer.compliance_risk = Math.min(100, (newPlayer.compliance_risk || 0) + riskGain);
-                message = `採購 ${typeConfig.name} +${quantity}，信任度+${trustGain.toFixed(1)}`;
-            } else {
-                newPlayer.low_data = (newPlayer.low_data || 0) + quantity;
-                const entropyGain = 2 * (quantity / 100);
-                newPlayer.entropy = Math.min(100, (newPlayer.entropy || 0) + entropyGain);
-                message = `採購 ${typeConfig.name} +${quantity}，熵值+${entropyGain.toFixed(1)}`;
-            }
-            
-            messageType = 'success';
-            break;
+            return {
+                success: false,
+                player: player,
+                message: '股權引擎未載入',
+                type: 'danger'
+            };
         }
         
         default:
@@ -673,6 +540,25 @@ function executeFinance(player, actionId, params = {}) {
         type: messageType,
         actionId: actionId,
         cooldown: actionConfig.cooldown || 0
+    };
+}
+
+/**
+ * 正規化股權比例（確保總和100%）
+ */
+function normalizeEquityShares(equityState) {
+    const total = equityState.founder_shares + 
+                 equityState.investor_shares + 
+                 equityState.public_shares;
+    
+    if (Math.abs(total - 100) < 0.01) return equityState;
+    
+    const factor = 100 / total;
+    return {
+        ...equityState,
+        founder_shares: Math.round(equityState.founder_shares * factor * 10) / 10,
+        investor_shares: Math.round(equityState.investor_shares * factor * 10) / 10,
+        public_shares: Math.round(equityState.public_shares * factor * 10) / 10
     };
 }
 
@@ -765,6 +651,241 @@ function processQuarterlyContracts(player) {
 }
 
 // ============================================
+// 利息計算函數
+// ============================================
+
+/**
+ * 計算並扣除季度利息
+ * @param {Object} player - 玩家狀態
+ * @param {Object} globalParams - 全球參數
+ * @returns {Object} 包含利息金額和更新後狀態
+ */
+function processQuarterlyInterest(player, globalParams) {
+    const newPlayer = JSON.parse(JSON.stringify(player));
+    const debt = newPlayer.debt || 0;
+    
+    if (debt <= 0) {
+        return { player: newPlayer, interest: 0, message: null };
+    }
+    
+    // 獲取動態利率
+    let interestRate = 0.05; // 預設5%
+    if (window.CreditEngine?.calculateDynamicInterestRate) {
+        const rateInfo = window.CreditEngine.calculateDynamicInterestRate(newPlayer, globalParams);
+        interestRate = rateInfo.rate || 0.05;
+    }
+    
+    const interest = debt * interestRate;
+    newPlayer.cash -= interest;
+    
+    // 更新玩家的利率記錄
+    newPlayer.credit_interest_rate = interestRate;
+    
+    return {
+        player: newPlayer,
+        interest: interest,
+        rate: interestRate,
+        message: `債務利息: -$${interest.toFixed(1)}M (利率 ${(interestRate * 100).toFixed(1)}%)`
+    };
+}
+
+// ============================================
+// 財務狀態檢查函數
+// ============================================
+
+/**
+ * 檢查財務健康狀態
+ * @param {Object} player - 玩家狀態
+ * @param {Object} globalParams - 全球參數
+ * @returns {Object} 財務健康報告
+ */
+function checkFinancialHealth(player, globalParams) {
+    const debt = player.debt || 0;
+    const cash = player.cash || 0;
+    const marketCap = Math.max(100, player.market_cap || 100);
+    const debtRatio = debt / marketCap;
+    
+    const report = {
+        debtRatio: debtRatio,
+        debtRatioPercent: (debtRatio * 100).toFixed(1),
+        cash: cash,
+        debt: debt,
+        runway: 0,
+        status: 'healthy',
+        warnings: [],
+        crisisLevel: null
+    };
+    
+    // 估算燒錢率
+    const quarterlyBurn = window.CreditEngine?.estimateQuarterlyBurn?.(player) || 10;
+    report.runway = quarterlyBurn > 0 ? Math.floor(cash / quarterlyBurn) : 99;
+    
+    // 檢查危機等級
+    const crisisConfig = window.CreditConfig?.DEBT_CRISIS || {
+        warningRatio: 0.8,
+        criticalRatio: 1.2,
+        defaultRatio: 1.5
+    };
+    
+    if (debtRatio >= crisisConfig.defaultRatio) {
+        report.status = 'default';
+        report.crisisLevel = 'default';
+        report.warnings.push('💀 技術性違約！公司面臨重組或破產');
+    } else if (debtRatio >= crisisConfig.criticalRatio) {
+        report.status = 'critical';
+        report.crisisLevel = 'critical';
+        report.warnings.push('🚨 債務危機！債權人施壓，營運受限');
+    } else if (debtRatio >= crisisConfig.warningRatio) {
+        report.status = 'warning';
+        report.crisisLevel = 'warning';
+        report.warnings.push('⚠️ 債務水平偏高，信用評級可能下調');
+    }
+    
+    // 檢查現金流
+    if (report.runway <= 1) {
+        report.warnings.push('💸 現金即將耗盡！');
+    } else if (report.runway <= 3) {
+        report.warnings.push('⚠️ 現金流緊張');
+    }
+    
+    // 獲取信用評級
+    if (window.CreditEngine?.getCreditRatingInfo) {
+        const creditInfo = window.CreditEngine.getCreditRatingInfo(player, globalParams);
+        report.creditRating = creditInfo.rating;
+        report.creditScore = creditInfo.score;
+    }
+    
+    return report;
+}
+
+// ============================================
+// 可用財務行動檢查
+// ============================================
+
+/**
+ * 獲取當前可用的財務行動列表
+ * @param {Object} player - 玩家狀態
+ * @param {Object} globalParams - 全球參數
+ * @returns {Array} 可用行動列表
+ */
+function getAvailableFinanceActions(player, globalParams) {
+    const config = window.GameConfig || (typeof GameConfig !== 'undefined' ? GameConfig : null);
+    const FINANCE_ACTIONS = config?.FINANCE_ACTIONS || {};
+    const mpTier = player.mp_tier || 0;
+    const isPublic = player.is_public || player.equity_state?.is_public || false;
+    const cooldowns = player.finance_cooldowns || {};
+    const creditInfo = window.CreditEngine?.getCreditRatingInfo?.(player, globalParams) || {};
+    
+    const available = [];
+    
+    // Tier 0 行動（始終可用）
+    if (FINANCE_ACTIONS.tier0) {
+        Object.entries(FINANCE_ACTIONS.tier0).forEach(([id, action]) => {
+            const isOnCooldown = (cooldowns[id] || 0) > 0;
+            let canUse = !isOnCooldown;
+            let reason = isOnCooldown ? `冷卻中 (${cooldowns[id]}回合)` : null;
+            
+            // 特殊條件檢查
+            if (id === 'emergencyLoan' && player.cash > 30) {
+                canUse = false;
+                reason = '現金需低於$30M';
+            }
+            
+            available.push({
+                ...action,
+                tier: 0,
+                available: canUse,
+                reason: reason,
+                cooldown: cooldowns[id] || 0
+            });
+        });
+    }
+    
+    // Tier 1 行動（需要一定發展）
+    if (FINANCE_ACTIONS.tier1 && mpTier >= 1) {
+        Object.entries(FINANCE_ACTIONS.tier1).forEach(([id, action]) => {
+            const isOnCooldown = (cooldowns[id] || 0) > 0;
+            let canUse = !isOnCooldown;
+            let reason = isOnCooldown ? `冷卻中 (${cooldowns[id]}回合)` : null;
+            
+            // 信用評級限制
+            if (id === 'corporateBond' && creditInfo.junkBondOnly) {
+                canUse = false;
+                reason = '信用評級過低';
+            }
+            
+            // IPO 要求
+            if (action.requiresIPO && !isPublic) {
+                canUse = false;
+                reason = '需要先完成IPO';
+            }
+            
+            available.push({
+                ...action,
+                tier: 1,
+                available: canUse,
+                reason: reason,
+                cooldown: cooldowns[id] || 0
+            });
+        });
+    }
+    
+    // Tier 2 行動
+    if (FINANCE_ACTIONS.tier2 && mpTier >= 2) {
+        Object.entries(FINANCE_ACTIONS.tier2).forEach(([id, action]) => {
+            const isOnCooldown = (cooldowns[id] || 0) > 0;
+            let canUse = !isOnCooldown;
+            let reason = isOnCooldown ? `冷卻中 (${cooldowns[id]}回合)` : null;
+            
+            // IPO 特殊處理
+            if (id === 'ipo') {
+                if (isPublic) {
+                    canUse = false;
+                    reason = '已完成IPO';
+                } else {
+                    const eligibility = window.EquityEngine?.checkIPOEligibility?.(player) || { canIPO: false, reasons: ['引擎未載入'] };
+                    canUse = eligibility.canIPO;
+                    reason = eligibility.reasons?.[0] || null;
+                }
+            }
+            
+            // IPO 後才能用的行動
+            if (action.requiresIPO && !isPublic) {
+                canUse = false;
+                reason = '需要先完成IPO';
+            }
+            
+            available.push({
+                ...action,
+                tier: 2,
+                available: canUse,
+                reason: reason,
+                cooldown: cooldowns[id] || 0
+            });
+        });
+    }
+    
+    // Tier 3 行動
+    if (FINANCE_ACTIONS.tier3 && mpTier >= 3) {
+        Object.entries(FINANCE_ACTIONS.tier3).forEach(([id, action]) => {
+            const isOnCooldown = (cooldowns[id] || 0) > 0;
+            let canUse = !isOnCooldown;
+            let reason = isOnCooldown ? `冷卻中 (${cooldowns[id]}回合)` : null;
+            
+            available.push({
+                ...action,
+                tier: 3,
+                available: canUse,
+                reason: reason,
+                cooldown: cooldowns[id] || 0
+            });
+        });
+    }
+    
+    return available;
+}
+
+// ============================================
 // 財務引擎自我註冊
 // ============================================
 
@@ -776,7 +897,10 @@ function processQuarterlyContracts(player) {
         executeFinance,
         updateFinanceCooldowns,
         processQuarterlyContracts,
-
+        processQuarterlyInterest,
+        checkFinancialHealth,
+        getAvailableFinanceActions,
+        normalizeEquityShares
     };
     
     // 如果 GameEngine 已存在，也掛載到 GameEngine
@@ -784,6 +908,7 @@ function processQuarterlyContracts(player) {
         window.GameEngine.executeFinance = executeFinance;
         window.GameEngine.updateFinanceCooldowns = updateFinanceCooldowns;
         window.GameEngine.processQuarterlyContracts = processQuarterlyContracts;
+        window.GameEngine.processQuarterlyInterest = processQuarterlyInterest;
     }
     
     console.log('✓ Finance Engine loaded');
