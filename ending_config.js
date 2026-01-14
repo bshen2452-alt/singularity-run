@@ -260,17 +260,15 @@ const EndingConfig = (function() {
                 victory: false,
                 priority: 8,
                 check: (player) => {
-                    // 滿足：Tier 1、多模態路線、低對齊值、低熵值（缺乏創造性）、且遊戲已進行一定回合
+                    // 滿足：Tier 1、低對齊值、低熵值（缺乏創造性）、且遊戲已進行一定回合
                     return player.mp_tier === 1 &&
-                        player.route === 'Multimodal' &&
                         player.alignment < 10 &&
                         player.entropy < 40 &&
                         player.turn_count > 12;
                 },
                 warning: (player) => {
                     // 預警條件：當對齊值過低且接近目標回合數時
-                    if (player.mp_tier === 1 && 
-                        player.route === 'Multimodal' && 
+                    if (player.mp_tier === 1 &&
                         player.alignment < 15 && 
                         player.turn_count > 8) {
                         return {
