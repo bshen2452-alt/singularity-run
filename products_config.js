@@ -268,7 +268,7 @@ const ProductConfig = {
                         description: "文字轉圖像AI產品",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
-                        effects: { community: 150, hype: 15, trust: 3, revenue_base: 6 },
+                        effects: { community: 150, hype: 15, revenue_base: 6 },
                         risks: { entropy: 3, compliance_risk: 8 },
                         requiresTuring: false,
                         requiresSenior: true
@@ -281,7 +281,7 @@ const ProductConfig = {
                         description: "AI生成互動文本，提供情緒價值",
                         devCost: { cash: 35, data: 120 },
                         devTurns: 2,
-                        effects: { community: 80, hype: 10, revenue_base: 7 },
+                        effects: { community: 80, trust: 10, revenue_base: 7 },
                         risks: { compliance_risk: 5 },
                         requiresTuring: true,
                         requiresSenior: true
@@ -312,7 +312,7 @@ const ProductConfig = {
                         description: "理解劇本邏輯的自主剪輯工具",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
-                        effects: { community: 600, hype: 30, trust: 8, revenue_base: 18 },
+                        effects: { community: 600, hype: 30, revenue_base: 18 },
                         risks: { entropy: 8, compliance_risk: 12 },
                         requiresTuring: false,
                         requiresSenior: true
@@ -325,7 +325,7 @@ const ProductConfig = {
                         description: "精確判讀人類微表情與潛台詞",
                         devCost: { cash: 50, data: 180 },
                         devTurns: 3,
-                        effects: { community: 200, hype: 20, revenue_bonus: 15 },
+                        effects: { community: 200, true: 20, revenue_bonus: 15 },
                         risks: { compliance_risk: 10 },
                         requiresTuring: true,
                         requiresSenior: true
@@ -338,7 +338,7 @@ const ProductConfig = {
                         description: "預測化學反應與物理實驗結果，減少實體實驗",
                         devCost: { cash: 70, data: 220 },
                         devTurns: 4,
-                        effects: { community: 100, revenue_base: 22, trust: 5 },
+                        effects: { community: 100, revenue_base: 22, trust: 15 },
                         risks: { compliance_risk: 6 },
                         requiresTuring: true,
                         requiresSenior: true
@@ -356,7 +356,7 @@ const ProductConfig = {
                         description: "AI 自主經營虛擬偶像",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
-                        effects: { community: 2500, hype: 50, trust: 12, revenue_base: 45 },
+                        effects: { community: 2500, hype: 50, revenue_base: 45 },
                         risks: { entropy: 12, compliance_risk: 18, regulation: 8 },
                         requiresTuring: false,
                         requiresSenior: true
@@ -369,7 +369,7 @@ const ProductConfig = {
                         description: "在社群平台自主調節衝突、引導輿論的 AI 代理",
                         devCost: { cash: 90, data: 280 },
                         devTurns: 4,
-                        effects: { community: 400, hype: 25, revenue_base: 28 },
+                        effects: { community: 400, trust: 35, revenue_base: 28 },
                         risks: { compliance_risk: 8 },
                         requiresTuring: true,
                         requiresSenior: true
@@ -382,7 +382,7 @@ const ProductConfig = {
                         description: "AI 自主設計、營運實體實驗",
                         devCost: { cash: 110, data: 350 },
                         devTurns: 5,
-                        effects: { revenue_bonus: 35, trust: -8 },
+                        effects: { revenue_bonus: 35, trust: 28 },
                         risks: { compliance_risk: 15, regulation: 12 },
                         requiresTuring: true,
                         requiresSenior: true
@@ -413,7 +413,7 @@ const ProductConfig = {
                         description: "透由 AI 對人性的洞察，引導人類社會和諧",
                         devCost: { cash: 180, data: 450 },
                         devTurns: 5,
-                        effects: { revenue_base: 70, hype: 40, community: 2000 },
+                        effects: { revenue_base: 70, trust: 40, community: 2000 },
                         risks: { compliance_risk: 18 },
                         requiresTuring: true,
                         requiresSenior: true
@@ -426,7 +426,7 @@ const ProductConfig = {
                         description: "AI 自行探索研究、發現人類未知的守則與技術",
                         devCost: { cash: 200, data: 500 },
                         devTurns: 6,
-                        effects: { trust: 25, alignment: 15 },
+                        effects: { trust: 30, alignment: 15 },
                         risks: { entropy: 18, regulation: 20 },
                         requiresTuring: true,
                         requiresSenior: true
