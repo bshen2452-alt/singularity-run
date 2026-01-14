@@ -175,57 +175,217 @@ const EquityUI = {
     // 私有公司區塊（IPO前）
     // ==========================================
 
+
     renderPrivateCompanySection(player, onAction) {
         const engine = window.EquityEngine;
         const eligibility = engine?.checkIPOEligibility(player) || { canIPO: false, reasons: [] };
-        const fundingOptions = engine?.getAvailableFundingOptions(player) || [];
+        const fundingResult = engine?.getAvailableFundingOptions(player) || { fundingRounds: [], strategicInvestment: null };
+        const { fundingRounds, strategicInvestment } = fundingResult;
+        
+        // 計算已完成的輪次
+        const completedRounds = player.equity_state?.funding_rounds || [];
+        const completedRoundIds = completedRounds.filter(r => r.type !== 'strategic').map(r => r.type);
 
         return React.createElement('div', { className: 'private-company-section' },
-            // 融資選項
+
+            // ==========================================
+            // 輪次融資區塊（一次性：種子→A輪→B輪）
+            // ==========================================
             React.createElement('div', {
                 style: {
                     marginBottom: '1rem',
                     padding: '1rem',
-                    background: 'rgba(255,213,0,0.1)',
+                    background: 'rgba(0,245,255,0.05)',
                     borderRadius: '8px',
-                    border: '1px solid rgba(255,213,0,0.3)'
+                    border: '1px solid rgba(0,245,255,0.2)'
+                }
+            },
+                React.createElement('h4', { 
+                    style: { margin: '0 0 0.75rem 0', color: 'var(--accent-cyan)' }
+                }, '📊 輪次融資'),
+                
+                // 進度顯示
+                React.createElement('div', {
+                    style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        marginBottom: '0.75rem',
+                        padding: '0.5rem',
+                        background: 'rgba(255,255,255,0.03)',
+                        borderRadius: '4px',
+                        fontSize: '0.85rem'
+                    }
+                },
+                    ['seed', 'series_a', 'series_b'].map((roundId, idx) => {
+                        const isCompleted = completedRoundIds.includes(roundId);
+                        const roundNames = { seed: '種子輪', series_a: 'A輪', series_b: 'B輪' };
+                        return React.createElement(React.Fragment, { key: roundId },
+                            idx > 0 && React.createElement('span', { 
+                                style: { color: 'var(--text-secondary)' }
+                            }, '→'),
+                            React.createElement('span', {
+                                style: {
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    background: isCompleted ? 'var(--accent-green)' : 'rgba(255,255,255,0.05)',
+                                    color: isCompleted ? '#000' : 'var(--text-secondary)',
+                                    fontWeight: isCompleted ? 'bold' : 'normal'
+                                }
+                            }, isCompleted ? `✓ ${roundNames[roundId]}` : roundNames[roundId])
+                        );
+                    })
+                ),
+                
+                // 下一個可用輪次
+                fundingRounds.length > 0 
+                    ? fundingRounds.map(opt => 
+                        React.createElement('button', {
+                            key: opt.id,
+                            className: 'funding-btn',
+                            disabled: !opt.available,
+                            style: {
+                                display: 'block',
+                                width: '100%',
+                                padding: '0.75rem',
+                                marginBottom: '0.5rem',
+                                background: opt.available ? 'rgba(0,245,255,0.1)' : 'rgba(255,255,255,0.02)',
+                                border: `1px solid ${opt.available ? 'var(--accent-cyan)' : 'rgba(255,255,255,0.1)'}`,
+                                borderRadius: '4px',
+                                color: opt.available ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                cursor: opt.available ? 'pointer' : 'not-allowed',
+                                textAlign: 'left',
+                                opacity: opt.available ? 1 : 0.6
+                            },
+                            onClick: () => opt.available && onAction('openFundingModal', { fundingType: opt.id })
+                        },
+                            React.createElement('div', { 
+                                style: { 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }
+                            },
+                                React.createElement('span', { style: { fontWeight: 'bold' } }, 
+                                    `🎯 ${opt.name}`),
+                                React.createElement('span', { 
+                                    style: { 
+                                        fontSize: '0.8rem',
+                                        padding: '0.2rem 0.5rem',
+                                        background: 'rgba(0,245,255,0.2)',
+                                        borderRadius: '4px'
+                                    }
+                                }, '一次性')
+                            ),
+                            React.createElement('div', { 
+                                style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }
+                            }, opt.description),
+                            React.createElement('div', { 
+                                style: { fontSize: '0.8rem', color: 'var(--accent-green)', marginTop: '0.25rem' }
+                            }, `$${opt.cash_range[0]}-${opt.cash_range[1]}M | 稀釋 ${opt.dilution_range[0]}-${opt.dilution_range[1]}%`),
+                            !opt.available && opt.unavailable_reason && React.createElement('div', {
+                                style: { fontSize: '0.75rem', color: 'var(--accent-yellow)', marginTop: '0.25rem' }
+                            }, `⚠ ${opt.unavailable_reason}`)
+                        )
+                    )
+                    : completedRoundIds.length >= 3
+                        ? React.createElement('div', { 
+                            style: { 
+                                color: 'var(--accent-green)', 
+                                fontSize: '0.9rem',
+                                padding: '0.5rem',
+                                background: 'rgba(0,255,136,0.1)',
+                                borderRadius: '4px',
+                                textAlign: 'center'
+                            }
+                        }, '✓ 所有輪次融資已完成')
+                        : React.createElement('div', { 
+                            style: { color: 'var(--text-secondary)', fontSize: '0.9rem' }
+                        }, '尚未滿足下一輪融資條件')
+            ),
+
+            // ==========================================
+            // 戰略投資區塊（可重複）
+            // ==========================================
+            React.createElement('div', {
+                style: {
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    background: 'rgba(255,213,0,0.05)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,213,0,0.2)'
                 }
             },
                 React.createElement('h4', { 
                     style: { margin: '0 0 0.5rem 0', color: 'var(--accent-yellow)' }
-                }, '🏦 戰略融資'),
+                }, '🏦 戰略投資'),
                 
-                fundingOptions.length > 0 
-                    ? fundingOptions.map(opt => 
-                        React.createElement('button', {
-                            key: opt.id,
-                            className: 'funding-btn',
-                            style: {
-                                display: 'block',
-                                width: '100%',
-                                padding: '0.5rem',
-                                marginBottom: '0.5rem',
-                                background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '4px',
-                                color: 'var(--text-primary)',
-                                cursor: 'pointer',
-                                textAlign: 'left'
-                            },
-                            onClick: () => onAction('openFundingModal', { fundingType: opt.id })
+                strategicInvestment 
+                    ? React.createElement('button', {
+                        className: 'funding-btn strategic',
+                        disabled: !strategicInvestment.available,
+                        style: {
+                            display: 'block',
+                            width: '100%',
+                            padding: '0.75rem',
+                            background: strategicInvestment.available 
+                                ? 'rgba(255,213,0,0.1)' 
+                                : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${strategicInvestment.available 
+                                ? 'var(--accent-yellow)' 
+                                : 'rgba(255,255,255,0.1)'}`,
+                            borderRadius: '4px',
+                            color: strategicInvestment.available 
+                                ? 'var(--text-primary)' 
+                                : 'var(--text-secondary)',
+                            cursor: strategicInvestment.available ? 'pointer' : 'not-allowed',
+                            textAlign: 'left',
+                            opacity: strategicInvestment.available ? 1 : 0.6
                         },
-                            React.createElement('div', { style: { fontWeight: 'bold' } }, opt.name),
-                            React.createElement('div', { 
-                                style: { fontSize: '0.8rem', color: 'var(--text-secondary)' }
-                            }, `$${opt.cash_range[0]}-${opt.cash_range[1]}M | 稀釋 ${opt.dilution_range[0]}-${opt.dilution_range[1]}%`)
-                        )
+                        onClick: () => strategicInvestment.available && 
+                            onAction('openFundingModal', { fundingType: 'strategic' })
+                    },
+                        React.createElement('div', { 
+                            style: { 
+                                display: 'flex', 
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }
+                        },
+                            React.createElement('span', { style: { fontWeight: 'bold' } }, 
+                                strategicInvestment.name),
+                            React.createElement('span', { 
+                                style: { 
+                                    fontSize: '0.8rem',
+                                    padding: '0.2rem 0.5rem',
+                                    background: 'rgba(255,213,0,0.2)',
+                                    borderRadius: '4px'
+                                }
+                            }, `🔄 可重複 (CD: ${strategicInvestment.cooldown || 2}回合)`)
+                        ),
+                        React.createElement('div', { 
+                            style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }
+                        }, strategicInvestment.description),
+                        React.createElement('div', { 
+                            style: { fontSize: '0.8rem', color: 'var(--accent-green)', marginTop: '0.25rem' }
+                        }, `$${strategicInvestment.cash_range[0]}-${strategicInvestment.cash_range[1]}M | 稀釋 ${strategicInvestment.dilution_range[0]}-${strategicInvestment.dilution_range[1]}%`),
+                        !strategicInvestment.available && strategicInvestment.unavailable_reason && 
+                            React.createElement('div', {
+                                style: { 
+                                    fontSize: '0.75rem', 
+                                    color: 'var(--accent-yellow)', 
+                                    marginTop: '0.25rem' 
+                                }
+                            }, `⚠ ${strategicInvestment.unavailable_reason}`)
                     )
                     : React.createElement('div', { 
                         style: { color: 'var(--text-secondary)', fontSize: '0.9rem' }
-                    }, '目前無可用融資選項')
+                    }, '戰略投資功能尚未解鎖')
             ),
 
+            // ==========================================
             // IPO 按鈕
+            // ==========================================
             React.createElement('div', {
                 style: {
                     padding: '1rem',

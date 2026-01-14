@@ -214,7 +214,12 @@
                     return this.executeStrategy(player, actionId, globalParams, params);
                 
                 case 'finance':
+                    // 優先使用 EquityIntegration 處理 IPO、增發、回購和戰略融資
+                    if (window.EquityIntegration?.executeFinanceWithEquity) {
+                        return window.EquityIntegration.executeFinanceWithEquity(player, actionId, params);
+                    }
                     return this.executeFinance(player, actionId, params);
+                
                 
                 case 'asset':
                     return this.executeAssetAction(player, actionId, params, globalParams);

@@ -97,7 +97,7 @@
                 },
                 medium: {
                     id: 'medium',
-                    name: '戰略型擴張募資',
+                    name: '中規模 IPO',
                     description: '平衡資金與控制權',
                     icon: '📊',
                     dilution: 0.20,          // 稀釋20%
@@ -107,7 +107,7 @@
                 },
                 large: {
                     id: 'large',
-                    name: '指標性上市公募',
+                    name: '大規模 IPO',
                     description: '積極融資，大幅稀釋股權',
                     icon: '📈',
                     dilution: 0.35,          // 稀釋35%
@@ -196,16 +196,20 @@
         },
 
         // ==========================================
-        // 戰略融資（影響 investor_shares）
+        // 融資系統（影響 investor_shares）
         // ==========================================
         STRATEGIC_FUNDING: {
-            // 融資類型
-            TYPES: {
+            // ==========================================
+            // 一次性輪次融資（必須按順序完成：種子→A輪→B輪）
+            // ==========================================
+            FUNDING_ROUNDS: {
                 seed: {
                     id: 'seed',
                     name: '種子輪',
                     description: '早期投資，小額高稀釋',
                     tier_required: 0,
+                    order: 1,                       // 順序編號
+                    one_time: true,                 // 一次性
                     cash_range: [20, 40],
                     dilution_range: [8, 15],
                     affinity_industries: ['research'],
@@ -216,6 +220,9 @@
                     name: 'A輪融資',
                     description: '成長期融資',
                     tier_required: 1,
+                    order: 2,
+                    one_time: true,
+                    prerequisite: 'seed',           // 需先完成種子輪
                     cash_range: [50, 100],
                     dilution_range: [10, 18],
                     affinity_industries: ['enterprise', 'cloud_infra'],
@@ -226,6 +233,69 @@
                     name: 'B輪融資',
                     description: '擴張期融資',
                     tier_required: 2,
+                    order: 3,
+                    one_time: true,
+                    prerequisite: 'series_a',       // 需先完成A輪
+                    cash_range: [100, 200],
+                    dilution_range: [8, 15],
+                    affinity_industries: ['semiconductor', 'energy'],
+                    affinity_bonus: 10
+                }
+            },
+            
+            // ==========================================
+            // 可重複戰略投資
+            // ==========================================
+            STRATEGIC_INVESTMENT: {
+                id: 'strategic',
+                name: '戰略投資',
+                description: '產業巨頭戰略入股，可多次進行',
+                tier_required: 1,
+                repeatable: true,                   // 可重複
+                cooldown: 2,                        // 冷卻回合
+                cash_range: [80, 180],
+                dilution_range: [6, 12],
+                affinity_industries: ['all'],       // 可選擇任一產業
+                affinity_bonus: 10
+            },
+            
+            // ==========================================
+            // 合併所有類型（供引擎使用）
+            // ==========================================
+            TYPES: {
+                seed: {
+                    id: 'seed',
+                    name: '種子輪',
+                    description: '早期投資，小額高稀釋',
+                    tier_required: 0,
+                    order: 1,
+                    one_time: true,
+                    cash_range: [20, 40],
+                    dilution_range: [8, 15],
+                    affinity_industries: ['research'],
+                    affinity_bonus: 5
+                },
+                series_a: {
+                    id: 'series_a',
+                    name: 'A輪融資',
+                    description: '成長期融資',
+                    tier_required: 1,
+                    order: 2,
+                    one_time: true,
+                    prerequisite: 'seed',
+                    cash_range: [50, 100],
+                    dilution_range: [10, 18],
+                    affinity_industries: ['enterprise', 'cloud_infra'],
+                    affinity_bonus: 8
+                },
+                series_b: {
+                    id: 'series_b',
+                    name: 'B輪融資',
+                    description: '擴張期融資',
+                    tier_required: 2,
+                    order: 3,
+                    one_time: true,
+                    prerequisite: 'series_a',
                     cash_range: [100, 200],
                     dilution_range: [8, 15],
                     affinity_industries: ['semiconductor', 'energy'],
@@ -240,7 +310,8 @@
                     dilution_range: [10, 20],
                     affinity_industries: ['all'],  // 可選擇任一產業
                     affinity_bonus: 15,
-                    requires_affinity: 20          // 需已有20親和度
+                    requires_affinity: 20,          // 需已有20親和度
+                    cooldown: 2  
                 }
             },
             // 投資人類型（影響產業親和度）

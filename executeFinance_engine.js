@@ -533,7 +533,7 @@ function executeFinance(player, actionId, params = {}) {
             return {
                 success: false,
                 player: player,
-                message: '未知的財務行動',
+                message: '就是未知的財務行動',
                 type: 'danger'
             };
     }

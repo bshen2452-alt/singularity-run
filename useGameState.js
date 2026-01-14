@@ -29,6 +29,10 @@ const ACTION_ROUTES = {
         engine: () => window.FinanceEngine,
         executor: (engine, player, action, globalParams, params) => {
             const actionId = action === 'financeAction' ? params.actionId : action;
+            // 優先使用 EquityIntegration 以支援 strategicFunding、IPO 等擴展財務行動
+            if (window.EquityIntegration?.executeFinanceWithEquity) {
+                return window.EquityIntegration.executeFinanceWithEquity(player, actionId, params);
+            }
             return engine.executeFinance(player, actionId, params);
         }
     },

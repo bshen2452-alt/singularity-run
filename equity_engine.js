@@ -272,7 +272,7 @@
 
             return {
                 success: true,
-                newPlayer,
+                player: newPlayer,
                 message: `IPO 成功！籌得 $${actualCash.toFixed(0)}M，公開發行 ${dilution}% 股份`,
                 type: 'success',
                 details: {
@@ -339,7 +339,7 @@
 
             return {
                 success: true,
-                newPlayer,
+                player: newPlayer,
                 message: `增發新股！籌得 $${cashGain.toFixed(0)}M，創辦人持股 -${option.founder_loss}%`,
                 type: 'success'
             };
@@ -398,7 +398,7 @@
 
             return {
                 success: true,
-                newPlayer,
+                player: newPlayer,
                 message: `股票回購！花費 $${cost.toFixed(0)}M，創辦人持股 +${option.founder_gain}%，Hype +${option.hype_change}`,
                 type: 'success'
             };
@@ -528,9 +528,16 @@
                 newPlayer.regulation = (newPlayer.regulation || 0) + investorConfig.regulation_change;
             }
 
+            // 設置冷卻時間（strategic 類型使用 2 回合冷卻）
+            if (!equityState.equity_cooldowns) {
+                equityState.equity_cooldowns = {};
+            }
+            equityState.equity_cooldowns.strategic = typeConfig.cooldown || 2;
+
+
             return {
                 success: true,
-                newPlayer,
+                player: newPlayer,
                 message: `${typeConfig.name}完成！籌得 $${finalCash.toFixed(0)}M，稀釋 ${finalDilution.toFixed(1)}%${affinityMessage}`,
                 type: 'success',
                 details: {

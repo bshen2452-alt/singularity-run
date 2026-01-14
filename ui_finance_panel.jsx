@@ -423,17 +423,221 @@ const FinancePanelUI = {
                 style: { margin: '0 0 0.75rem 0', fontSize: '1rem', color: 'var(--text-primary)' }
             }, '⚡ 財務行動'),
 
-            // Pre-IPO 階段 (Tier 0-1)
-            !isPublic && this.renderPreIPOActions(player, globalParams, onAction, mpTier),
+            // ==========================================
+            // 常態性財務操作（不分階段都存在）
+            // ==========================================
+            this.renderRegularFinanceActions(player, globalParams, onAction, mpTier, isPublic),
 
-            // Tier1+ 債務操作（IPO前後皆可見）
-            mpTier >= 1 && !isPublic && this.renderDebtSection(player, globalParams, onAction),
+            // ==========================================
+            // Pre-IPO 限定：一次性輪次融資
+            // ==========================================
+            !isPublic && this.renderPreIPOFundingRounds(player, globalParams, onAction),
 
-            // IPO 階段 (Tier 2+)
+            // ==========================================
+            // IPO 區塊 (Tier 2+，尚未上市)
+            // ==========================================
             mpTier >= 2 && !isPublic && this.renderIPOSection(player, globalParams, onAction),
 
+            // ==========================================
             // Post-IPO 階段
+            // ==========================================
             isPublic && this.renderPostIPOActions(player, globalParams, onAction)
+        );
+    },
+
+    // ==========================================
+    // 常態性財務操作（不分 Tier/IPO 階段都存在）
+    // ==========================================
+    renderRegularFinanceActions(player, globalParams, onAction, mpTier, isPublic) {
+        const cooldowns = player.finance_cooldowns || {};
+
+        // Tier 0 基礎行動（永遠可用）
+        const tier0Actions = [
+            {
+                id: 'founderWork',
+                name: '創始人打工',
+                icon: '💼',
+                description: '暫時外出接案賺錢，但會影響研發進度',
+                effect: '+$25M 現金, 下季MP成長-20%',
+                available: true,
+                cooldown: cooldowns.founderWork || 0,
+                color: '#ffd000'
+            },
+            {
+                id: 'applyGrant',
+                name: '申請獎助金',
+                icon: '🏛️',
+                description: '向政府或基金會申請研究補助',
+                effect: '有機會獲得 $15-35M',
+                available: true,
+                cooldown: cooldowns.applyGrant || 0,
+                color: '#00f5ff'
+            },
+            {
+                id: 'emergencyLoan',
+                name: '緊急貸款',
+                icon: '🏦',
+                description: '緊急向銀行借款（僅現金<$30M時可用）',
+                effect: '+$40M 現金, +$60M 債務',
+                available: player.cash < 30,
+                cooldown: 0,
+                color: '#ff4444',
+                warning: true
+            }
+        ];
+
+        return React.createElement('div', { style: { marginBottom: '1rem' } },
+            // ==========================================
+            // Tier 0 基礎財務
+            // ==========================================
+            React.createElement('div', {
+                style: { 
+                    fontSize: '0.8rem', 
+                    color: 'var(--text-secondary)', 
+                    marginBottom: '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                }
+            }, 
+                React.createElement('span', null, '🌱'),
+                '基礎財務'
+            ),
+
+            React.createElement('div', {
+                style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1rem' }
+            },
+                tier0Actions.map(action => this.renderActionButton(action, onAction))
+            ),
+
+            // ==========================================
+            // Tier1+ 債務操作（IPO前後皆可見）
+            // ==========================================
+            mpTier >= 1 && !isPublic && this.renderDebtSection(player, globalParams, onAction),
+
+            // ==========================================
+            // 戰略投資（可重複，常態性）
+            // ==========================================
+            this.renderStrategicInvestmentSection(player, globalParams, onAction)
+        );
+    },
+
+    // ==========================================
+    // 戰略投資區塊（可重複，常態性操作）
+    // ==========================================
+    renderStrategicInvestmentSection(player, globalParams, onAction) {
+        const config = window.EquityConfig?.STRATEGIC_FUNDING;
+        const strategicConfig = config?.STRATEGIC_INVESTMENT || config?.TYPES?.strategic;
+        
+        if (!strategicConfig) return null;
+
+        const mpTier = player.mp_tier || 0;
+        const equityState = player.equity_state || {};
+        const cooldowns = equityState.equity_cooldowns || {};
+        const cooldownRemaining = cooldowns.strategic || 0;
+        
+        const tierMet = mpTier >= strategicConfig.tier_required;
+        const isOnCooldown = cooldownRemaining > 0;
+        const available = tierMet && !isOnCooldown;
+        
+        // 計算已完成的戰略投資次數
+        const fundingRounds = equityState.funding_rounds || [];
+        const strategicCount = fundingRounds.filter(r => r.type === 'strategic').length;
+
+        return React.createElement('div', {
+            style: {
+                background: 'rgba(255,213,0,0.05)',
+                border: '1px solid rgba(255,213,0,0.2)',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginTop: '1rem'
+            }
+        },
+            React.createElement('div', {
+                style: { 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '0.75rem'
+                }
+            },
+                React.createElement('h4', {
+                    style: { margin: 0, fontSize: '0.9rem', color: 'var(--accent-yellow)' }
+                }, '🏦 戰略投資'),
+                React.createElement('div', {
+                    style: { display: 'flex', alignItems: 'center', gap: '0.5rem' }
+                },
+                    React.createElement('span', {
+                        style: { 
+                            fontSize: '0.7rem', 
+                            color: 'var(--text-secondary)',
+                            padding: '0.2rem 0.5rem',
+                            background: 'rgba(255,213,0,0.2)',
+                            borderRadius: '4px'
+                        }
+                    }, '🔄 可重複'),
+                    strategicCount > 0 && React.createElement('span', {
+                        style: { fontSize: '0.75rem', color: 'var(--text-secondary)' }
+                    }, `已完成 ${strategicCount} 次`)
+                )
+            ),
+
+            React.createElement('button', {
+                style: {
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: available ? 'rgba(255,213,0,0.1)' : 'rgba(255,255,255,0.03)',
+                    border: available ? '1px solid rgba(255,213,0,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '6px',
+                    cursor: available ? 'pointer' : 'not-allowed',
+                    opacity: available ? 1 : 0.6,
+                    textAlign: 'left',
+                    transition: 'all 0.2s ease'
+                },
+                onClick: () => available && onAction('openFundingModal', { fundingType: 'strategic' }),
+                disabled: !available
+            },
+                React.createElement('div', {
+                    style: { 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '0.25rem'
+                    }
+                },
+                    React.createElement('span', { 
+                        style: { fontWeight: 'bold', color: available ? 'var(--accent-yellow)' : 'var(--text-secondary)' }
+                    }, strategicConfig.name),
+                    isOnCooldown && React.createElement('span', {
+                        style: { 
+                            fontSize: '0.75rem',
+                            color: 'var(--accent-red)',
+                            padding: '0.15rem 0.4rem',
+                            background: 'rgba(255,68,68,0.2)',
+                            borderRadius: '4px'
+                        }
+                    }, `⏳ ${cooldownRemaining} 回合`)
+                ),
+                React.createElement('div', {
+                    style: { fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }
+                }, strategicConfig.description),
+                React.createElement('div', {
+                    style: { fontSize: '0.75rem', color: 'var(--accent-green)' }
+                }, `$${strategicConfig.cash_range[0]}-${strategicConfig.cash_range[1]}M | 稀釋 ${strategicConfig.dilution_range[0]}-${strategicConfig.dilution_range[1]}%`),
+                !tierMet && React.createElement('div', {
+                    style: { fontSize: '0.7rem', color: 'var(--accent-red)', marginTop: '0.25rem' }
+                }, `⚠ 需達到 Tier ${strategicConfig.tier_required}`)
+            ),
+
+            // 冷卻說明
+            React.createElement('div', {
+                style: { 
+                    marginTop: '0.5rem',
+                    fontSize: '0.7rem',
+                    color: 'var(--text-secondary)',
+                    textAlign: 'center'
+                }
+            }, `每次戰略投資後需等待 ${strategicConfig.cooldown || 2} 回合冷卻`)
         );
     },
 
@@ -525,92 +729,44 @@ const FinancePanelUI = {
     },
 
     // ==========================================
-    // Pre-IPO 行動 (Tier 0-1)
+    // Pre-IPO 限定：一次性輪次融資（種子→A→B）
     // ==========================================
 
-    renderPreIPOActions(player, globalParams, onAction, mpTier) {
-        const cooldowns = player.finance_cooldowns || {};
-        
-        // Tier 0 基礎行動
-        const tier0Actions = [
-            {
-                id: 'founderWork',
-                name: '創始人打工',
-                icon: '💼',
-                description: '暫時外出接案賺錢，但會影響研發進度',
-                effect: '+$25M 現金, 下季MP成長-20%',
-                available: true,
-                cooldown: cooldowns.founderWork || 0,
-                color: '#ffd000'
-            },
-            {
-                id: 'applyGrant',
-                name: '申請獎助金',
-                icon: '🏛️',
-                description: '向政府或基金會申請研究補助',
-                effect: '有機會獲得 $15-35M',
-                available: true,
-                cooldown: cooldowns.applyGrant || 0,
-                color: '#00f5ff'
-            },
-            {
-                id: 'emergencyLoan',
-                name: '緊急貸款',
-                icon: '🏦',
-                description: '緊急向銀行借款（僅現金<$30M時可用）',
-                effect: '+$40M 現金, +$60M 債務',
-                available: player.cash < 30,
-                cooldown: 0,
-                color: '#ff4444',
-                warning: true
-            }
-        ];
-
-        return React.createElement('div', { style: { marginBottom: '1rem' } },
-            // Tier 0 基礎行動
-            React.createElement('div', {
-                style: { 
-                    fontSize: '0.8rem', 
-                    color: 'var(--text-secondary)', 
-                    marginBottom: '0.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                }
-            }, 
-                React.createElement('span', null, '🌱'),
-                '基礎財務'
-            ),
-
-            React.createElement('div', {
-                style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1rem' }
-            },
-                tier0Actions.map(action => this.renderActionButton(action, onAction))
-            ),
-
-            // 戰略融資區塊
-            this.renderPrivateCompanySection(player, globalParams, onAction)
-        );
-    },
-
-    // ==========================================
-    // 私有公司融資區（戰略融資）
-    // ==========================================
-
-    renderPrivateCompanySection(player, globalParams, onAction) {
+    renderPreIPOFundingRounds(player, globalParams, onAction) {
+        const config = window.EquityConfig?.STRATEGIC_FUNDING;
+        const roundConfigs = config?.FUNDING_ROUNDS || {};
         const equityState = player.equity_state || {};
+        const completedRounds = equityState.funding_rounds || [];
+        const completedIds = completedRounds.filter(r => r.type !== 'strategic').map(r => r.type);
         const mpTier = player.mp_tier || 0;
-        const fundingRounds = equityState.funding_rounds || [];
 
-        // 可用融資選項
-        const fundingOptions = this.getAvailableFundingOptions(player);
+        // 按順序排列輪次
+        const orderedRounds = Object.values(roundConfigs)
+            .filter(r => r.order !== undefined)
+            .sort((a, b) => a.order - b.order);
+
+        // 找出下一個可進行的輪次
+        let nextRound = null;
+        for (const round of orderedRounds) {
+            if (completedIds.includes(round.id)) continue;
+            
+            // 檢查前置條件
+            if (round.prerequisite && !completedIds.includes(round.prerequisite)) continue;
+            
+            nextRound = round;
+            break;
+        }
+
+        // 如果所有輪次都完成了
+        const allCompleted = completedIds.length >= orderedRounds.length;
 
         return React.createElement('div', {
             style: {
-                background: 'rgba(255,213,0,0.05)',
-                border: '1px solid rgba(255,213,0,0.2)',
+                background: 'rgba(0,245,255,0.05)',
+                border: '1px solid rgba(0,245,255,0.2)',
                 borderRadius: '8px',
-                padding: '1rem'
+                padding: '1rem',
+                marginTop: '1rem'
             }
         },
             React.createElement('div', {
@@ -622,85 +778,132 @@ const FinancePanelUI = {
                 }
             },
                 React.createElement('h4', {
-                    style: { margin: 0, fontSize: '0.9rem', color: 'var(--accent-yellow)' }
-                }, '🏦 戰略融資'),
+                    style: { margin: 0, fontSize: '0.9rem', color: 'var(--accent-cyan)' }
+                }, '📊 輪次融資'),
                 React.createElement('span', {
-                    style: { fontSize: '0.75rem', color: 'var(--text-secondary)' }
-                }, `已完成 ${fundingRounds.length} 輪`)
+                    style: { 
+                        fontSize: '0.7rem', 
+                        color: 'var(--text-secondary)',
+                        padding: '0.2rem 0.5rem',
+                        background: 'rgba(0,245,255,0.2)',
+                        borderRadius: '4px'
+                    }
+                }, '一次性 · IPO前限定')
             ),
 
-            // 融資選項
-            fundingOptions.length > 0 ? React.createElement('div', {
-                style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }
+            // 進度顯示
+            React.createElement('div', {
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '0.75rem',
+                    padding: '0.5rem',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem'
+                }
             },
-                fundingOptions.map(option =>
-                    React.createElement('button', {
-                        key: option.id,
-                        style: {
-                            padding: '0.75rem',
-                            background: option.available ? 'rgba(255,213,0,0.1)' : 'rgba(255,255,255,0.03)',
-                            border: option.available ? '1px solid rgba(255,213,0,0.3)' : '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '6px',
-                            cursor: option.available ? 'pointer' : 'not-allowed',
-                            opacity: option.available ? 1 : 0.5,
-                            textAlign: 'left',
-                            transition: 'all 0.2s ease'
-                        },
-                        onClick: () => option.available && onAction('openFundingModal', { fundingType: option.id }),
-                        disabled: !option.available
-                    },
-                        React.createElement('div', {
-                            style: { fontWeight: 'bold', color: 'var(--accent-yellow)', marginBottom: '0.25rem' }
-                        }, option.name),
-                        React.createElement('div', {
-                            style: { fontSize: '0.75rem', color: 'var(--text-secondary)' }
-                        }, `$${option.cashRange[0]}-${option.cashRange[1]}M`),
-                        React.createElement('div', {
-                            style: { fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)' }
-                        }, `稀釋 ${option.dilutionRange[0]}-${option.dilutionRange[1]}%`),
-                        !option.available && option.reason && React.createElement('div', {
-                            style: { fontSize: '0.65rem', color: 'var(--accent-red)', marginTop: '0.25rem' }
-                        }, option.reason)
-                    )
-                )
-            ) : React.createElement('div', {
-                style: { color: 'var(--text-secondary)', fontSize: '0.85rem', textAlign: 'center', padding: '1rem' }
-            }, '目前無可用融資選項')
+                orderedRounds.map((round, idx) => {
+                    const isCompleted = completedIds.includes(round.id);
+                    const isNext = nextRound?.id === round.id;
+                    return React.createElement(React.Fragment, { key: round.id },
+                        idx > 0 && React.createElement('span', { 
+                            style: { color: 'var(--text-secondary)' }
+                        }, '→'),
+                        React.createElement('span', {
+                            style: {
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '4px',
+                                background: isCompleted ? 'var(--accent-green)' 
+                                    : isNext ? 'rgba(0,245,255,0.3)' 
+                                    : 'rgba(255,255,255,0.05)',
+                                color: isCompleted ? '#000' 
+                                    : isNext ? 'var(--accent-cyan)' 
+                                    : 'var(--text-secondary)',
+                                fontWeight: isCompleted || isNext ? 'bold' : 'normal',
+                                border: isNext ? '1px solid var(--accent-cyan)' : 'none'
+                            }
+                        }, isCompleted ? `✓ ${round.name}` : round.name)
+                    );
+                })
+            ),
+
+            // 下一個可用輪次或完成狀態
+            allCompleted 
+                ? React.createElement('div', {
+                    style: { 
+                        color: 'var(--accent-green)', 
+                        fontSize: '0.9rem',
+                        padding: '0.75rem',
+                        background: 'rgba(0,255,136,0.1)',
+                        borderRadius: '6px',
+                        textAlign: 'center'
+                    }
+                }, '✓ 所有輪次融資已完成！可準備 IPO')
+                : nextRound 
+                    ? this.renderFundingRoundButton(nextRound, mpTier, onAction)
+                    : React.createElement('div', {
+                        style: { 
+                            color: 'var(--text-secondary)', 
+                            fontSize: '0.85rem',
+                            textAlign: 'center',
+                            padding: '0.5rem'
+                        }
+                    }, '尚未滿足下一輪融資條件')
         );
     },
 
-    getAvailableFundingOptions(player) {
-        const config = window.EquityConfig?.STRATEGIC_FUNDING?.TYPES || {};
-        const mpTier = player.mp_tier || 0;
-        const options = [];
+    renderFundingRoundButton(round, mpTier, onAction) {
+        const tierMet = mpTier >= round.tier_required;
+        const available = tierMet;
 
-        Object.entries(config).forEach(([id, cfg]) => {
-            const available = mpTier >= cfg.tier_required;
-            let reason = null;
-            
-            if (!available) {
-                reason = `需要 Tier ${cfg.tier_required}`;
-            } else if (cfg.requires_affinity) {
-                // 檢查產業親和度要求（簡化）
-                const hasAffinity = player.industry_affinity?.affinity ? 
-                    Object.values(player.industry_affinity.affinity).some(v => v >= cfg.requires_affinity) : false;
-                if (!hasAffinity) {
-                    reason = `需要 ${cfg.requires_affinity}+ 產業親和度`;
+        return React.createElement('button', {
+            style: {
+                width: '100%',
+                padding: '0.75rem',
+                background: available ? 'rgba(0,245,255,0.1)' : 'rgba(255,255,255,0.03)',
+                border: available ? '1px solid rgba(0,245,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '6px',
+                cursor: available ? 'pointer' : 'not-allowed',
+                opacity: available ? 1 : 0.6,
+                textAlign: 'left',
+                transition: 'all 0.2s ease'
+            },
+            onClick: () => available && onAction('openFundingModal', { fundingType: round.id }),
+            disabled: !available
+        },
+            React.createElement('div', {
+                style: { 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.25rem'
                 }
-            }
-
-            options.push({
-                id,
-                name: cfg.name,
-                description: cfg.description,
-                cashRange: cfg.cash_range,
-                dilutionRange: cfg.dilution_range,
-                available: available && !reason,
-                reason
-            });
-        });
-
-        return options;
+            },
+                React.createElement('span', { 
+                    style: { fontWeight: 'bold', color: available ? 'var(--accent-cyan)' : 'var(--text-secondary)' }
+                }, `🎯 ${round.name}`),
+                React.createElement('span', {
+                    style: { 
+                        fontSize: '0.7rem',
+                        color: 'var(--text-secondary)',
+                        padding: '0.15rem 0.4rem',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: '4px'
+                    }
+                }, '一次性')
+            ),
+            React.createElement('div', {
+                style: { fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }
+            }, round.description),
+            React.createElement('div', {
+                style: { fontSize: '0.75rem', color: 'var(--accent-green)' }
+            }, `$${round.cash_range[0]}-${round.cash_range[1]}M | 稀釋 ${round.dilution_range[0]}-${round.dilution_range[1]}%`),
+            !tierMet && React.createElement('div', {
+                style: { fontSize: '0.7rem', color: 'var(--accent-red)', marginTop: '0.25rem' }
+            }, `⚠ 需達到 Tier ${round.tier_required}`)
+        );
     },
 
     // ==========================================
