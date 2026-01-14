@@ -407,68 +407,149 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
             }, `${tab.icon} ${tab.label}`)
         )),
         
+        // ==========================================
         // 儀表板標籤頁
+        // ==========================================
         activeTab === 'dashboard' && React.createElement('div', {
             key: 'dashboard-content',
             style: { display: 'grid', gap: '12px' }
         }, [
-            // 整體市場概覽
+            // === 市場總價值概覽 ===
             React.createElement('div', {
-                key: 'market-overview',
+                key: 'total-market-value',
                 style: {
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '8px',
                     padding: '12px',
-                    background: 'var(--bg-secondary)',
-                    borderRadius: '8px'
+                    background: 'linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--accent-cyan)33'
                 }
             }, [
                 React.createElement('div', {
-                    key: 'total-market',
-                    style: { textAlign: 'center', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }
-                }, [
-                    React.createElement('div', { key: 'l', style: { fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' } }, '🌐 整體市值'),
-                    React.createElement('div', { 
-                        key: 'v',
-                        style: { fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }
-                    }, `$${formatToTwoDecimals(totalInvestment)}M`)
-                ]),
-                React.createElement('div', {
-                    key: 'investment-limit',
-                    style: { textAlign: 'center', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }
-                }, [
-                    React.createElement('div', { key: 'l', style: { fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' } }, '📊 投資上限'),
-                    React.createElement('div', { 
-                        key: 'v',
-                        style: { fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: totalInvestment > investmentLimit ? 'var(--accent-red)' : 'var(--accent-green)' }
-                    }, `$${formatToTwoDecimals(investmentLimit)}M`)
-                ]),
-                React.createElement('div', {
-                    key: 'total-pl',
-                    style: { textAlign: 'center', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }
-                }, [
-                    React.createElement('div', { key: 'l', style: { fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' } }, '💰 總盈虧'),
-                    React.createElement('div', { 
-                        key: 'v',
-                        style: { fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: totalProfitLoss >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }
-                    }, `${totalProfitLoss >= 0 ? '+' : ''}$${formatToTwoDecimals(totalProfitLoss)}M`)
-                ]),
-                React.createElement('div', {
-                    key: 'usage',
-                    style: { textAlign: 'center', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }
-                }, [
-                    React.createElement('div', { key: 'l', style: { fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' } }, '📈 額度使用率'),
-                    React.createElement('div', { 
-                        key: 'v',
-                        style: { fontSize: '1.2rem', fontFamily: 'var(--font-mono)', color: (totalInvestment / investmentLimit) > 0.8 ? 'var(--accent-yellow)' : 'var(--text-primary)' }
-                    }, `${formatToTwoDecimals((totalInvestment / Math.max(1, investmentLimit)) * 100)}%`)
-                ])
+                    key: 'header',
+                    style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }
+                }, '🌐 AI 產業市場總價值'),
+                // 計算市場總價值
+                (() => {
+                    const playerMarketCap = player?.market_cap || 0;
+                    const rivalsMarketCap = (rivals || []).reduce((sum, r) => sum + (r.market_cap || 0), 0);
+                    const totalMarketCap = playerMarketCap + rivalsMarketCap;
+                    const playerShare = totalMarketCap > 0 ? (playerMarketCap / totalMarketCap) * 100 : 0;
+                    
+                    return React.createElement('div', { key: 'market-stats' }, [
+                        // 總市值
+                        React.createElement('div', {
+                            key: 'total',
+                            style: { 
+                                textAlign: 'center', 
+                                marginBottom: '12px',
+                                padding: '10px',
+                                background: 'var(--bg-tertiary)',
+                                borderRadius: '6px'
+                            }
+                        }, [
+                            React.createElement('div', {
+                                key: 'value',
+                                style: { 
+                                    fontSize: '1.5rem', 
+                                    fontFamily: 'var(--font-mono)', 
+                                    color: 'var(--accent-cyan)',
+                                    fontWeight: 'bold'
+                                }
+                            }, `$${formatToTwoDecimals(totalMarketCap)}M`),
+                            React.createElement('div', {
+                                key: 'label',
+                                style: { fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }
+                            }, '市場總估值 (玩家 + 對手)')
+                        ]),
+                        // 市佔率進度條
+                        React.createElement('div', {
+                            key: 'share-bar',
+                            style: {
+                                height: '24px',
+                                background: 'var(--bg-tertiary)',
+                                borderRadius: '4px',
+                                overflow: 'hidden',
+                                display: 'flex',
+                                marginBottom: '8px'
+                            }
+                        }, [
+                            React.createElement('div', {
+                                key: 'player-share',
+                                style: {
+                                    width: `${playerShare}%`,
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-blue) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.7rem',
+                                    color: '#fff',
+                                    fontWeight: 'bold',
+                                    minWidth: playerShare > 5 ? '60px' : '0'
+                                }
+                            }, playerShare > 5 ? `你 ${formatToTwoDecimals(playerShare)}%` : ''),
+                            React.createElement('div', {
+                                key: 'rival-share',
+                                style: {
+                                    flex: 1,
+                                    height: '100%',
+                                    background: 'var(--accent-orange)66',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.7rem',
+                                    color: 'var(--text-primary)'
+                                }
+                            }, `對手 ${formatToTwoDecimals(100 - playerShare)}%`)
+                        ]),
+                        // 分項數據
+                        React.createElement('div', {
+                            key: 'breakdown',
+                            style: {
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: '8px',
+                                fontSize: '0.75rem'
+                            }
+                        }, [
+                            React.createElement('div', {
+                                key: 'player',
+                                style: { 
+                                    padding: '6px 10px', 
+                                    background: 'var(--accent-cyan)11', 
+                                    borderRadius: '4px',
+                                    borderLeft: '3px solid var(--accent-cyan)'
+                                }
+                            }, [
+                                React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '你的市值'),
+                                React.createElement('div', { 
+                                    key: 'v', 
+                                    style: { fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' } 
+                                }, `$${formatToTwoDecimals(playerMarketCap)}M`)
+                            ]),
+                            React.createElement('div', {
+                                key: 'rivals',
+                                style: { 
+                                    padding: '6px 10px', 
+                                    background: 'var(--accent-orange)11', 
+                                    borderRadius: '4px',
+                                    borderLeft: '3px solid var(--accent-orange)'
+                                }
+                            }, [
+                                React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '對手總市值'),
+                                React.createElement('div', { 
+                                    key: 'v', 
+                                    style: { fontFamily: 'var(--font-mono)', color: 'var(--accent-orange)' } 
+                                }, `$${formatToTwoDecimals(rivalsMarketCap)}M`)
+                            ])
+                        ])
+                    ]);
+                })()
             ]),
             
-            // 投資組合分佈
-            portfolioDistribution.length > 0 && React.createElement('div', {
-                key: 'portfolio-dist',
+            // === 玩家投資組合分布 ===
+            React.createElement('div', {
+                key: 'portfolio-section',
                 style: {
                     padding: '12px',
                     background: 'var(--bg-secondary)',
@@ -476,114 +557,355 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                 }
             }, [
                 React.createElement('div', {
-                    key: 'title',
-                    style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }
-                }, '📊 投資組合分佈'),
-                // 超寬進度條
-                React.createElement('div', {
-                    key: 'bar',
-                    style: {
-                        height: '20px',
-                        background: 'var(--bg-tertiary)',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        marginBottom: '8px'
+                    key: 'header',
+                    style: { 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '10px'
                     }
-                }, portfolioDistribution.map((item, idx) => 
-                    React.createElement('div', {
-                        key: idx,
-                        style: {
-                            width: `${(item.value / Math.max(1, totalInvestment)) * 100}%`,
-                            height: '100%',
-                            background: item.color,
-                            transition: 'width 0.3s ease'
-                        },
-                        title: `${item.name}: $${formatToTwoDecimals(item.value)}M`
-                    })
-                )),
-                // 列表明細
+                }, [
+                    React.createElement('span', {
+                        key: 'title',
+                        style: { fontSize: '0.85rem', color: 'var(--text-secondary)' }
+                    }, '💼 投資組合分布'),
+                    React.createElement('span', {
+                        key: 'total',
+                        style: { 
+                            fontSize: '0.85rem', 
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--accent-green)'
+                        }
+                    }, `總值: $${formatToTwoDecimals(totalInvestment)}M`)
+                ]),
+                // 投資使用率
                 React.createElement('div', {
-                    key: 'list',
-                    style: { display: 'grid', gap: '4px', maxHeight: '120px', overflowY: 'auto' }
-                }, portfolioDistribution.map((item, idx) =>
+                    key: 'usage-bar',
+                    style: {
+                        marginBottom: '10px'
+                    }
+                }, [
                     React.createElement('div', {
-                        key: idx,
+                        key: 'bar-bg',
                         style: {
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '4px 8px',
+                            height: '8px',
                             background: 'var(--bg-tertiary)',
                             borderRadius: '4px',
-                            fontSize: '0.75rem'
+                            overflow: 'hidden'
+                        }
+                    }, React.createElement('div', {
+                        style: {
+                            width: `${Math.min(100, (totalInvestment / Math.max(1, investmentLimit)) * 100)}%`,
+                            height: '100%',
+                            background: (totalInvestment / investmentLimit) > 0.8 
+                                ? 'var(--accent-yellow)' 
+                                : 'var(--accent-green)',
+                            transition: 'width 0.3s ease'
+                        }
+                    })),
+                    React.createElement('div', {
+                        key: 'usage-label',
+                        style: { 
+                            display: 'flex', 
+                            justifyContent: 'space-between',
+                            fontSize: '0.65rem',
+                            color: 'var(--text-muted)',
+                            marginTop: '4px'
                         }
                     }, [
-                        React.createElement('div', {
-                            key: 'name',
-                            style: { display: 'flex', alignItems: 'center', gap: '6px' }
-                        }, [
-                            React.createElement('span', {
-                                key: 'dot',
-                                style: { width: '8px', height: '8px', borderRadius: '50%', background: item.color }
-                            }),
-                            React.createElement('span', { key: 'text' }, item.name),
-                            React.createElement('span', {
-                                key: 'type',
-                                style: { fontSize: '0.65rem', color: 'var(--text-muted)', padding: '1px 4px', background: 'var(--bg-secondary)', borderRadius: '2px' }
-                            }, item.type)
-                        ]),
-                        React.createElement('span', {
-                            key: 'value',
-                            style: { fontFamily: 'var(--font-mono)', color: item.color }
-                        }, `$${formatToTwoDecimals(item.value)}M (${formatToTwoDecimals((item.value / Math.max(1, totalInvestment)) * 100)}%)`)
+                        React.createElement('span', { key: 'used' }, 
+                            `已用: ${formatToTwoDecimals((totalInvestment / Math.max(1, investmentLimit)) * 100)}%`),
+                        React.createElement('span', { key: 'limit' }, 
+                            `上限: $${formatToTwoDecimals(investmentLimit)}M`)
                     ])
-                ))
+                ]),
+                // 投資組合分布條
+                portfolioDistribution.length > 0 ? [
+                    React.createElement('div', {
+                        key: 'dist-bar',
+                        style: {
+                            height: '24px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            marginBottom: '8px'
+                        }
+                    }, portfolioDistribution.map((item, idx) => 
+                        React.createElement('div', {
+                            key: idx,
+                            style: {
+                                width: `${(item.value / Math.max(1, totalInvestment)) * 100}%`,
+                                height: '100%',
+                                background: item.color,
+                                transition: 'width 0.3s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.6rem',
+                                color: '#fff',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                minWidth: (item.value / totalInvestment) > 0.15 ? '40px' : '0'
+                            },
+                            title: `${item.name}: $${formatToTwoDecimals(item.value)}M`
+                        }, (item.value / totalInvestment) > 0.15 ? item.name : '')
+                    )),
+                    // 投資明細列表
+                    React.createElement('div', {
+                        key: 'dist-list',
+                        style: { display: 'grid', gap: '4px', maxHeight: '100px', overflowY: 'auto' }
+                    }, portfolioDistribution.map((item, idx) =>
+                        React.createElement('div', {
+                            key: idx,
+                            style: {
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '4px 8px',
+                                background: 'var(--bg-tertiary)',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem'
+                            }
+                        }, [
+                            React.createElement('div', {
+                                key: 'name',
+                                style: { display: 'flex', alignItems: 'center', gap: '6px' }
+                            }, [
+                                React.createElement('span', {
+                                    key: 'dot',
+                                    style: { width: '8px', height: '8px', borderRadius: '50%', background: item.color }
+                                }),
+                                React.createElement('span', { key: 'text' }, item.name),
+                                React.createElement('span', {
+                                    key: 'type',
+                                    style: { 
+                                        fontSize: '0.6rem', 
+                                        color: item.type === 'ETF' ? 'var(--accent-cyan)' : 'var(--accent-orange)', 
+                                        padding: '1px 4px', 
+                                        background: 'var(--bg-secondary)', 
+                                        borderRadius: '2px' 
+                                    }
+                                }, item.type)
+                            ]),
+                            React.createElement('span', {
+                                key: 'value',
+                                style: { fontFamily: 'var(--font-mono)', color: item.color }
+                            }, `$${formatToTwoDecimals(item.value)}M (${formatToTwoDecimals((item.value / Math.max(1, totalInvestment)) * 100)}%)`)
+                        ])
+                    ))
+                ] : React.createElement('div', {
+                    key: 'empty',
+                    style: { 
+                        textAlign: 'center', 
+                        padding: '20px', 
+                        color: 'var(--text-muted)',
+                        fontSize: '0.8rem'
+                    }
+                }, '尚無投資持倉，點擊「競爭對手」或「ETF基金」開始投資')
             ]),
             
-            // 市場指標
+            // === 產業親和度動態 ===
+            React.createElement('div', {
+                key: 'industry-affinity',
+                style: {
+                    padding: '12px',
+                    background: 'var(--bg-secondary)',
+                    borderRadius: '8px'
+                }
+            }, [
+                React.createElement('div', {
+                    key: 'header',
+                    style: { fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }
+                }, '🤝 產業親和度'),
+                // 獲取親和度數據
+                (() => {
+                    const affinityConfig = window.IndustryAffinityConfig;
+                    const industries = affinityConfig?.INDUSTRIES || {};
+                    const playerAffinity = player?.industry_affinity?.affinity || {};
+                    const levelDescriptions = affinityConfig?.AFFINITY_EFFECTS?.level_descriptions || {};
+                    
+                    // 獲取親和度等級
+                    const getAffinityLevel = (value) => {
+                        const thresholds = Object.keys(levelDescriptions).map(Number).sort((a, b) => b - a);
+                        for (const threshold of thresholds) {
+                            if (value >= threshold) {
+                                return levelDescriptions[threshold];
+                            }
+                        }
+                        return levelDescriptions['-60'] || { name: '敵對', icon: '⚠️', color: '#ff4444' };
+                    };
+                    
+                    // 排序產業（按親和度高低）
+                    const sortedIndustries = Object.entries(industries)
+                        .map(([id, config]) => ({
+                            id,
+                            ...config,
+                            affinity: playerAffinity[id] || 0,
+                            level: getAffinityLevel(playerAffinity[id] || 0)
+                        }))
+                        .sort((a, b) => b.affinity - a.affinity);
+                    
+                    return React.createElement('div', {
+                        key: 'affinity-grid',
+                        style: { display: 'grid', gap: '6px', maxHeight: '200px', overflowY: 'auto' }
+                    }, sortedIndustries.map(ind =>
+                        React.createElement('div', {
+                            key: ind.id,
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '6px 10px',
+                                background: 'var(--bg-tertiary)',
+                                borderRadius: '6px',
+                                borderLeft: `3px solid ${ind.color}`
+                            }
+                        }, [
+                            // 產業圖示與名稱
+                            React.createElement('div', {
+                                key: 'info',
+                                style: { 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '6px',
+                                    minWidth: '100px'
+                                }
+                            }, [
+                                React.createElement('span', { key: 'icon', style: { fontSize: '1rem' } }, ind.icon),
+                                React.createElement('span', { 
+                                    key: 'name', 
+                                    style: { fontSize: '0.75rem', color: 'var(--text-primary)' } 
+                                }, ind.name)
+                            ]),
+                            // 親和度進度條
+                            React.createElement('div', {
+                                key: 'bar-container',
+                                style: { flex: 1, position: 'relative' }
+                            }, [
+                                // 背景條（-100 到 +100 範圍）
+                                React.createElement('div', {
+                                    key: 'bar-bg',
+                                    style: {
+                                        height: '12px',
+                                        background: 'var(--bg-secondary)',
+                                        borderRadius: '6px',
+                                        overflow: 'hidden',
+                                        position: 'relative'
+                                    }
+                                }, [
+                                    // 中線標記（0點）
+                                    React.createElement('div', {
+                                        key: 'zero-line',
+                                        style: {
+                                            position: 'absolute',
+                                            left: '50%',
+                                            top: 0,
+                                            bottom: 0,
+                                            width: '1px',
+                                            background: 'var(--text-muted)',
+                                            opacity: 0.5
+                                        }
+                                    }),
+                                    // 親和度填充
+                                    React.createElement('div', {
+                                        key: 'fill',
+                                        style: {
+                                            position: 'absolute',
+                                            top: 0,
+                                            bottom: 0,
+                                            left: ind.affinity >= 0 ? '50%' : `${50 + (ind.affinity / 2)}%`,
+                                            width: `${Math.abs(ind.affinity) / 2}%`,
+                                            background: ind.affinity >= 0 
+                                                ? `linear-gradient(90deg, ${ind.color}88, ${ind.color})`
+                                                : `linear-gradient(90deg, var(--accent-red), var(--accent-red)88)`,
+                                            borderRadius: ind.affinity >= 0 ? '0 6px 6px 0' : '6px 0 0 6px',
+                                            transition: 'all 0.3s ease'
+                                        }
+                                    })
+                                ])
+                            ]),
+                            // 數值與等級
+                            React.createElement('div', {
+                                key: 'value',
+                                style: { 
+                                    minWidth: '70px',
+                                    textAlign: 'right',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    justifyContent: 'flex-end'
+                                }
+                            }, [
+                                React.createElement('span', {
+                                    key: 'num',
+                                    style: { 
+                                        fontFamily: 'var(--font-mono)',
+                                        fontSize: '0.75rem',
+                                        color: ind.affinity >= 0 ? ind.color : 'var(--accent-red)'
+                                    }
+                                }, `${ind.affinity >= 0 ? '+' : ''}${ind.affinity}`),
+                                React.createElement('span', {
+                                    key: 'level',
+                                    style: { 
+                                        fontSize: '0.65rem',
+                                        padding: '1px 4px',
+                                        background: ind.level.color + '22',
+                                        color: ind.level.color,
+                                        borderRadius: '3px'
+                                    }
+                                }, ind.level.icon)
+                            ])
+                        ])
+                    ));
+                })()
+            ]),
+            
+            // === 市場指標 ===
             React.createElement('div', {
                 key: 'market-indices',
                 style: {
-                    display: 'flex',
-                    justifyContent: 'space-around',
-                    padding: '8px',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '6px',
+                    padding: '10px',
                     background: 'var(--bg-secondary)',
                     borderRadius: '6px',
                     fontSize: '0.75rem'
                 }
             }, [
-                React.createElement('div', { key: 'gpu', style: { textAlign: 'center' } }, [
-                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, 'GPU指數'),
+                React.createElement('div', { key: 'gpu', style: { textAlign: 'center', padding: '6px', background: 'var(--bg-tertiary)', borderRadius: '4px' } }, [
+                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)', fontSize: '0.65rem' } }, '💻 GPU'),
                     React.createElement('div', { 
                         key: 'v',
-                        style: { color: 'var(--accent-cyan)' }
+                        style: { color: 'var(--accent-cyan)', fontFamily: 'var(--font-mono)' }
                     }, `${formatToTwoDecimals(globalParams?.P_GPU || 1)}x`)
                 ]),
-                React.createElement('div', { key: 'energy', style: { textAlign: 'center' } }, [
-                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '能源指數'),
+                React.createElement('div', { key: 'energy', style: { textAlign: 'center', padding: '6px', background: 'var(--bg-tertiary)', borderRadius: '4px' } }, [
+                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)', fontSize: '0.65rem' } }, '⚡ 能源'),
                     React.createElement('div', { 
                         key: 'v',
-                        style: { color: 'var(--accent-orange)' }
+                        style: { color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }
                     }, `${formatToTwoDecimals(globalParams?.E_Price || 1)}x`)
                 ]),
-                React.createElement('div', { key: 'rate', style: { textAlign: 'center' } }, [
-                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '利率指數'),
+                React.createElement('div', { key: 'rate', style: { textAlign: 'center', padding: '6px', background: 'var(--bg-tertiary)', borderRadius: '4px' } }, [
+                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)', fontSize: '0.65rem' } }, '📊 利率'),
                     React.createElement('div', { 
                         key: 'v',
-                        style: { color: 'var(--accent-green)' }
+                        style: { color: 'var(--accent-green)', fontFamily: 'var(--font-mono)' }
                     }, `${formatToTwoDecimals(globalParams?.R_base || 1)}x`)
                 ]),
-                React.createElement('div', { key: 'hype', style: { textAlign: 'center' } }, [
-                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '市場信心'),
+                React.createElement('div', { key: 'hype', style: { textAlign: 'center', padding: '6px', background: 'var(--bg-tertiary)', borderRadius: '4px' } }, [
+                    React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)', fontSize: '0.65rem' } }, '🔥 信心'),
                     React.createElement('div', { 
                         key: 'v',
-                        style: { color: 'var(--accent-magenta)' }
+                        style: { color: 'var(--accent-magenta)', fontFamily: 'var(--font-mono)' }
                     }, `${formatToTwoDecimals(globalParams?.I_Hype || 1)}x`)
                 ])
             ]),
             
-            // 快捷操作提示
+            // === 快捷提示 ===
             React.createElement('div', {
                 key: 'tips',
                 style: {
@@ -591,12 +913,15 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                     background: 'var(--accent-cyan)11',
                     borderRadius: '6px',
                     fontSize: '0.75rem',
-                    color: 'var(--text-muted)'
+                    color: 'var(--text-muted)',
+                    textAlign: 'center'
                 }
-            }, '💡 點擊 "競爭對手" 或 "ETF基金" 標籤頁進行交易操作')
+            }, '💡 點擊「競爭對手」或「ETF基金」標籤頁進行交易操作')
         ]),
         
+        // ==========================================
         // 競爭對手標籤頁
+        // ==========================================
         activeTab === 'rivals' && React.createElement('div', {
             key: 'rivals-content',
             style: {
@@ -613,7 +938,9 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
             })
         )),
         
+        // ==========================================
         // ETF 標籤頁
+        // ==========================================
         activeTab === 'etf' && React.createElement('div', {
             key: 'etf-content',
             style: {
