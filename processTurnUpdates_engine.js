@@ -322,6 +322,15 @@ function processTurnUpdates(player, rivals, globalParams) {
         });
     }
 
+    // === 1.1 處理股權系統冷卻（strategic funding 等）===
+    if (updatedPlayer.equity_state?.equity_cooldowns) {
+        Object.keys(updatedPlayer.equity_state.equity_cooldowns).forEach(key => {
+            if (updatedPlayer.equity_state.equity_cooldowns[key] > 0) {
+                updatedPlayer.equity_state.equity_cooldowns[key]--;
+            }
+        });
+    }
+
     // === 1.5 處理路線專屬技能冷卻 ===
     if (window.RouteSkillEngine && window.RouteSkillEngine.tickCooldowns) {
         const cooledPlayer = window.RouteSkillEngine.tickCooldowns(updatedPlayer);
