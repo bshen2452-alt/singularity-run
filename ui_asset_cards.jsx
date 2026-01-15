@@ -1602,12 +1602,106 @@ function DataTypeRowWithAction({
 }
 
 // ============================================
+// 數據合約簽訂彈出視窗
+// ============================================
+
+function DataContractModal({ player, onAction, onClose }) {
+    const [selectedType, setSelectedType] = React.useState('legal_high_broad');
+    const { GlowButton } = window.Components || {};
+    
+    const dataConfig = window.DataConfig || {};
+    const contractConfig = dataConfig.PURCHASE_OPTIONS?.contract || {};
+    const availableTypes = contractConfig.available_types || ['legal_high_broad', 'legal_low'];
+    
+    const getContractDetails = (typeId) => {
+        const typeConfig = dataConfig.DATA_TYPES?.[typeId] || {};
+        const basePrice = typeConfig.base_price || 1;
+        const discountedPrice = basePrice * (contractConfig.price_multiplier || 0.7);
+        const duration = contractConfig.duration || 4;
+        const deliveryPerTurn = contractConfig.delivery_per_turn || 50;
+        const totalDelivery = deliveryPerTurn * duration;
+        const costPerTurn = discountedPrice * deliveryPerTurn;
+        const totalCost = costPerTurn * duration;
+        return { typeConfig, basePrice, discountedPrice, duration, deliveryPerTurn, totalDelivery, costPerTurn, totalCost, savings: (basePrice - discountedPrice) * totalDelivery };
+    };
+    
+    const details = getContractDetails(selectedType);
+    const canAfford = player.cash >= details.costPerTurn;
+    
+    const handleSign = () => {
+        onAction('signDataContract', { dataType: selectedType, duration: details.duration, deliveryPerTurn: details.deliveryPerTurn, costPerTurn: details.costPerTurn });
+        onClose();
+    };
+    
+    return (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent-cyan)', borderRadius: '12px', padding: '20px', width: '90%', maxWidth: '400px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--accent-cyan)' }}>📝 數據訂閱合約</h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
+                </div>
+                
+                <div style={{ padding: '10px', background: 'var(--bg-tertiary)', borderRadius: '6px', marginBottom: '16px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <p style={{ margin: '0 0 6px 0' }}>📋 合約條款：</p>
+                    <ul style={{ margin: 0, paddingLeft: '18px', lineHeight: 1.6 }}>
+                        <li>合約期限：{details.duration} 季</li>
+                        <li>每季自動交付數據</li>
+                        <li>享受 {((1 - (contractConfig.price_multiplier || 0.7)) * 100).toFixed(0)}% 價格折扣</li>
+                        <li>提前解約需支付 {((contractConfig.cancellation_fee || 0.3) * 100).toFixed(0)}% 違約金</li>
+                    </ul>
+                </div>
+                
+                <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>選擇數據類型</div>
+                    <div style={{ display: 'grid', gap: '8px' }}>
+                        {availableTypes.map(typeId => {
+                            const typeConfig = dataConfig.DATA_TYPES?.[typeId] || {};
+                            const isSelected = selectedType === typeId;
+                            return (
+                                <button key={typeId} onClick={() => setSelectedType(typeId)} style={{ padding: '10px 12px', background: isSelected ? 'var(--accent-cyan)22' : 'var(--bg-tertiary)', border: `1px solid ${isSelected ? 'var(--accent-cyan)' : 'var(--border-color)'}`, borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '1rem' }}>{typeConfig.icon || '📦'}</span>
+                                        <span style={{ fontSize: '0.8rem', color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)' }}>{typeConfig.name || typeId}</span>
+                                    </div>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>${(typeConfig.base_price || 1).toFixed(1)}M/TB</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+                
+                <div style={{ padding: '12px', background: 'var(--accent-cyan)11', borderRadius: '6px', marginBottom: '16px', border: '1px solid var(--accent-cyan)22' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', marginBottom: '8px', fontWeight: 600 }}>合約詳情</div>
+                    <div style={{ display: 'grid', gap: '6px', fontSize: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>每季交付</span><span>{details.deliveryPerTurn} TB</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>原價</span><span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>${(details.basePrice * details.deliveryPerTurn).toFixed(1)}M/季</span></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>折扣價</span><span style={{ color: 'var(--accent-green)', fontWeight: 600 }}>${details.costPerTurn.toFixed(1)}M/季</span></div>
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>總數據</span><span style={{ color: 'var(--accent-cyan)' }}>{details.totalDelivery} TB</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--text-muted)' }}>總費用</span><span>${details.totalCost.toFixed(1)}M</span></div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: 'var(--accent-green)' }}>節省</span><span style={{ color: 'var(--accent-green)' }}>${details.savings.toFixed(1)}M</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <button onClick={onClose} style={{ padding: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '6px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}>取消</button>
+                    <button onClick={handleSign} disabled={!canAfford} style={{ padding: '10px', background: canAfford ? 'var(--accent-cyan)' : 'var(--bg-tertiary)', border: 'none', borderRadius: '6px', color: canAfford ? 'white' : 'var(--text-muted)', cursor: canAfford ? 'pointer' : 'not-allowed', fontSize: '0.8rem', fontWeight: 600 }}>{canAfford ? '簽訂合約' : '現金不足'}</button>
+                </div>
+                {!canAfford && <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--accent-red)', textAlign: 'center' }}>需要 ${details.costPerTurn.toFixed(1)}M 支付首期款項</div>}
+            </div>
+        </div>
+    );
+}
+
+// ============================================
 // 數據卡片（始終開放）- 整合完整功能
 // ============================================
 
 function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false }) {
     const [purchaseQty, setPurchaseQty] = React.useState(100);
     const [activeTab, setActiveTab] = React.useState('overview');
+    const [showContractModal, setShowContractModal] = React.useState(false);
     
     const config = window.AssetCardConfig;
     const upgrades = config?.DATA_UPGRADES || {};
@@ -1619,26 +1713,68 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
     
     const tier = player.mp_tier || 0;
     
-    // 數據整合
+    // 數據整合 - 使用 useMemo 確保數據正確同步
     const DataInt = window.DataIntegration;
-    const summary = DataInt ? DataInt.getDataSummary(player) : {
-        high_data: player.high_data || 0,
-        low_data: player.low_data || 0,
-        total: (player.high_data || 0) + (player.low_data || 0),
-        legal_total: (player.high_data || 0) + (player.low_data || 0),
-        gray_total: 0
-    };
+    const DataEng = window.DataEngine;
+    
+    // 獲取統一的數據摘要（優先使用 data_state.inventory，同時檢查 data_inventory）
+    const summary = React.useMemo(() => {
+        // 優先使用 DataIntegration
+        if (DataInt) {
+            const baseSummary = DataInt.getDataSummary(player);
+            // 如果 by_type 有數據，直接使用
+            if (baseSummary.by_type && Object.keys(baseSummary.by_type).some(k => baseSummary.by_type[k] > 0)) {
+                return baseSummary;
+            }
+        }
+        
+        // 後備：合併 data_state.inventory 和 data_inventory
+        const ds = player.data_state;
+        const di = player.data_inventory || {};
+        
+        // 合併兩個來源的數據（取較大值避免數據丟失）
+        const mergedInventory = {
+            legal_high_broad: Math.max(ds?.inventory?.legal_high_broad || 0, di.legal_high_broad || 0),
+            legal_high_focused: Math.max(ds?.inventory?.legal_high_focused || 0, di.legal_high_focused || 0),
+            legal_low: Math.max(ds?.inventory?.legal_low || 0, di.legal_low || 0),
+            gray_high: Math.max(ds?.inventory?.gray_high || 0, di.gray_high || 0),
+            gray_low: Math.max(ds?.inventory?.gray_low || 0, di.gray_low || 0),
+            synthetic: ds?.inventory?.synthetic || 0
+        };
+        
+        const legalTotal = mergedInventory.legal_high_broad + mergedInventory.legal_high_focused + mergedInventory.legal_low;
+        const grayTotal = mergedInventory.gray_high + mergedInventory.gray_low;
+        const syntheticTotal = mergedInventory.synthetic;
+        const total = legalTotal + grayTotal + syntheticTotal;
+        
+        return {
+            high_data: player.high_data || 0,
+            low_data: player.low_data || 0,
+            total,
+            legal_total: legalTotal,
+            gray_total: grayTotal,
+            synthetic_total: syntheticTotal,
+            by_type: mergedInventory,
+            synthetic_quality: ds?.synthetic_quality || 0.5
+        };
+    }, [player.data_state, player.data_inventory, player.high_data, player.low_data, DataInt]);
+    
     const report = DataInt ? DataInt.getDetailedReport(player) : null;
     const features = DataInt ? DataInt.getUnlockedFeatures(player) : {};
     const synthesisMethods = DataInt ? DataInt.getAvailableSynthesisMethods(player) : [];
     const processingTasks = report?.processing_tasks || [];
+    
+    // 數據合約相關
+    const dataContracts = player.data_state?.contracts || player.data_contracts || [];
+    const dataConfig = window.DataConfig || {};
+    const contractConfig = dataConfig.PURCHASE_OPTIONS?.contract || {};
+    const canUseContracts = tier >= (contractConfig.unlock_tier || 2);
     
     const grayWarning = report?.gray_warning || false;
     const grayRatio = report?.gray_ratio || 0;
     const decayEstimate = report?.decay_estimate || { high_decay: 0 };
     
     // 檢查路線是否禁止灰色數據
-    const dataConfig = window.DataConfig || {};
     const routeMod = dataConfig.ROUTE_MODIFIERS?.[player.route] || {};
     const grayForbidden = routeMod.gray_data_forbidden || false;
     
@@ -1646,7 +1782,6 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
     const hasSynthesis = (playerUpgrades.synthesis || 0) >= 1;
 
     // 檢查販賣功能解鎖（marketplace 升級等級）
-    const DataEng = window.DataEngine;
     const marketplaceLevel = playerUpgrades.marketplace || 0;
     const sellableTypes = DataEng ? DataEng.getSellableDataTypes(player) : [];
     const sellConfig = dataConfig.SELL_OPTIONS || {};
@@ -1831,10 +1966,61 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                                     🚨 空間不足
                                 </span>
                             )}
+
+                            
                         </div>
                     )}
                     
-                    {/* 整合數據類型與採購/爬蟲按鈕 */}
+                    {/* 數據訂閱合約按鈕 (Tier 2+) */}
+                    {canUseContracts && (
+                        <div style={{ 
+                            marginBottom: '12px', 
+                            padding: '10px', 
+                            background: 'var(--accent-cyan)08',
+                            border: '1px solid var(--accent-cyan)22',
+                            borderRadius: '6px'
+                        }}>
+                            <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: '6px'
+                            }}>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                                    📝 數據訂閱合約
+                                </span>
+                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                                    7折優惠 · 4季期約
+                                </span>
+                            </div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                簽訂長期合約可享受折扣價，每季自動交付數據
+                            </div>
+                            {GlowButton ? (
+                                <GlowButton 
+                                    variant="primary" 
+                                    size="small" 
+                                    onClick={() => setShowContractModal(true)}
+                                    style={{ width: '100%' }}
+                                >
+                                    📋 簽訂數據合約
+                                </GlowButton>
+                            ) : (
+                                <button 
+                                    onClick={() => setShowContractModal(true)}
+                                    style={{ width: '100%', padding: '6px', fontSize: '0.75rem' }}
+                                >
+                                    📋 簽訂數據合約
+                                </button>
+                            )}
+                            {dataContracts.length > 0 && (
+                                <div style={{ marginTop: '6px', fontSize: '0.6rem', color: 'var(--accent-green)' }}>
+                                    ✓ 已有 {dataContracts.length} 個進行中的合約
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div style={{ marginBottom: '12px' }}>
                         {/* 合法數據 - 購買按鈕 */}
                         <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)', marginBottom: '6px', fontWeight: 600 }}>
@@ -2101,6 +2287,16 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                     🔒 Tier 3 解鎖技術升級
                 </div>
             )}
+
+
+            {/* 數據合約簽訂彈出視窗 */}
+            {showContractModal && (
+                <DataContractModal
+                    player={player}
+                    onAction={onAction}
+                    onClose={() => setShowContractModal(false)}
+                />
+            )}
         </AssetCardBase>
     );
 }
@@ -2335,6 +2531,7 @@ window.AssetCardComponents = {
     DataCard,
     DataTypeRow,
     DataTypeRowWithAction,
+    DataContractModal,
     DepartmentUnlockHint,
     AssetCardsPanel
 };
