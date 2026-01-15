@@ -482,17 +482,13 @@ function applyCreditRatingEffects(player, globalParams) {
             type: ratingEvent.direction === 'upgrade' ? 'success' : 'warning'
         });
         
-        // 應用評級變動效果
+        // 應用評級變動效果（無上下限）
         if (ratingEvent.direction === 'upgrade') {
-            newPlayer.hype = Math.min(100, (newPlayer.hype || 0) + 
-                (ratingEvent.hypeBonus || 0));
-            newPlayer.trust = Math.min(100, (newPlayer.trust || 0) + 
-                (ratingEvent.trustBonus || 0));
+            newPlayer.hype = (newPlayer.hype || 0) + (ratingEvent.hypeBonus || 0);
+            newPlayer.trust = (newPlayer.trust || 0) + (ratingEvent.trustBonus || 0);
         } else {
-            newPlayer.hype = Math.max(0, (newPlayer.hype || 0) - 
-                (ratingEvent.hypePenalty || 0));
-            newPlayer.trust = Math.max(0, (newPlayer.trust || 0) - 
-                (ratingEvent.trustPenalty || 0));
+            newPlayer.hype = (newPlayer.hype || 0) - (ratingEvent.hypePenalty || 0);
+            newPlayer.trust = (newPlayer.trust || 0) - (ratingEvent.trustPenalty || 0);
         }
         
         // 子事件（跨越投資/投機級）

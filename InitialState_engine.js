@@ -196,8 +196,8 @@ function createInitialPlayerState(routeName) {
 
     // 確保不會出現負值，並且處理特別的初始化邏輯
     initialState.cash = Math.max(0, initialState.cash);
-    initialState.hype = Math.min(100, initialState.hype);
-    initialState.trust = Math.min(100, initialState.trust);
+    // hype 和 trust 無上下限制
+    
 
     console.log('Initial state created for route: ' + routeName);
 

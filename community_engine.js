@@ -267,14 +267,14 @@ function executeCommunityStrategy(player, strategyId) {
         messages.push(`活躍度 ${effects.engagement_change >= 0 ? '+' : ''}${effects.engagement_change}`);
     }
     
-    // Hype 變化
+    // Hype 變化（無上下限）
     if (effects.hype_change) {
-        newPlayer.hype = Math.max(0, newPlayer.hype + effects.hype_change);
+        newPlayer.hype = (newPlayer.hype || 0) + effects.hype_change;
     }
     
-    // Trust 變化
+    // Trust 變化（無上下限）
     if (effects.trust_change) {
-        newPlayer.trust = Math.max(0, Math.min(100, newPlayer.trust + effects.trust_change));
+        newPlayer.trust = (newPlayer.trust || 0) + effects.trust_change;
     }
     
     // 數據獲得
