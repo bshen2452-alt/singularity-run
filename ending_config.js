@@ -84,6 +84,68 @@ const EndingConfig = (function() {
                 }
             },
             {
+                id: 'the_last_arbitrage',
+                name: '最後的晚餐',
+                type: '最後的晚餐 - The Last Arbitrage',
+                msg: '「不勞而獲的冠軍。」\n\n雖然對手掌握了奇點，但你掌握了對手。\n不能解決問題，就買下能解決問題的人。',
+                victory: true,
+                priority: 150, // 極高優先級，因為這是在對手達到AGI時的特殊逆轉結局
+                check: (player, rivals) => {
+                    // 玩家自身未達AGI
+                    if ((player.model_power || 0) >= 1005) return false;
+                    
+                    // 檢查是否有對手達到AGI且玩家在該對手身上投資超過1000
+                    if (!rivals || rivals.length === 0) return false;
+                    if (!player.rival_investments) return false;
+                    
+                    for (let i = 0; i < rivals.length; i++) {
+                        const rival = rivals[i];
+                        const rivalMP = rival.model_power || rival.mp || 0;
+                        const playerInvestment = player.rival_investments[rival.name] || 0;
+                        
+                        // 對手達到AGI (mp >= 1005) 且玩家投資超過1000
+                        if (rivalMP >= 1005 && playerInvestment >= 1000) {
+                            return true;
+                        }
+                    }
+                    return false;
+                },
+                warning: (player, rivals) => {
+                    if (!rivals || rivals.length === 0) return null;
+                    if (!player.rival_investments) return null;
+                    
+                    // 尋找最接近AGI且有大量投資的對手
+                    let bestCandidate = null;
+                    let highestProgress = 0;
+                    
+                    for (let i = 0; i < rivals.length; i++) {
+                        const rival = rivals[i];
+                        const rivalMP = rival.model_power || rival.mp || 0;
+                        const playerInvestment = player.rival_investments[rival.name] || 0;
+                        
+                        // 對手接近AGI (mp >= 800) 且玩家投資接近門檻 (>= 800)
+                        if (rivalMP >= 800 && playerInvestment >= 800) {
+                            const progress = (rivalMP / 1005) * (playerInvestment / 1000);
+                            if (progress > highestProgress) {
+                                highestProgress = progress;
+                                bestCandidate = rival;
+                            }
+                        }
+                    }
+                    
+                    if (bestCandidate) {
+                        const investment = player.rival_investments[bestCandidate.name] || 0;
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: `${bestCandidate.name} 即將突破奇點，你持有其 $${investment}M 股份`,
+                            severity: investment >= 950 ? 'info' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
                 id: 'rival_approaching_agi',
                 name: '對手逼近奇點',
                 type: '競爭預警',
@@ -913,16 +975,122 @@ const EndingConfig = (function() {
                 }
             },
             {
-                id: 'agi_standard',
+                id: 'singularity_protocol',
                 name: '奇點協議',
-                type: '奇點協議 - Standard Victory',
-                msg: '你創造了 AGI，但未來仍未可知。',
+                type: '奇點協議 - Singularity Protocol',
+                msg: '「新紀元的開端。」\n\n你並非最大最強的，但你說服競爭對手共同簽署「奇點協議」，確保技術為全人類服務。',
                 victory: true,
-                priority: 1, // 最低優先級，作為 fallback
+                priority: 80, // 高優先級，代表外交型AGI勝利
                 check: (player) => {
-                    return player.model_power >= 1000;
+                    // 基礎條件：達到AGI
+                    if ((player.model_power || 0) < 1005) return false;
+                    
+                    // 信任度 > 200
+                    if ((player.trust || 0) <= 200) return false;
+                    
+                    // 炒作度 > 400
+                    if ((player.hype || 0) <= 400) return false;
+                    
+                    // 檢查產業親和度：需要5個產業達到「戰略聯盟」等級（70+）
+                    const affinityState = player.industry_affinity_state;
+                    if (!affinityState || !affinityState.affinity) return false;
+                    
+                    const industries = Object.values(affinityState.affinity);
+                    const allianceCount = industries.filter(value => value >= 70).length;
+                    
+                    return allianceCount >= 5;
+                },
+                warning: (player) => {
+                    // 預警條件：接近達成
+                    const mp = player.model_power || 0;
+                    const trust = player.trust || 0;
+                    const hype = player.hype || 0;
+                    
+                    // 檢查產業親和度進度
+                    const affinityState = player.industry_affinity_state;
+                    let allianceCount = 0;
+                    let nearAllianceCount = 0;
+                    
+                    if (affinityState && affinityState.affinity) {
+                        for (const value of Object.values(affinityState.affinity)) {
+                            if (value >= 70) allianceCount++;
+                            else if (value >= 55) nearAllianceCount++;
+                        }
+                    }
+                    
+                    // 當MP接近AGI且其他條件有一定進展時觸發預警
+                    if (mp >= 800 && trust >= 150 && hype >= 300 && (allianceCount >= 3 || (allianceCount >= 2 && nearAllianceCount >= 2))) {
+                        const progress = (
+                            (Math.min(mp, 1005) / 1005) * 0.3 +
+                            (Math.min(trust, 200) / 200) * 0.25 +
+                            (Math.min(hype, 400) / 400) * 0.25 +
+                            (allianceCount / 5) * 0.2
+                        );
+                        
+                        return {
+                            active: true,
+                            turnsLeft: progress >= 0.9 ? 2 : 5,
+                            condition: `產業聯盟進度：${allianceCount}/5，全球影響力正在匯聚`,
+                            severity: progress >= 0.85 ? 'info' : 'warning'
+                        };
+                    }
+                    return null;
                 }
-            }
+            },
+            {
+                id: 'great_schism',
+                name: '大分流',
+                type: '大分流 - Great Schism',
+                msg: '「時代的兩極。」\n\n你與主要對手分不出勝負又無法合作，世界的 AI 發展被兩股截然不同的哲學分裂。',
+                victory: false, // 達成AGI但世界分裂，非完美結局
+                priority: 75,
+                check: (player) => {
+                    // 基礎條件：達到AGI
+                    if ((player.model_power || 0) < 1005) return false;
+
+                    // 信任度 < 200 或 炒作度 < 400
+                    const trust = player.trust || 0;
+                    const hype = player.hype || 0;
+                    if (!(trust < 200 || hype < 400)) return false;
+                    
+                    // 檢查產業親和度：需要5個產業達到「疏遠」等級（<= -30）
+                    const affinityState = player.industry_affinity_state;
+                    if (!affinityState || !affinityState.affinity) return false;
+                    
+                    const industries = Object.values(affinityState.affinity);
+                    const alienatedCount = industries.filter(value => value <= -30).length;
+                    
+                    return alienatedCount >= 5;
+                },
+                warning: (player) => {
+                    const mp = player.model_power || 0;
+                    const trust = player.trust || 0;
+                    const hype = player.hype || 0;
+                    
+                    // 檢查產業疏遠進度
+                    const affinityState = player.industry_affinity_state;
+                    let alienatedCount = 0;
+                    let nearAlienatedCount = 0;
+                    
+                    if (affinityState && affinityState.affinity) {
+                        for (const value of Object.values(affinityState.affinity)) {
+                            if (value <= -30) alienatedCount++;
+                            else if (value <= -15) nearAlienatedCount++;
+                        }
+                    }
+                    
+                    // 當MP接近AGI且產業關係惡化時觸發預警
+                    if (mp >= 800 && (trust < 220 || hype > 350) && (alienatedCount >= 3 || (alienatedCount >= 2 && nearAlienatedCount >= 2))) {
+                        return {
+                            active: true,
+                            turnsLeft: alienatedCount >= 4 ? 2 : 4,
+                            condition: `產業疏遠警告：${alienatedCount}/5 個產業關係破裂`,
+                            severity: alienatedCount >= 4 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
         ]
     };
 
