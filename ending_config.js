@@ -448,6 +448,69 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            {
+                id: 'wunderkind_no_more',
+                name: '小時了了',
+                type: '小時了了 - Wunderkind no more',
+                msg: '「組成社會的螺釘。」\n\n資金充裕、形象良好，但你的 AI 永遠無法突破下一個門檻。\n你成了兒時自己嫌棄無趣的大人。',
+                victory: false,
+                priority: 5,
+                // 判定條件：達到 Tier 3 但模型實力不足、信任度高、資金極其充裕且遊戲已進入後期
+                check: (player) => {
+                    return player.mp_tier === 3 &&
+                        (player.model_power || 0) < 300 && 
+                        (player.trust || 0) >= 60 &&
+                        (player.cash || 0) >= 500 &&
+                        (player.turn_count || 0) > 20;
+                },
+                // 預警系統：偵測到技術停滯但公司穩定
+                warning: (player) => {
+                    if (player.mp_tier === 3 && 
+                        (player.model_power || 0) < 350 && 
+                        (player.cash || 0) > 400) {
+                        return {
+                            active: true,
+                            turnsLeft: 5,
+                            condition: '發展正步上軌道，拼勁卻悄悄遠去',
+                            severity: 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
+                id: 'commercial_victory',
+                name: '資本奴隸',
+                type: '資本奴隸 - Commercial Victory',
+                msg: '「黃金鑄造的牢籠。」\n\n你的算法是完美的市場脈搏，無所不在的推銷員。\n股東賺翻了，人類智慧卻停滯不前。',
+                victory: true, // 雖然諷刺，但在商業標準下是勝利
+                priority: 8,   // 高優先級，代表這是一個強力的商業終局
+                check: (player, rivals, globalParams) => {
+                    // 判定條件：
+
+                    // 系統熵值極低 (代表完全失去創新活力，僅剩僵化的算法)
+                    // 現金流極高 (超過 500,000)
+                    // 社群好感度極低 (低於 30，大眾反感)
+                    return player.mp_tier === 3 &&
+                        player.entropy < 20 &&
+                        (player.product_state?.product_revenue || 0) > 500000 &&
+                        (player.community?.sentiment || 0) < 30;
+                },
+                warning: (player, rivals, globalParams) => {
+                    const sentiment = player.community?.sentiment || 0;
+                    // 預警條件：當現金流已經達標，但社群聲望持續下跌時
+                    if (player.mp_tier >= 2 && (player.product_state?.product_revenuee || 0) > 400000 && sentiment < 40) {
+                        return {
+                            active: true,
+                            turnsLeft: 5,
+                            condition: '既然投入這麼多錢研發，何不多貼幾張廣告呢?',
+                            severity: sentiment < 35 ? 'critical' : 'info'
+                        };
+                    }
+                    return null;
+                }
+            },
+
         ],
 
         // ============================================
@@ -611,6 +674,65 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            // 技術優化路線專屬結局
+            {
+                id: 'ghost_in_the_machine',
+                name: '機中幽靈',
+                type: '機中幽靈 - Ghost in the Machine',
+                msg: '「我揮一揮衣袖，不帶走一片雲彩。」\n\n當所有人還在堆砌硬體時，你的天才演算法悄無聲息地完成了進化。\n現在奇點的鑰匙在你手中。',
+                victory: true,
+                priority: 100, // 極致成就，優先級設為最高
+                check: (player) => {
+                    // 達成最高 MP 等級、走效率路線、且擁有 10 名以上圖靈級天才
+                    // 備註：cash < 5,000,000 代表這不是靠錢砸出來的，而是純粹的技術突破
+                    return player.mp_tier === 4 &&
+                        player.cash < 5000000 &&
+                        player.route === 'Efficiency' &&
+        player.model_power > 800 &&
+                        (player.talent?.turing || 0) >= 10;
+                },
+                warning: (player) => {
+                    const turingCount = (player.talent?.turing || 0);
+                    // 當條件接近（例如有 10 個圖靈級天才且 MP 等級已高）時給予預警
+                    if (player.route === 'Efficiency' && turingCount >= 4 && player.mp_tier >= 3) {
+                        return {
+                            active: true,
+                            turnsLeft: 2,
+                            condition: '手握鑰匙，你已抵達門前',
+                            severity: 'info' // 對於邁向勝利來說，這是「極其重要」的關鍵時刻
+                        };
+                    }
+                    return null;
+                }
+            },
+            {
+                id: 'oracles_silence',
+                name: '靜默神諭',
+                type: '靜默神諭 - Oracle\'s Silence',
+                msg: '「佛曰不可說。」\n\n你創造了一個無人能管理的數位神祇。\n當它不再給予回應，已無工程師能修復、理解那個超越人智的系統了。',
+                victory: false,
+                priority: 20, // Tier 4 高階結局，優先級設定較高
+                check: (player) => {
+                    return player.mp_tier === 4 &&
+                        player.model_power > 800 &&
+                        player.route === 'Efficiency' &&
+                        player.entropy > 90;
+                },
+                warning: (player) => {
+                    // 當熵值接近臨界點 (例如 > 75) 且模型強度已達標時觸發預警
+                    if (player.model_power > 700 && player.entropy > 75 && player.route === 'Efficiency') {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '底層程式碼逐漸自我重構為不可理解的形態......',
+                            severity: player.entropy > 85 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+
+
             // Scaling Law路線專屬結局
             {
                 id: 'scaling_leviathan',
@@ -681,7 +803,7 @@ const EndingConfig = (function() {
                 victory: false,
                 priority: 10,
                 check: (player) => {
-                    return player.mp_tier < 5 &&
+                    return player.mp_tier >= 4 &&
                            player.turn_count > 12 &&
                            player.model_power >= 990 &&
                            player.model_power <= 999;
@@ -743,7 +865,7 @@ const EndingConfig = (function() {
                 check: (player) => {
                     // 判定條件：熵值 >= 100, 對齊度 < 30, 模型算力 >= 1005
                     return (player.entropy >= 100 || player.entropy >= 100) && 
-                        (player.alignment < 30 || player.對齊度 < 30) &&
+                        (player.alignment < 30 || player.alignment < 30) &&
                         (player.model_power >= 1005);
                 },
                 warning: (player) => {
