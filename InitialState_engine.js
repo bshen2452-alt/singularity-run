@@ -212,6 +212,12 @@ function createInitialPlayerState(routeName) {
         console.log('✓ Global Market initialized at game start');
     }
     
+    // 初始化產業親和度狀態
+    if (window.IndustryAffinityEngine && !initialState.industry_affinity_state) {
+        initialState.industry_affinity_state = window.IndustryAffinityEngine.createInitialState(routeName);
+        console.log('✓ Industry Affinity initialized for route: ' + routeName);
+    }
+    
     return initialState;
 }
 

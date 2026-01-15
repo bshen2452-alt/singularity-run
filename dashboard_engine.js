@@ -529,44 +529,7 @@
             }
         }
 
-        // 3. 添加 Doom Gauge 相關警示
-        const doomGauge = DashboardEngine.getDoomGauge(player);
-        
-        if (doomGauge.commercial_ruin >= 70) {
-            alerts.push({
-                level: doomGauge.commercial_ruin >= 85 ? 'danger' : 'warning',
-                icon: '💸',
-                category: '崩潰預警',
-                text: `商業崩潰風險：${doomGauge.commercial_ruin.toFixed(0)}%`,
-                isDoomWarning: true,
-                doomType: 'commercial_ruin',
-                doomValue: doomGauge.commercial_ruin
-            });
-        }
-        
-        if (doomGauge.internal_unraveling >= 70) {
-            alerts.push({
-                level: doomGauge.internal_unraveling >= 85 ? 'danger' : 'warning',
-                icon: '🔥',
-                category: '崩潰預警',
-                text: `內部瓦解風險：${doomGauge.internal_unraveling.toFixed(0)}%`,
-                isDoomWarning: true,
-                doomType: 'internal_unraveling',
-                doomValue: doomGauge.internal_unraveling
-            });
-        }
-        
-        if (doomGauge.external_sanction >= 70) {
-            alerts.push({
-                level: doomGauge.external_sanction >= 85 ? 'danger' : 'warning',
-                icon: '🚫',
-                category: '崩潰預警',
-                text: `外部制裁風險：${doomGauge.external_sanction.toFixed(0)}%`,
-                isDoomWarning: true,
-                doomType: 'external_sanction',
-                doomValue: doomGauge.external_sanction
-            });
-        }
+
 
         // 4. 按優先級排序：結局預警 > Doom預警 > 風險警示
         alerts.sort((a, b) => {
@@ -574,9 +537,6 @@
             if (a.isEndingWarning && !b.isEndingWarning) return -1;
             if (!a.isEndingWarning && b.isEndingWarning) return 1;
             
-            // Doom預警次之
-            if (a.isDoomWarning && !b.isDoomWarning) return -1;
-            if (!a.isDoomWarning && b.isDoomWarning) return 1;
             
             // 同類型按嚴重程度排序
             const levelOrder = { danger: 0, warning: 1, info: 2 };

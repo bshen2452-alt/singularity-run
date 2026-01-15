@@ -431,9 +431,26 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                 // 計算市場總價值
                 (() => {
                     const playerMarketCap = player?.market_cap || 0;
-                    const rivalsMarketCap = (rivals || []).reduce((sum, r) => sum + (r.market_cap || 0), 0);
+                    const rivalsList = rivals || [];
+                    const rivalsMarketCap = rivalsList.reduce((sum, r) => sum + (r.market_cap || 0), 0);
                     const totalMarketCap = playerMarketCap + rivalsMarketCap;
                     const playerShare = totalMarketCap > 0 ? (playerMarketCap / totalMarketCap) * 100 : 0;
+                    
+                    // 準備所有參與者的市值數據（用於進度條和列表）
+                    const marketParticipants = [
+                        { name: '你', marketCap: playerMarketCap, color: 'var(--accent-cyan)', icon: '🏠' }
+                    ];
+                    rivalsList.forEach(r => {
+                        marketParticipants.push({
+                            name: r.name,
+                            marketCap: r.market_cap || 0,
+                            color: 'var(--accent-orange)',
+                            icon: r.icon || '🏢',
+                            route: r.route
+                        });
+                    });
+                    // 按市值排序
+                    marketParticipants.sort((a, b) => b.marketCap - a.marketCap);
                     
                     return React.createElement('div', { key: 'market-stats' }, [
                         // 總市值
@@ -459,9 +476,9 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                             React.createElement('div', {
                                 key: 'label',
                                 style: { fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }
-                            }, '市場總估值 (玩家 + 對手)')
+                            }, '市場總估值')
                         ]),
-                        // 市佔率進度條
+                        // 市佔率進度條（多色分段）
                         React.createElement('div', {
                             key: 'share-bar',
                             style: {
@@ -472,77 +489,105 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                                 display: 'flex',
                                 marginBottom: '8px'
                             }
-                        }, [
-                            React.createElement('div', {
-                                key: 'player-share',
+                        }, marketParticipants.map((p, idx) => {
+                            const share = totalMarketCap > 0 ? (p.marketCap / totalMarketCap) * 100 : 0;
+                            // 給每個對手不同的橘色深淺
+                            const rivalColors = ['#ff8800', '#ff6600', '#ff9933', '#cc5500', '#ffaa44'];
+                            const bgColor = p.name === '你' 
+                                ? 'linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-blue) 100%)'
+                                : rivalColors[idx % rivalColors.length];
+                            return React.createElement('div', {
+                                key: idx,
                                 style: {
-                                    width: `${playerShare}%`,
+                                    width: `${share}%`,
                                     height: '100%',
-                                    background: 'linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-blue) 100%)',
+                                    background: bgColor,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    fontSize: '0.7rem',
+                                    fontSize: '0.65rem',
                                     color: '#fff',
                                     fontWeight: 'bold',
-                                    minWidth: playerShare > 5 ? '60px' : '0'
-                                }
-                            }, playerShare > 5 ? `你 ${formatToTwoDecimals(playerShare)}%` : ''),
-                            React.createElement('div', {
-                                key: 'rival-share',
-                                style: {
-                                    flex: 1,
-                                    height: '100%',
-                                    background: 'var(--accent-orange)66',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.7rem',
-                                    color: 'var(--text-primary)'
-                                }
-                            }, `對手 ${formatToTwoDecimals(100 - playerShare)}%`)
-                        ]),
-                        // 分項數據
+                                    minWidth: share > 8 ? '30px' : '0',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                },
+                                title: `${p.name}: $${formatToTwoDecimals(p.marketCap)}M (${formatToTwoDecimals(share)}%)`
+                            }, share > 8 ? `${formatToTwoDecimals(share)}%` : '');
+                        })),
+                        // 分項數據列表
                         React.createElement('div', {
                             key: 'breakdown',
                             style: {
                                 display: 'grid',
-                                gridTemplateColumns: '1fr 1fr',
-                                gap: '8px',
-                                fontSize: '0.75rem'
+                                gap: '4px',
+                                fontSize: '0.75rem',
+                                maxHeight: '120px',
+                                overflowY: 'auto'
                             }
-                        }, [
-                            React.createElement('div', {
-                                key: 'player',
+                        }, marketParticipants.map((p, idx) => {
+                            const share = totalMarketCap > 0 ? (p.marketCap / totalMarketCap) * 100 : 0;
+                            const isPlayer = p.name === '你';
+                            return React.createElement('div', {
+                                key: idx,
                                 style: { 
-                                    padding: '6px 10px', 
-                                    background: 'var(--accent-cyan)11', 
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '5px 10px', 
+                                    background: isPlayer ? 'var(--accent-cyan)11' : 'var(--bg-tertiary)', 
                                     borderRadius: '4px',
-                                    borderLeft: '3px solid var(--accent-cyan)'
+                                    borderLeft: `3px solid ${isPlayer ? 'var(--accent-cyan)' : 'var(--accent-orange)'}`
                                 }
                             }, [
-                                React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '你的市值'),
                                 React.createElement('div', { 
-                                    key: 'v', 
-                                    style: { fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' } 
-                                }, `$${formatToTwoDecimals(playerMarketCap)}M`)
-                            ]),
-                            React.createElement('div', {
-                                key: 'rivals',
-                                style: { 
-                                    padding: '6px 10px', 
-                                    background: 'var(--accent-orange)11', 
-                                    borderRadius: '4px',
-                                    borderLeft: '3px solid var(--accent-orange)'
-                                }
-                            }, [
-                                React.createElement('div', { key: 'l', style: { color: 'var(--text-muted)' } }, '對手總市值'),
-                                React.createElement('div', { 
-                                    key: 'v', 
-                                    style: { fontFamily: 'var(--font-mono)', color: 'var(--accent-orange)' } 
-                                }, `$${formatToTwoDecimals(rivalsMarketCap)}M`)
-                            ])
-                        ])
+                                    key: 'name',
+                                    style: { display: 'flex', alignItems: 'center', gap: '6px' }
+                                }, [
+                                    React.createElement('span', { key: 'icon' }, p.icon),
+                                    React.createElement('span', { 
+                                        key: 'text',
+                                        style: { fontWeight: isPlayer ? 'bold' : 'normal' }
+                                    }, p.name),
+                                    !isPlayer && p.route && React.createElement('span', {
+                                        key: 'route',
+                                        style: { 
+                                            fontSize: '0.6rem', 
+                                            color: 'var(--text-muted)',
+                                            padding: '1px 4px',
+                                            background: 'var(--bg-secondary)',
+                                            borderRadius: '2px'
+                                        }
+                                    }, p.route)
+                                ]),
+                                React.createElement('div', {
+                                    key: 'value',
+                                    style: { 
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px'
+                                    }
+                                }, [
+                                    React.createElement('span', { 
+                                        key: 'cap',
+                                        style: { 
+                                            fontFamily: 'var(--font-mono)', 
+                                            color: isPlayer ? 'var(--accent-cyan)' : 'var(--accent-orange)' 
+                                        } 
+                                    }, `$${formatToTwoDecimals(p.marketCap)}M`),
+                                    React.createElement('span', {
+                                        key: 'share',
+                                        style: { 
+                                            fontSize: '0.65rem',
+                                            color: 'var(--text-muted)',
+                                            minWidth: '35px',
+                                            textAlign: 'right'
+                                        }
+                                    }, `${formatToTwoDecimals(share)}%`)
+                                ])
+                            ]);
+                        }))
                     ]);
                 })()
             ]),
@@ -723,7 +768,7 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                 (() => {
                     const affinityConfig = window.IndustryAffinityConfig;
                     const industries = affinityConfig?.INDUSTRIES || {};
-                    const playerAffinity = player?.industry_affinity?.affinity || {};
+                    const playerAffinity = player?.industry_affinity_state?.affinity || {};
                     const levelDescriptions = affinityConfig?.AFFINITY_EFFECTS?.level_descriptions || {};
                     
                     // 獲取親和度等級
