@@ -729,7 +729,7 @@
     // 主儀表板
     // ============================================
     
-    function GameDashboardNew({ gameState, derived, processData, finances, messages }) {
+    function GameDashboardNew({ gameState, derived, processData, finances, messages, onAction }) {
         const { player, globalParams, rivals } = gameState;
         const route = window.GameConfig?.TECH_ROUTES?.[player.route] || {};
 

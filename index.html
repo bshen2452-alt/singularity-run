@@ -1220,7 +1220,8 @@ function App() {
                             derived: derived,
                             processData: lastTurnData.processData,
                             finances: lastTurnData.finances,
-                            messages: messages
+                            messages: messages,
+                            onAction: handleAction
                         })
                     ) : (
                         <GameDashboard gameState={gameState} derived={derived} onAction={handleAction} />

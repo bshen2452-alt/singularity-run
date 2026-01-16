@@ -81,10 +81,10 @@ const DataEngine = {
 
         switch (feature) {
             case 'display':
-                return true;  // 始終顯示
+            case 'scraping':  // 爬蟲從 Tier 0 即可使用
+                return true;
             case 'sources':
             case 'decay':
-            case 'scraping':
                 return tier >= config.UNLOCK_TIERS?.BASIC || tier >= 1;
             case 'cleaning':
             case 'synthesis':

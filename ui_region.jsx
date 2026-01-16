@@ -784,7 +784,7 @@
                                     {scoreResult?.eligible ? (
                                         <div>
                                             <button
-                                                onClick={() => onAction?.('establish_liaison', { regionId })}
+                                                onClick={() => { console.log('🔘 Button clicked: establish_liaison', { regionId, onAction: typeof onAction }); onAction?.('establish_liaison', { regionId }); }}
                                                 style={{
                                                     width: '100%',
                                                     padding: '12px',
@@ -801,7 +801,7 @@
                                                 📍 建立聯絡處 ({fmtCash(config.OFFICE_LEVELS?.liaison?.setup_cost || 20)})
                                             </button>
                                             <button
-                                                onClick={() => onAction?.('submit_application', { regionId })}
+                                                onClick={() => { console.log('🔘 Button clicked: submit_application', { regionId, onAction: typeof onAction }); onAction?.('submit_application', { regionId }); }}
                                                 style={{
                                                     width: '100%',
                                                     padding: '12px',
