@@ -359,8 +359,56 @@ const ACTION_ROUTES = {
                     return { success: false, message: '未知的空間行動' };
             }
         }
+    },
+
+    // 區域系統行動組 (Tier4+)
+    region: {
+        actions: ['establish_liaison', 'submit_application', 'upgrade_office', 'assign_asset'],
+        engine: () => window.RegionEngine,
+        executor: (engine, player, action, globalParams, params) => {
+            switch(action) {
+                case 'establish_liaison':
+                    const liaisonResult = engine.establishLiaison(player, params.regionId);
+                    if (liaisonResult.success && liaisonResult.newState) {
+                        liaisonResult.player = liaisonResult.newState;
+                    }
+                    return liaisonResult;
+                    
+                case 'submit_application':
+                    const appResult = engine.submitApplication(player, params.regionId);
+                    if (appResult.success && appResult.newState) {
+                        appResult.player = appResult.newState;
+                    }
+                    return appResult;
+                    
+                case 'upgrade_office':
+                    if (!engine.upgradeOffice) {
+                        return { success: false, message: '辦公室升級功能未實現' };
+                    }
+                    const upgradeResult = engine.upgradeOffice(player, params.regionId, params.officeIndex);
+                    if (upgradeResult.success && upgradeResult.newState) {
+                        upgradeResult.player = upgradeResult.newState;
+                    }
+                    return upgradeResult;
+                    
+                case 'assign_asset':
+                    if (!engine.assignAsset) {
+                        return { success: false, message: '資產派駐功能未實現' };
+                    }
+                    const assignResult = engine.assignAsset(player, params.regionId, params.assetId);
+                    if (assignResult.success && assignResult.newState) {
+                        assignResult.player = assignResult.newState;
+                    }
+                    return assignResult;
+                    
+                default:
+                    return { success: false, message: '未知的區域行動' };
+            }
+        }
     }
 };
+
+
 
 // 里程碑行動路由
 const MILESTONE_ACTION_ROUTING = {
@@ -371,7 +419,7 @@ const MILESTONE_ACTION_ROUTING = {
             return engine.executeMilestoneLaunch(player, milestoneId);
         }
     }
-};
+};   
 
 
 
@@ -838,6 +886,7 @@ function useGameState() {
             EndingEngine: !!window.EndingEngine,
             ETFEngine: !!window.ETFEngine,
             CommunityEngine: !!window.CommunityEngine,
+            RegionEngine: !!window.RegionEngine,  // 區域系統
             EventEngine: !!window.EventEngine,
             ComputeEngine: !!window.ComputeEngine,  // 新增
             allReady: !!(

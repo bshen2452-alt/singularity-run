@@ -599,6 +599,167 @@ const RegionEngine = {
         
         return Object.keys(bonuses).length > 0 ? bonuses : null;
     },
+
+    // ==========================================
+    // 區域進入行動
+    // ==========================================
+    
+    /**
+     * 建立聯絡處（快速進入，需要資金）
+     * @param {Object} playerState - 玩家狀態
+     * @param {string} regionId - 區域ID
+     * @returns {Object} 執行結果
+     */
+    establishLiaison: function(playerState, regionId) {
+        console.log("🌍 [RegionEngine] establishLiaison called:", { regionId, playerCash: playerState?.cash });
+        const config = window.RegionConfig;
+        const region = config.getRegion(regionId);
+        
+        if (!region) {
+            return { success: false, message: '無效區域' };
+        }
+        
+        if (region.is_home) {
+            return { success: false, message: '無法在母國建立聯絡處' };
+        }
+        
+        // 檢查評分資格
+        const regionSystemState = playerState.region_system || this.createInitialState();
+        const scoreResult = this.calculateRegionScore(regionId, playerState, regionSystemState, playerState.global_market);
+        
+        if (!scoreResult.eligible) {
+            return { 
+                success: false, 
+                message: `評分未達門檻（${scoreResult.score.toFixed(1)}/${scoreResult.threshold}）` 
+            };
+        }
+        
+        // 檢查是否已有辦公室
+        const regionState = regionSystemState.regions[regionId];
+        if (regionState && regionState.offices && regionState.offices.length > 0) {
+            return { success: false, message: '該區域已有據點' };
+        }
+        
+        // 檢查資金
+        const liaisonConfig = config.OFFICE_LEVELS.liaison;
+        const setupCost = liaisonConfig.setup_cost || 20;
+        
+        if (playerState.cash < setupCost) {
+            return { 
+                success: false, 
+                message: `資金不足，需要 $${setupCost}M` 
+            };
+        }
+        
+        // 執行建立
+        const newPlayer = JSON.parse(JSON.stringify(playerState));
+        newPlayer.cash -= setupCost;
+        
+        // 確保 region_system 存在
+        if (!newPlayer.region_system) {
+            newPlayer.region_system = this.createInitialState();
+        }
+        
+        // 更新區域狀態
+        const newRegionState = newPlayer.region_system.regions[regionId];
+        newRegionState.unlocked = true;
+        newRegionState.offices = [{
+            level: 'liaison',
+            established_turn: playerState.turn_count || 1
+        }];
+        
+        newPlayer.region_system.global_expansion_count++;
+        
+        return {
+            success: true,
+            newState: newPlayer,
+            message: `📍 已在 ${region.icon} ${region.name} 建立聯絡處（-$${setupCost}M）`
+        };
+    },
+    
+    /**
+     * 提交營運申請（需要審批時間）
+     * @param {Object} playerState - 玩家狀態
+     * @param {string} regionId - 區域ID
+     * @returns {Object} 執行結果
+     */
+    submitApplication: function(playerState, regionId) {
+        const config = window.RegionConfig;
+        const region = config.getRegion(regionId);
+        
+        if (!region) {
+            return { success: false, message: '無效區域' };
+        }
+        
+        if (region.is_home) {
+            return { success: false, message: '無法在母國申請' };
+        }
+        
+        // 檢查評分資格
+        const regionSystemState = playerState.region_system || this.createInitialState();
+        const scoreResult = this.calculateRegionScore(regionId, playerState, regionSystemState, playerState.global_market);
+        
+        if (!scoreResult.eligible) {
+            return { 
+                success: false, 
+                message: `評分未達門檻（${scoreResult.score.toFixed(1)}/${scoreResult.threshold}）` 
+            };
+        }
+        
+        // 檢查是否已有辦公室
+        const regionState = regionSystemState.regions[regionId];
+        if (regionState && regionState.offices && regionState.offices.length > 0) {
+            return { success: false, message: '該區域已有據點' };
+        }
+        
+        // 檢查是否已有進行中的申請
+        if (regionState && regionState.pending_applications && regionState.pending_applications.length > 0) {
+            return { success: false, message: '該區域已有進行中的申請' };
+        }
+        
+        // 檢查同時申請數量上限
+        const maxConcurrent = config.SYSTEM.max_concurrent_applications || 2;
+        let totalPending = 0;
+        Object.values(regionSystemState.regions).forEach(rs => {
+            totalPending += (rs.pending_applications || []).length;
+        });
+        if (totalPending >= maxConcurrent) {
+            return { 
+                success: false, 
+                message: `同時進行的申請數已達上限（${maxConcurrent}）` 
+            };
+        }
+        
+        // 計算審批時間
+        const approvalTime = this.calculateApprovalTime(regionId, scoreResult.score, scoreResult.threshold);
+        
+        // 執行申請
+        const newPlayer = JSON.parse(JSON.stringify(playerState));
+        
+        // 確保 region_system 存在
+        if (!newPlayer.region_system) {
+            newPlayer.region_system = this.createInitialState();
+        }
+        
+        // 添加待審批申請
+        const newRegionState = newPlayer.region_system.regions[regionId];
+        if (!newRegionState.pending_applications) {
+            newRegionState.pending_applications = [];
+        }
+        
+        newRegionState.pending_applications.push({
+            type: 'operation_license',
+            submitted_turn: playerState.turn_count || 1,
+            remaining_turns: approvalTime.turns,
+            approval_type: approvalTime.type
+        });
+        
+        return {
+            success: true,
+            newState: newPlayer,
+            message: `📝 已向 ${region.icon} ${region.name} 提交營運申請（審批需 ${approvalTime.turns} 回合）`
+        };
+    },
     
     // ==========================================
     // 狀態更新

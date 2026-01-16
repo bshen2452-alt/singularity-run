@@ -477,6 +477,47 @@ const handleAction = useCallback((action, params = {}) => {
     }
 
     // ========================================
+    // 區域系統行動 (Tier4+)
+    // ========================================
+    else if (action === 'establish_liaison') {
+        console.log('🌍 [handleAction] establish_liaison triggered, params:', params);
+        const RegionEng = window.RegionEngine;
+        if (RegionEng && RegionEng.establishLiaison) {
+            result = RegionEng.establishLiaison(player, params.regionId);
+            console.log('🌍 [handleAction] establishLiaison result:', result);
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+        } else {
+            result = { success: false, message: '區域系統未載入' };
+        }
+    }
+    else if (action === 'submit_application') {
+        console.log('🌍 [handleAction] submit_application triggered, params:', params);
+        const RegionEng = window.RegionEngine;
+        if (RegionEng && RegionEng.submitApplication) {
+            result = RegionEng.submitApplication(player, params.regionId);
+            console.log('🌍 [handleAction] submitApplication result:', result);
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+        } else {
+            result = { success: false, message: '區域系統未載入' };
+        }
+    }
+    else if (action === 'upgrade_office') {
+        const RegionEng = window.RegionEngine;
+        if (RegionEng && RegionEng.upgradeOffice) {
+            result = RegionEng.upgradeOffice(player, params.regionId, params.officeIndex);
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+        } else {
+            result = { success: false, message: '區域系統未載入' };
+        }
+    }
+
+    // ========================================
     else {
         addMessage('未知的行動類型: ' + action, 'danger');
         return;
