@@ -64,46 +64,75 @@ const RegionEngine = {
         const dimension = config.getDimension(dimensionId);
         if (!dimension) return 0;
         
+        // 信用評級字串轉數值的映射
+        const CREDIT_RATING_VALUES = {
+            'AAA': 100, 'AA': 90, 'A': 80, 'BBB': 70,
+            'BB': 55, 'B': 40, 'CCC': 25, 'CC': 15, 'C': 10, 'D': 0
+        };
+        
         let score = 0;
         
         switch (dimensionId) {
             case 'finance':
-                // 現金 + 信用評級
+                // 現金 + 信用評級 + 營收
                 const cash = playerState.cash || 0;
-                const creditRating = playerState.credit_rating || 50;
-                score = Math.min(100, (cash / 10) + (creditRating * 0.5));
+                // 將信用評級字串轉換為數值
+                const creditRatingStr = playerState.credit_rating || 'BBB';
+                const creditRatingValue = CREDIT_RATING_VALUES[creditRatingStr] || 70;
+                // 也考慮季度營收
+                const revenue = playerState.revenue || 0;
+                // cash/20 最高50分, creditRating/2 最高50分
+                score = Math.min(100, (cash / 20) + (creditRatingValue * 0.4) + (revenue / 10));
                 break;
                 
             case 'tech':
                 // MP + 里程碑 + 技術等級
                 const mp = playerState.mp || 0;
-                const milestones = playerState.milestones_achieved || 0;
-                const techLevel = playerState.tech_level || 1;
-                score = Math.min(100, (mp / 5) + (milestones * 5) + (techLevel * 10));
+                // 支援多種里程碑存儲格式
+                let milestones = 0;
+                if (typeof playerState.milestones_achieved === 'number') {
+                    milestones = playerState.milestones_achieved;
+                } else if (playerState.mp_milestones) {
+                    milestones = Object.values(playerState.mp_milestones).filter(v => v === true).length;
+                }
+                const techLevel = playerState.tech_level || playerState.mp_tier || 1;
+                score = Math.min(100, (mp / 5) + (milestones * 8) + (techLevel * 15));
                 break;
                 
             case 'market':
-                // 訂閱者 + 社群 + 熱度
-                const subscribers = playerState.subscribers || 0;
-                const community = playerState.community || 0;
+                // 社群規模 + 熱度 + 產品滿意度
+                const communitySize = playerState.community_size || 
+                    (playerState.community && playerState.community.size) || 0;
                 const hype = playerState.hype || 0;
-                score = Math.min(100, (subscribers / 100000) + (community / 50) + (hype * 0.5));
+                // 從產品系統獲取產品滿意度
+                const productState = playerState.product_state || {};
+                const productFulfillment = (productState.product_fulfillment || 1.0) * 100;
+                score = Math.min(100, (communitySize / 500) + (hype * 0.6) + (productFulfillment * 0.2));
                 break;
                 
             case 'scale':
-                // 部門數 + 子公司數 + 產品線
-                const departments = (playerState.departments || []).length;
-                const subsidiaries = (playerState.subsidiaries || []).length;
-                const productLines = (playerState.product_lines || []).length;
-                score = Math.min(100, (departments * 8) + (subsidiaries * 15) + (productLines * 5));
+                // 職能部門 + 職能子公司 + 事業單位
+                // 支援新舊屬性名
+                const funcDepts = (playerState.functional_depts || playerState.departments || []).length;
+                const funcSubs = (playerState.functional_subsidiaries || playerState.subsidiaries || []).length;
+                // business_units 是物件，需要計算鍵數量
+                const businessUnits = playerState.business_units ? 
+                    Object.keys(playerState.business_units).length : 0;
+                // 也計算產品系統中的完成產品數
+                const pState = playerState.product_state || {};
+                const completedProducts = (pState.completed || []).length;
+                score = Math.min(100, (funcDepts * 10) + (funcSubs * 18) + (businessUnits * 12) + (completedProducts * 3));
                 break;
                 
             case 'safety':
-                // 安全指數 + 對齊進度 + 信任度
-                const safetyIndex = playerState.safety_index || 50;
-                const alignmentProgress = playerState.alignment_progress || 0;
+                // 對齊度 + 信任度 + 合規風險(反向) + 熵值(反向)
+                const alignment = playerState.alignment || 0;
                 const trust = playerState.trust || 50;
-                score = Math.min(100, (safetyIndex * 0.4) + (alignmentProgress * 0.3) + (trust * 0.3));
+                const complianceRisk = playerState.compliance_risk || 0;
+                const entropy = playerState.entropy || 5;
+                // 低熵值和低合規風險會增加安全分數
+                score = Math.min(100, (alignment * 0.4) + (trust * 0.5) + 
+                    ((100 - complianceRisk) * 0.05) + ((100 - entropy) * 0.05));
                 break;
                 
             case 'local':
@@ -112,6 +141,8 @@ const RegionEngine = {
                 break;
         }
         
+        // 確保返回有效數字
+        score = isNaN(score) ? 0 : score;
         return Math.round(score * 10) / 10;
     },
     
@@ -241,7 +272,7 @@ const RegionEngine = {
         }
         
         // 4. 全球指數修正
-        if (marketState) {
+        if (marketState && marketState.indices) {
             const indexModifiers = this.calculateIndexModifiers(regionId, marketState);
             if (indexModifiers.total !== 0) {
                 breakdown.index_modifiers = indexModifiers;
@@ -261,6 +292,7 @@ const RegionEngine = {
         
         // 6. 計算動態門檻
         const threshold = this.calculateDynamicThreshold(regionId, marketState, regionSystemState);
+       
         
         // 7. 判定是否達標
         const eligible = totalScore >= threshold;
@@ -330,7 +362,7 @@ const RegionEngine = {
         let threshold = region.base_threshold;
         
         // 全球指數影響
-        if (marketState) {
+        if (marketState && marketState.indices) {
             // 市場信心低時，所有門檻上升
             const confidence = marketState.indices.market_confidence?.value || 100;
             if (confidence < 80) {
@@ -426,7 +458,7 @@ const RegionEngine = {
         });
         
         // 應用全球指數影響
-        if (marketState) {
+        if (marketState && marketState.indices) {
             const marketEngine = window.GlobalMarketEngine;
             if (marketEngine) {
                 const costMults = marketEngine.getCostMultipliers(marketState);

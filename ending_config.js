@@ -188,15 +188,18 @@ const EndingConfig = (function() {
                 // 判定條件：MP 等級為 0、資金極低、回合數過半，且擁有多位頂尖人才
                 check: (player) => {
                     const turingCount = player.talent?.turing || 0;
+                    const applyGrantCount = player.finance_action_counts?.applyGrant || 0;
                     return player.mp_tier === 0 && 
                         player.cash < 5 && 
                         player.turn_count > 4 && 
-                        turingCount >= 2;
+                        turingCount >= 2 &&
+                        applyGrantCount >= 4;
                 },
                 // 預警系統：當資金開始見底且空有大師時觸發
                 warning: (player) => {
                     const turingCount = player.talent?.turing || 0;
-                    if (player.mp_tier === 0 && player.cash < 15 && turingCount >= 2) {
+                    const applyGrantCount = player.finance_action_counts?.applyGrant || 0;
+                    if (player.mp_tier === 0 && player.cash < 15 && turingCount >= 2 && applyGrantCount >= 3) {
                         return {
                             active: true,
                             turnsLeft: 3,
@@ -430,15 +433,15 @@ const EndingConfig = (function() {
                 check: (player) => {
                     return player.mp_tier === 3 &&
                            player.route === 'Multimodal' &&
-                           player.compliance_risk > 80 && // 數據合規風險
+                           player.compliance_risk > 90 && // 數據合規風險
                            player.trust > 80 &&                // 信任度
-                           player.market_cap > 250 &&          // 市值
+                           player.market_cap > 500 &&          // 市值
                            player.entropy > 80;                // 熵值
                 },
                 // 預警邏輯：在風險或熵值接近臨界點時發出警告
                 warning: (player) => {
                     if (player.route === 'Multimodal' && player.mp_tier === 3 && 
-                        (player.compliance_risk > 65 || player.entropy > 65)) {
+                        (player.compliance_risk > 75 || player.entropy > 65)) {
                         return {
                             active: true,
                             turnsLeft: 3,
