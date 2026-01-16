@@ -2147,7 +2147,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                         />
                         {tier < 2 && (
                             <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'center' }}>
-                                Tier 2 解鎖合成功能
+                                Tier 3 透過技術升級，解鎖合成功能
                             </div>
                         )}
                     </div>
