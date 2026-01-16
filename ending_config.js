@@ -331,6 +331,7 @@ const EndingConfig = (function() {
                 warning: (player) => {
                     // 預警條件：當對齊值過低且接近目標回合數時
                     if (player.mp_tier === 1 &&
+                        player.entropy < 50 && 
                         player.alignment < 15 && 
                         player.turn_count > 8) {
                         return {
