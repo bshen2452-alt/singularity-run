@@ -521,15 +521,15 @@ const EndingConfig = (function() {
                 // 判定條件：達到 Tier 3 但模型實力不足、信任度高、資金極其充裕且遊戲已進入後期
                 check: (player) => {
                     return player.mp_tier === 3 &&
-                        (player.model_power || 0) < 300 && 
+                        (player.model_power || 0) < 150 && 
                         (player.trust || 0) >= 60 &&
                         (player.cash || 0) >= 500 &&
-                        (player.turn_count || 0) > 20;
+                        (player.turn_count || 0) > 40;
                 },
                 // 預警系統：偵測到技術停滯但公司穩定
                 warning: (player) => {
                     if (player.mp_tier === 3 && 
-                        (player.model_power || 0) < 350 && 
+                        (player.model_power || 0) < 150 && 
                         (player.cash || 0) > 400) {
                         return {
                             active: true,
