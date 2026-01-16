@@ -56,13 +56,10 @@ const FinancePanelUI = {
                 }, isPublic ? '📈 上市公司' : '🔒 私有公司')
             ),
 
-            // 1. 創辦人掌控度面板
+            // 1. 創辦人掌控度面板 (IPO後整合股權結構)
             this.renderFounderControlPanel(player),
 
-            // 2. 股權結構（IPO後才顯示）
-            isPublic && this.renderEquityStructure(player, onAction),
-
-            // 3. 財務行動區
+            // 2. 財務行動區
             this.renderFinanceActions(player, globalParams, onAction, mpTier, isPublic)
         );
     },
@@ -76,6 +73,7 @@ const FinancePanelUI = {
         const founderShares = equityState?.founder_shares || 100;
         const investorShares = equityState?.investor_shares || 0;
         const publicShares = equityState?.public_shares || 0;
+        const isPublic = equityState?.is_public || player.is_public || false;
 
         // 計算掌控度分數 (0-100)
         const controlScore = this.calculateControlScore(founderShares, investorShares, publicShares);
@@ -108,6 +106,15 @@ const FinancePanelUI = {
                     }
                 }, `${controlLevel.icon} ${controlLevel.name}`)
             ),
+
+            // IPO後顯示股權結構圖，私有公司顯示掌控度進度條
+            isPublic ? 
+                React.createElement('div', { style: { marginBottom: '1rem' } },
+                    this.renderSharesChart(equityState),
+                    this.renderSharesDetail(equityState),
+                    equityState.stock_price > 0 && this.renderStockPriceHistory(equityState, player)
+                )
+            :
 
             // 掌控度進度條
             React.createElement('div', {
