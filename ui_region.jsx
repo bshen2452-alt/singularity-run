@@ -681,7 +681,7 @@
                                                 尚未派駐任何資產
                                             </div>
                                         ) : (
-                                            regionState.assigned_assets.map((asset, i) => (
+                                            regionState.assigned_assets.filter(a => a && typeof a === 'object').map((asset, i) => (
                                                 <div key={i} style={{
                                                     padding: '6px 10px',
                                                     background: 'rgba(0,0,0,0.2)',
@@ -689,7 +689,7 @@
                                                     marginBottom: '4px',
                                                     fontSize: '0.85rem'
                                                 }}>
-                                                    {asset.name || asset.id}
+                                                    {asset?.name || asset?.id || '未知'}
                                                 </div>
                                             ))
                                         )}
