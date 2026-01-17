@@ -757,7 +757,7 @@
                 <TurnSummary player={player} processData={processData} finances={finances} />
                 <RiskDashboard player={player} derived={derived} rivals={rivals} />
                 <CompanyDetails player={player} derived={derived} />
-                <WorldEnvironment player={player} globalParams={globalParams} gameState={gameState} processData={processData} />
+                <WorldEnvironment player={player} globalParams={globalParams} gameState={gameState} processData={processData} onAction={onAction} />
             </div>
         );
     }
