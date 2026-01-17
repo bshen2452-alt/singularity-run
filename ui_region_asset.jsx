@@ -52,9 +52,28 @@
     function AssetCard({ asset, targetRegionId, onSelect, isSelected }) {
         const RegionAssetConf = window.RegionAssetConfig;
         
-        const typeDisplay = asset.type_display || RegionAssetConf?.getAssetTypeDisplay(asset.type) || {};
-        const statusDisplay = asset.status_display || RegionAssetConf?.DEPLOYMENT_STATUS_DISPLAY?.[asset.status] || {};
-        const affinityLevel = asset.affinity_level || RegionAssetConf?.getAffinityLevel(asset.target_affinity || 0);
+        // 防禦性檢查 - 確保 asset 存在且有必要屬性
+        if (!asset || typeof asset !== 'object') {
+            console.warn('RegionAssetCard: asset is undefined or invalid');
+            return null;
+        }
+        
+        // 安全取得顯示配置，確保所有值都有預設
+        const typeDisplay = (asset.type_display || RegionAssetConf?.getAssetTypeDisplay?.(asset.type)) || {
+            name: asset.type || '未知',
+            icon: '📦',
+            color: '#888888'
+        };
+        const statusDisplay = (asset.status_display || RegionAssetConf?.DEPLOYMENT_STATUS_DISPLAY?.[asset.status]) || {
+            name: asset.status || '未知',
+            icon: '❓',
+            color: '#888888'
+        };
+        const affinityLevel = asset.affinity_level || RegionAssetConf?.getAffinityLevel?.(asset.target_affinity || 0) || {
+            color: '#888888',
+            icon: '',
+            label: ''
+        };
         
         const isDeployed = asset.status === 'deployed';
         const borderColor = asset.category === 'business' ? C.business : C.functional;
@@ -653,7 +672,8 @@
     // ============================================
     window.RegionAssetPanel = RegionAssetPanel;
     window.DeployedAssetsSummary = DeployedAssetsSummary;
-    window.AssetCard = AssetCard;
+    // 使用更具體的名稱避免與 ui_assets.jsx 的 AssetCard 衝突
+    window.RegionAssetCard = AssetCard;
     
     console.log('✓ Region Asset UI loaded');
     console.log('  - RegionAssetPanel: 派駐面板');

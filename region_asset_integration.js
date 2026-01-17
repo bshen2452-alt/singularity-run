@@ -170,10 +170,18 @@
             // 獲取所有可派駐資產
             const assets = RegionAssetEng.getAllDeployableAssets(player);
             
-            // 為每個資產添加親和度信息
+            // 防禦性檢查：確保 assets 結構正確
+            const businessAssets = Array.isArray(assets?.business) ? assets.business : [];
+            const functionalAssets = Array.isArray(assets?.functional) ? assets.functional : [];
+            
+            // 為每個資產添加親和度信息（過濾掉無效資產）
             const enrichedAssets = {
-                business: assets.business.map(asset => this._enrichAssetData(asset, regionId)),
-                functional: assets.functional.map(asset => this._enrichAssetData(asset, regionId))
+                business: businessAssets
+                    .filter(asset => asset && typeof asset === 'object')
+                    .map(asset => this._enrichAssetData(asset, regionId)),
+                functional: functionalAssets
+                    .filter(asset => asset && typeof asset === 'object')
+                    .map(asset => this._enrichAssetData(asset, regionId))
             };
             
             // 基礎數據
@@ -255,26 +263,32 @@
          * @private
          */
         _enrichAssetData(asset, targetRegionId) {
+            // 防禦性檢查
+            if (!asset || typeof asset !== 'object') {
+                console.warn('_enrichAssetData: invalid asset', asset);
+                return asset;
+            }
+            
             const RegionAssetEng = window.RegionAssetEngine;
             const RegionAssetConf = window.RegionAssetConfig;
             
             const enriched = { ...asset };
             
-            // 添加顯示配置
-            enriched.type_display = RegionAssetConf?.getAssetTypeDisplay(asset.type);
-            enriched.status_display = RegionAssetConf?.DEPLOYMENT_STATUS_DISPLAY[asset.status];
+            // 添加顯示配置（使用可選鏈確保安全）
+            enriched.type_display = RegionAssetConf?.getAssetTypeDisplay?.(asset.type) || null;
+            enriched.status_display = RegionAssetConf?.DEPLOYMENT_STATUS_DISPLAY?.[asset.status] || null;
             
             // 如果指定了目標區域，添加該區域的親和度
             if (targetRegionId && RegionAssetEng) {
                 const affinity = RegionAssetEng.getAssetRegionAffinity(asset, targetRegionId);
                 enriched.target_affinity = affinity;
-                enriched.affinity_level = RegionAssetConf?.getAffinityLevel(affinity);
+                enriched.affinity_level = RegionAssetConf?.getAffinityLevel?.(affinity) || null;
             }
             
             // 添加最佳推薦區域（親和度最高的）
             if (RegionAssetEng) {
                 const recommendations = RegionAssetEng.getRecommendedRegions(asset);
-                if (recommendations.length > 0) {
+                if (recommendations && recommendations.length > 0 && recommendations[0].region) {
                     enriched.best_region = {
                         id: recommendations[0].regionId,
                         name: recommendations[0].region.name,
