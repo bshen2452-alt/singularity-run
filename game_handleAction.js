@@ -455,7 +455,7 @@ const handleAction = useCallback((action, params = {}) => {
         }
     }
     // 打開特定面板的處理
-    else if (action === 'openSpacePanel' || action === 'openDataPanel') {
+    else if (action === 'openSpacePanel' || action === 'openDataPanel' || action === 'open_asset_panel') {
         // 這些是 UI 切換操作，不需要後端處理
         // 由 UI 層直接處理
         result = { success: true, message: '' };
@@ -514,6 +514,29 @@ const handleAction = useCallback((action, params = {}) => {
             }
         } else {
             result = { success: false, message: '區域系統未載入' };
+        }
+    }
+        // 區域資產派駐
+    else if (action === 'deploy_asset') {
+        const RegionAssetInt = window.RegionAssetIntegration;
+        if (RegionAssetInt && RegionAssetInt.handleDeploymentAction) {
+            result = RegionAssetInt.handleDeploymentAction(player, action, params);
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+        } else {
+            result = { success: false, message: '區域資產派駐系統未載入' };
+        }
+    }
+    else if (action === 'recall_asset') {
+        const RegionAssetInt = window.RegionAssetIntegration;
+        if (RegionAssetInt && RegionAssetInt.handleDeploymentAction) {
+            result = RegionAssetInt.handleDeploymentAction(player, action, params);
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+        } else {
+            result = { success: false, message: '區域資產派駐系統未載入' };
         }
     }
 

@@ -933,10 +933,20 @@
     function WorldEnvironmentPanel({ gameState, onAction }) {
         const [expanded, setExpanded] = useState(false);
         const [selectedRegion, setSelectedRegion] = useState(null);
+        const [assetPanelRegion, setAssetPanelRegion] = useState(null); // 資產面板
         
         const { player, globalParams } = gameState;
         const regionSystemState = player?.region_system || window.RegionEngine?.createInitialState();
         const marketState = player?.global_market;
+        
+        // 處理動作（攔截 open_asset_panel）
+        const handleRegionAction = useCallback((actionType, params) => {
+            if (actionType === 'open_asset_panel') {
+                setAssetPanelRegion(params.regionId);
+            } else {
+                onAction?.(actionType, params);
+            }
+        }, [onAction]);
         
         // 全球事件
         const activeEvents = useMemo(() => {
@@ -1030,7 +1040,18 @@
                         playerState={player}
                         marketState={marketState}
                         onClose={() => setSelectedRegion(null)}
+                        onAction={handleRegionAction}
+                    />,
+                    document.body
+                )}
+                
+                {/* 資產派駐面板 */}
+                {assetPanelRegion && window.RegionAssetPanel && createPortal(
+                    <window.RegionAssetPanel
+                        player={player}
+                        regionId={assetPanelRegion}
                         onAction={onAction}
+                        onClose={() => setAssetPanelRegion(null)}
                     />,
                     document.body
                 )}

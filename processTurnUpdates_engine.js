@@ -764,6 +764,21 @@ function processTurnUpdates(player, rivals, globalParams) {
                 updatedPlayer.turn_count
             );
         }
+        
+        // 處理區域資產派駐效果
+        let deploymentRevenue = 0;
+        if (updatedPlayer.region_system && window.RegionAssetIntegration) {
+            const deploymentResult = window.RegionAssetIntegration.processTurnDeploymentEffects(updatedPlayer);
+            deploymentRevenue = deploymentResult.revenue || 0;
+            updatedPlayer.cash += deploymentRevenue;
+            
+            // 添加派駐收益訊息
+            if (deploymentResult.messages && deploymentResult.messages.length > 0) {
+                deploymentResult.messages.forEach(msg => {
+                    milestoneMessages.push(msg);
+                });
+            }
+        }
     }
     
     // === 10. 回合計數遞增 ===

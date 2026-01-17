@@ -405,6 +405,24 @@ const ACTION_ROUTES = {
                     return { success: false, message: '未知的區域行動' };
             }
         }
+    },
+
+    // 區域資產派駐行動組 (Tier4+)
+    regionAsset: {
+        actions: ['deploy_asset', 'recall_asset'],
+        engine: () => window.RegionAssetIntegration,
+        executor: (engine, player, action, globalParams, params) => {
+            if (!engine) {
+                return { success: false, message: '區域資產系統未載入' };
+            }
+            
+            const result = engine.handleDeploymentAction(player, action, params);
+            
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+            return result;
+        }
     }
 };
 
