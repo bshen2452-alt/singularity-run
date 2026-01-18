@@ -851,10 +851,12 @@ const RegionEngine = {
             };
         }
         
-        // 檢查是否已有辦公室
+        // 檢查是否已有正式辦公室（排除預備據點）
         const regionState = regionSystemState.regions[regionId];
-        if (regionState && regionState.offices && regionState.offices.length > 0) {
-            return { success: false, message: '該區域已有據點' };
+        const hasOfficialOffice = regionState && regionState.offices && regionState.offices.length > 0 && 
+                                  !regionState.offices[0].is_preliminary;
+        if (hasOfficialOffice) {
+            return { success: false, message: '該區域已有正式據點' };
         }
         
         // 檢查是否已有進行中的申請
