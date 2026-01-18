@@ -363,10 +363,21 @@ const ACTION_ROUTES = {
 
     // 區域系統行動組 (Tier4+)
     region: {
-        actions: ['establish_liaison', 'submit_application', 'upgrade_office', 'assign_asset'],
+        actions: ['establish_preliminary', 'establish_liaison', 'submit_application', 'upgrade_office', 'assign_asset', 'open_asset_panel'],
         engine: () => window.RegionEngine,
         executor: (engine, player, action, globalParams, params) => {
             switch(action) {
+                case 'establish_preliminary':
+                    // 建立預備據點（審批前）
+                    if (!engine.establishPreliminary) {
+                        return { success: false, message: '預備據點功能未實現' };
+                    }
+                    const prelimResult = engine.establishPreliminary(player, params.regionId, params.preliminaryType);
+                    if (prelimResult.success && prelimResult.newState) {
+                        prelimResult.player = prelimResult.newState;
+                    }
+                    return prelimResult;
+                    
                 case 'establish_liaison':
                     const liaisonResult = engine.establishLiaison(player, params.regionId);
                     if (liaisonResult.success && liaisonResult.newState) {
@@ -395,11 +406,21 @@ const ACTION_ROUTES = {
                     if (!engine.assignAsset) {
                         return { success: false, message: '資產派駐功能未實現' };
                     }
-                    const assignResult = engine.assignAsset(player, params.regionId, params.assetId);
+                    // 支援新的資產信息格式 { id, category }
+                    const assetInfo = params.assetInfo || (params.assetId ? { id: params.assetId, category: params.assetCategory } : null);
+                    const assignResult = engine.assignAsset(player, params.regionId, assetInfo);
                     if (assignResult.success && assignResult.newState) {
                         assignResult.player = assignResult.newState;
                     }
+                    // 處理 UI 動作
+                    if (assignResult.uiAction === 'open_asset_panel') {
+                        return { success: true, uiAction: 'open_asset_panel', regionId: params.regionId };
+                    }
                     return assignResult;
+                
+                case 'open_asset_panel':
+                    // 直接打開資產面板的 UI 動作
+                    return { success: true, uiAction: 'open_asset_panel', regionId: params.regionId };
                     
                 default:
                     return { success: false, message: '未知的區域行動' };

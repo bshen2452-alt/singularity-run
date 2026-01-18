@@ -626,208 +626,180 @@
                             )}
                         </div>
                     )}
-
-                    {/* 營運標籤 */}
+                    {/* 營運標籤 - 新流程：預備據點 -> 提交申請 -> 審批通過 -> 正式進駐 -> 派駐資產 */}
                     {activeTab === 'operations' && !isHome && (
                         <div>
-                            {hasOffice ? (
-                                // 已進入區域的營運管理
-                                <div>
-                                    {/* 辦公室列表 */}
-                                    <div style={{ marginBottom: '16px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: C.muted, marginBottom: '8px' }}>🏢 據點</div>
-                                        {regionState.offices.map((office, i) => {
-                                            const officeConfig = config.getOfficeLevel(office.level);
-                                            return (
-                                                <div key={i} style={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    padding: '8px 12px',
-                                                    background: 'rgba(0,0,0,0.2)',
-                                                    borderRadius: '6px',
-                                                    marginBottom: '8px'
-                                                }}>
-                                                    <div>
-                                                        <span style={{ fontSize: '1.1rem', marginRight: '8px' }}>{officeConfig?.icon}</span>
-                                                        <span>{officeConfig?.name}</span>
-                                                    </div>
-                                                    {officeConfig?.upgrade_from && (
-                                                        <button
-                                                            onClick={() => onAction?.('upgrade_office', { regionId, officeIndex: i })}
-                                                            style={{
-                                                                padding: '4px 12px',
-                                                                background: C.cyan + '22',
-                                                                border: `1px solid ${C.cyan}`,
-                                                                borderRadius: '4px',
-                                                                color: C.cyan,
-                                                                cursor: 'pointer',
-                                                                fontSize: '0.75rem'
-                                                            }}
-                                                        >
-                                                            升級 ({fmtCash(officeConfig.upgrade_cost)})
-                                                        </button>
-                                                    )}
+                            {(() => {
+                                // 計算各種狀態
+                                const hasPreliminary = regionState?.offices?.length > 0 && regionState.offices[0].is_preliminary;
+                                const hasApproval = regionState?.approval_granted === true;
+                                const hasOfficialOffice = regionState?.unlocked && regionState?.offices?.length > 0 && !regionState.offices[0].is_preliminary;
+                                const prelimOffice = hasPreliminary ? regionState.offices[0] : null;
+                                const prelimConfig = prelimOffice ? config.getOfficeLevel(prelimOffice.level) : null;
+                                
+                                // 狀態1：已有正式據點 - 顯示據點管理和派駐資產
+                                if (hasOfficialOffice) {
+                                    return (
+                                        <div>
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <div style={{ fontSize: '0.75rem', color: C.muted, marginBottom: '8px' }}>🏢 正式據點</div>
+                                                {regionState.offices.map((office, i) => {
+                                                    const officeConfig = config.getOfficeLevel(office.level);
+                                                    return (
+                                                        <div key={i} style={{
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            padding: '8px 12px', background: 'rgba(0,245,255,0.1)', borderRadius: '6px',
+                                                            marginBottom: '8px', border: '1px solid rgba(0,245,255,0.3)'
+                                                        }}>
+                                                            <div>
+                                                                <span style={{ fontSize: '1.1rem', marginRight: '8px' }}>{officeConfig?.icon}</span>
+                                                                <span>{officeConfig?.name}</span>
+                                                            </div>
+                                                            {officeConfig?.upgrade_from && (
+                                                                <button onClick={() => onAction?.('upgrade_office', { regionId, officeIndex: i })}
+                                                                    style={{ padding: '4px 12px', background: C.cyan + '22', border: '1px solid ' + C.cyan, borderRadius: '4px', color: C.cyan, cursor: 'pointer', fontSize: '0.75rem' }}>
+                                                                    升級 ({fmtCash(officeConfig.upgrade_cost)})
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div style={{ marginBottom: '16px' }}>
+                                                <div style={{ fontSize: '0.75rem', color: C.muted, marginBottom: '8px' }}>📦 派駐資產</div>
+                                                {(regionState.assigned_assets?.length || 0) === 0 ? (
+                                                    <div style={{ fontSize: '0.8rem', color: C.muted, fontStyle: 'italic' }}>尚未派駐任何資產</div>
+                                                ) : (
+                                                    regionState.assigned_assets.filter(a => a && typeof a === 'object').map((asset, i) => (
+                                                        <div key={i} style={{ padding: '6px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', marginBottom: '4px', fontSize: '0.85rem' }}>
+                                                            {asset?.name || asset?.id || '未知'}
+                                                        </div>
+                                                    ))
+                                                )}
+                                                <button onClick={() => onAction?.('open_asset_panel', { regionId })}
+                                                    style={{ width: '100%', padding: '8px', marginTop: '8px', background: 'transparent', border: '1px dashed ' + C.muted, borderRadius: '4px', color: C.muted, cursor: 'pointer', fontSize: '0.8rem' }}>
+                                                    + 派駐資產
+                                                </button>
+                                            </div>
+                                            <div style={{ padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
+                                                <div style={{ fontSize: '0.75rem', color: C.muted, marginBottom: '6px' }}>📈 營運效果</div>
+                                                <div style={{ fontSize: '0.8rem', color: C.muted }}>• 在地連結分數：{fmt(summary?.local_score || 0, 0)}</div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                
+                                // 狀態2：審批通過，可以正式進駐
+                                if (hasApproval) {
+                                    return (
+                                        <div style={{ textAlign: 'center', padding: '16px' }}>
+                                            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>✅</div>
+                                            <div style={{ fontSize: '1.1rem', marginBottom: '8px', color: C.pos }}>審批通過！</div>
+                                            <div style={{ color: C.muted, marginBottom: '16px' }}>可以正式進駐此區域</div>
+                                            {hasPreliminary && (
+                                                <div style={{ padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', marginBottom: '16px', fontSize: '0.8rem', color: C.muted }}>
+                                                    {prelimConfig?.icon} {prelimConfig?.name} 累積在地連結：+{prelimOffice?.accumulated_local_bonus || 0}
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
+                                            )}
+                                            <button onClick={() => onAction?.('establish_liaison', { regionId })}
+                                                style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, ' + C.pos + '44, ' + C.pos + '22)', border: '2px solid ' + C.pos, borderRadius: '8px', color: C.pos, cursor: 'pointer', fontSize: '1rem', fontWeight: 600 }}>
+                                                🏢 正式進駐 - 建立聯絡處 ({fmtCash(config.OFFICE_LEVELS?.liaison?.setup_cost || 20)})
+                                            </button>
+                                        </div>
+                                    );
+                                }
+                                
+                                // 狀態3：審批進行中
+                                if (isPending) {
+                                    const pendingApp = regionState.pending_applications[0];
+                                    return (
+                                        <div style={{ textAlign: 'center', padding: '16px' }}>
+                                            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⏳</div>
+                                            <div style={{ fontSize: '1.1rem', marginBottom: '8px' }}>審批進行中</div>
+                                            <div style={{ color: C.muted, marginBottom: '8px' }}>剩餘 {pendingApp?.remaining_turns} 回合</div>
+                                            {hasPreliminary && (
+                                                <div style={{ padding: '10px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', marginBottom: '12px', fontSize: '0.8rem', color: C.muted }}>
+                                                    {prelimConfig?.icon} {prelimConfig?.name} 持續累積在地連結
+                                                    <div style={{ color: C.cyan, marginTop: '4px' }}>已累積：+{prelimOffice?.accumulated_local_bonus || 0}</div>
+                                                </div>
+                                            )}
+                                            <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                <div style={{ width: '40%', height: '100%', background: 'linear-gradient(90deg, ' + C.pending + ', ' + C.cyan + ')', animation: 'pulse 2s infinite' }} />
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                
+                                // 狀態4：有預備據點但尚未提交申請
+                                if (hasPreliminary) {
+                                    return (
+                                        <div>
+                                            <div style={{ padding: '12px', background: 'rgba(255,208,0,0.1)', border: '1px solid rgba(255,208,0,0.3)', borderRadius: '8px', marginBottom: '16px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>{prelimConfig?.icon}</span>
+                                                    <span style={{ color: C.warn }}>{prelimConfig?.name}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.8rem', color: C.muted }}>{prelimConfig?.description}</div>
+                                                <div style={{ fontSize: '0.85rem', color: C.cyan, marginTop: '8px' }}>累積在地連結：+{prelimOffice?.accumulated_local_bonus || 0}</div>
+                                            </div>
+                                            <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '16px' }}>
+                                                <div style={{ fontSize: '0.85rem', color: C.muted, marginBottom: '6px' }}>預估審批時間</div>
+                                                <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-mono)', color: C.cyan }}>{approvalTime?.turns || 2} 回合</div>
+                                            </div>
+                                            <button onClick={() => onAction?.('submit_application', { regionId })}
+                                                style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, ' + C.cyan + '44, ' + C.cyan + '22)', border: '2px solid ' + C.cyan, borderRadius: '8px', color: C.cyan, cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600 }}>
+                                                📝 提交營運申請
+                                            </button>
+                                        </div>
+                                    );
+                                }
+                                
+                                // 狀態5：尚未建立任何據點
+                                return (
+                                    <div>
+                                        <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '16px' }}>
+                                            <div style={{ fontSize: '0.85rem', color: C.muted, marginBottom: '6px' }}>預估審批時間</div>
+                                            <div style={{ fontSize: '2rem', fontFamily: 'var(--font-mono)', color: C.cyan }}>{approvalTime?.turns || 2} 回合</div>
+                                            {approvalTime?.type === 'fast_track' && (
+                                                <div style={{ fontSize: '0.75rem', color: C.pos, marginTop: '4px' }}>🚀 快速通道</div>
+                                            )}
+                                        </div>
 
-                                    {/* 派駐資產 */}
-                                    <div style={{ marginBottom: '16px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: C.muted, marginBottom: '8px' }}>📦 派駐資產</div>
-                                        {(regionState.assigned_assets?.length || 0) === 0 ? (
-                                            <div style={{ fontSize: '0.8rem', color: C.muted, fontStyle: 'italic' }}>
-                                                尚未派駐任何資產
+                                        {scoreResult?.eligible ? (
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: C.muted, marginBottom: '12px', textAlign: 'center' }}>
+                                                    選擇進入方式：建立預備據點累積在地連結，或直接提交申請等待審批
+                                                </div>
+                                                
+                                                {/* 預備據點選項 */}
+                                                <div style={{ marginBottom: '12px' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: C.warn, marginBottom: '8px' }}>📌 預備據點（審批前）</div>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={() => onAction?.('establish_preliminary', { regionId, preliminaryType: 'virtual_office' })}
+                                                            style={{ flex: 1, padding: '10px', background: 'rgba(255,208,0,0.1)', border: '1px solid rgba(255,208,0,0.4)', borderRadius: '6px', color: C.warn, cursor: 'pointer', fontSize: '0.8rem' }}>
+                                                            💻 虛擬辦公室<br/><span style={{ fontSize: '0.7rem', color: C.muted }}>{fmtCash(config.OFFICE_LEVELS?.virtual_office?.setup_cost || 10)}</span>
+                                                        </button>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', color: C.muted, marginTop: '4px', textAlign: 'center' }}>
+                                                        預備據點每回合自動累積在地連結
+                                                    </div>
+                                                </div>
+                                                
+                                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
+                                                    <button onClick={() => onAction?.('submit_application', { regionId })}
+                                                        style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid ' + C.muted, borderRadius: '8px', color: C.muted, cursor: 'pointer', fontSize: '0.85rem' }}>
+                                                        📝 直接提交營運申請（需審批）
+                                                    </button>
+                                                </div>
                                             </div>
                                         ) : (
-                                            regionState.assigned_assets.filter(a => a && typeof a === 'object').map((asset, i) => (
-                                                <div key={i} style={{
-                                                    padding: '6px 10px',
-                                                    background: 'rgba(0,0,0,0.2)',
-                                                    borderRadius: '4px',
-                                                    marginBottom: '4px',
-                                                    fontSize: '0.85rem'
-                                                }}>
-                                                    {asset?.name || asset?.id || '未知'}
-                                                </div>
-                                            ))
-                                        )}
-                                        <button
-                                            onClick={() => onAction?.('assign_asset', { regionId })}
-                                            style={{
-                                                width: '100%',
-                                                padding: '8px',
-                                                marginTop: '8px',
-                                                background: 'transparent',
-                                                border: `1px dashed ${C.muted}`,
-                                                borderRadius: '4px',
-                                                color: C.muted,
-                                                cursor: 'pointer',
-                                                fontSize: '0.8rem'
-                                            }}
-                                        >
-                                            + 派駐資產
-                                        </button>
-                                    </div>
-
-                                    {/* 營運效果 */}
-                                    <div style={{
-                                        padding: '10px',
-                                        background: 'rgba(0,0,0,0.2)',
-                                        borderRadius: '6px'
-                                    }}>
-                                        <div style={{ fontSize: '0.75rem', color: C.muted, marginBottom: '6px' }}>📈 營運效果</div>
-                                        <div style={{ fontSize: '0.8rem', color: C.muted }}>
-                                            • 在地連結分數：{fmt(summary?.local_score || 0, 0)}
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : isPending ? (
-                                // 審批進行中
-                                <div style={{
-                                    textAlign: 'center',
-                                    padding: '24px'
-                                }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⏳</div>
-                                    <div style={{ fontSize: '1.1rem', marginBottom: '8px' }}>審批進行中</div>
-                                    <div style={{ color: C.muted }}>
-                                        剩餘 {regionState.pending_applications[0]?.remaining_turns} 回合
-                                    </div>
-                                    <div style={{
-                                        marginTop: '16px',
-                                        height: '8px',
-                                        background: 'rgba(255,255,255,0.1)',
-                                        borderRadius: '4px',
-                                        overflow: 'hidden'
-                                    }}>
-                                        <div style={{
-                                            width: '40%',
-                                            height: '100%',
-                                            background: `linear-gradient(90deg, ${C.pending}, ${C.cyan})`,
-                                            animation: 'pulse 2s infinite'
-                                        }} />
-                                    </div>
-                                </div>
-                            ) : (
-                                // 可申請進入
-                                <div>
-                                    <div style={{
-                                        textAlign: 'center',
-                                        padding: '16px',
-                                        background: 'rgba(0,0,0,0.2)',
-                                        borderRadius: '8px',
-                                        marginBottom: '16px'
-                                    }}>
-                                        <div style={{ fontSize: '0.85rem', color: C.muted, marginBottom: '8px' }}>
-                                            預估審批時間
-                                        </div>
-                                        <div style={{ 
-                                            fontSize: '2rem', 
-                                            fontFamily: 'var(--font-mono)',
-                                            color: C.cyan 
-                                        }}>
-                                            {approvalTime?.turns || 2} 回合
-                                        </div>
-                                        {approvalTime?.type === 'fast_track' && (
-                                            <div style={{ fontSize: '0.75rem', color: C.pos, marginTop: '4px' }}>
-                                                🚀 快速通道
-                                            </div>
-                                        )}
-                                        {approvalTime?.type === 'extended' && (
-                                            <div style={{ fontSize: '0.75rem', color: C.warn, marginTop: '4px' }}>
-                                                ⚠️ 延長審查
+                                            <div style={{ textAlign: 'center', padding: '16px', color: C.muted, fontSize: '0.9rem' }}>
+                                                評分未達門檻，請先提升相關能力
                                             </div>
                                         )}
                                     </div>
-
-                                    {scoreResult?.eligible ? (
-                                        <div>
-                                            <button
-                                                onClick={() => { console.log('🔘 Button clicked: establish_liaison', { regionId, onAction: typeof onAction }); onAction?.('establish_liaison', { regionId }); }}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '12px',
-                                                    marginBottom: '8px',
-                                                    background: `linear-gradient(135deg, ${C.cyan}44, ${C.cyan}22)`,
-                                                    border: `2px solid ${C.cyan}`,
-                                                    borderRadius: '8px',
-                                                    color: C.cyan,
-                                                    cursor: 'pointer',
-                                                    fontSize: '0.95rem',
-                                                    fontWeight: 600
-                                                }}
-                                            >
-                                                📍 建立聯絡處 ({fmtCash(config.OFFICE_LEVELS?.liaison?.setup_cost || 20)})
-                                            </button>
-                                            <button
-                                                onClick={() => { console.log('🔘 Button clicked: submit_application', { regionId, onAction: typeof onAction }); onAction?.('submit_application', { regionId }); }}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '12px',
-                                                    background: 'transparent',
-                                                    border: `1px solid ${C.muted}`,
-                                                    borderRadius: '8px',
-                                                    color: C.muted,
-                                                    cursor: 'pointer',
-                                                    fontSize: '0.85rem'
-                                                }}
-                                            >
-                                                📝 提交營運申請（需審批）
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div style={{
-                                            textAlign: 'center',
-                                            padding: '16px',
-                                            color: C.muted,
-                                            fontSize: '0.9rem'
-                                        }}>
-                                            評分未達門檻，請先提升相關能力
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     )}
                 </div>

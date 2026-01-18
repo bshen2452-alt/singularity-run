@@ -644,6 +644,19 @@ const RegionConfig = {
     // 區域辦公室配置
     // ==========================================
     OFFICE_LEVELS: {
+        // 預備階段（審批前選項）- 一次性設置，隨回合自動提升在地連結
+        virtual_office: {
+            level: 0,
+            name: '虛擬辦公室',
+            icon: '💻',
+            setup_cost: 10,
+            maintenance_cost: 2,
+            local_bonus: 5,           // 較高初始在地連結
+            local_bonus_per_turn: 2,  // 每回合額外增加較多
+            is_preliminary: true,     // 標記為預備階段
+            description: '設立線上據點，開始建立在地合作關係',
+            capabilities: ['scout', 'basic_intel', 'remote_partnership']
+        },
         liaison: {
             level: 1,
             name: '聯絡處',
@@ -651,6 +664,8 @@ const RegionConfig = {
             setup_cost: 20,
             maintenance_cost: 5,
             local_bonus: 5,
+            requires_approval: true,  // 需要通過審批才能建立
+            upgrade_from_preliminary: true, // 可從預備據點升級
             capabilities: ['scout', 'basic_intel']
         },
         branch: {

@@ -160,10 +160,15 @@ const RegionEngine = {
         let score = 0;
         
         // 辦公室加成
-        regionState.offices.forEach(office => {
+        regionState.offices.forEach(function(office) {
             const officeConfig = config.getOfficeLevel(office.level);
             if (officeConfig) {
-                score += officeConfig.local_bonus;
+                // 如果是預備據點，使用累積的在地連結
+                if (office.is_preliminary && office.accumulated_local_bonus) {
+                    score += office.accumulated_local_bonus;
+                } else {
+                    score += officeConfig.local_bonus || 0;
+                }
             }
         });
         
@@ -605,13 +610,94 @@ const RegionEngine = {
     // ==========================================
     
     /**
-     * 建立聯絡處（快速進入，需要資金）
+     * 建立預備據點（審批前，增加在地連結）
+     * @param {Object} playerState - 玩家狀態
+     * @param {string} regionId - 區域ID
+     * @param {string} preliminaryType - 預備據點類型 ('site_selection' 或 'virtual_office')
+     * @returns {Object} 執行結果
+     */
+    establishPreliminary: function(playerState, regionId, preliminaryType) {
+        console.log("🌐 [RegionEngine] establishPreliminary called:", { regionId, preliminaryType });
+        const config = window.RegionConfig;
+        const region = config.getRegion(regionId);
+        const type = preliminaryType || 'site_selection';
+        
+        if (!region) {
+            return { success: false, message: '無效區域' };
+        }
+        
+        if (region.is_home) {
+            return { success: false, message: '無法在母國建立據點' };
+        }
+        
+        const prelimConfig = config.OFFICE_LEVELS[type];
+        if (!prelimConfig || !prelimConfig.is_preliminary) {
+            return { success: false, message: '無效的預備據點類型' };
+        }
+        
+        // 檢查評分資格
+        const regionSystemState = playerState.region_system || this.createInitialState();
+        const scoreResult = this.calculateRegionScore(regionId, playerState, regionSystemState, playerState.global_market);
+        
+        if (!scoreResult.eligible) {
+            return { 
+                success: false, 
+                message: '評分未達門檻（' + scoreResult.score.toFixed(1) + '/' + scoreResult.threshold + '）' 
+            };
+        }
+        
+        // 檢查是否已有任何據點
+        const regionState = regionSystemState.regions[regionId];
+        if (regionState && regionState.offices && regionState.offices.length > 0) {
+            return { success: false, message: '該區域已有據點或預備據點' };
+        }
+        
+        // 檢查是否有進行中的申請
+        if (regionState && regionState.pending_applications && regionState.pending_applications.length > 0) {
+            return { success: false, message: '該區域已有進行中的申請' };
+        }
+        
+        // 檢查資金
+        const setupCost = prelimConfig.setup_cost || 5;
+        if (playerState.cash < setupCost) {
+            return { 
+                success: false, 
+                message: '資金不足，需要 $' + setupCost + 'M' 
+            };
+        }
+        
+        // 執行建立
+        const newPlayer = JSON.parse(JSON.stringify(playerState));
+        newPlayer.cash -= setupCost;
+        
+        if (!newPlayer.region_system) {
+            newPlayer.region_system = this.createInitialState();
+        }
+        
+        const newRegionState = newPlayer.region_system.regions[regionId];
+        newRegionState.unlocked = false; // 預備階段尚未正式解鎖
+        newRegionState.offices = [{
+            level: type,
+            established_turn: playerState.turn_count || 1,
+            is_preliminary: true,
+            accumulated_local_bonus: prelimConfig.local_bonus || 2
+        }];
+        
+        return {
+            success: true,
+            newState: newPlayer,
+            message: prelimConfig.icon + ' 已在 ' + region.icon + ' ' + region.name + ' ' + prelimConfig.name + '（-$' + setupCost + 'M）'
+        };
+    },
+
+    /**
+     * 建立聯絡處（需通過審批後）
      * @param {Object} playerState - 玩家狀態
      * @param {string} regionId - 區域ID
      * @returns {Object} 執行結果
      */
     establishLiaison: function(playerState, regionId) {
-        console.log("🌍 [RegionEngine] establishLiaison called:", { regionId, playerCash: playerState?.cash });
+        console.log("🌐 [RegionEngine] establishLiaison called:", { regionId, playerCash: playerState?.cash });
         const config = window.RegionConfig;
         const region = config.getRegion(regionId);
         
@@ -623,21 +709,30 @@ const RegionEngine = {
             return { success: false, message: '無法在母國建立聯絡處' };
         }
         
-        // 檢查評分資格
         const regionSystemState = playerState.region_system || this.createInitialState();
-        const scoreResult = this.calculateRegionScore(regionId, playerState, regionSystemState, playerState.global_market);
+        const regionState = regionSystemState.regions[regionId];
         
-        if (!scoreResult.eligible) {
+        // 檢查是否有已通過的審批
+        const hasApproval = regionState?.approval_granted === true;
+        
+        // 如果沒有審批，不能建立正式據點
+        if (!hasApproval) {
+            const scoreResult = this.calculateRegionScore(regionId, playerState, regionSystemState, playerState.global_market);
+            if (!scoreResult.eligible) {
+                return { 
+                    success: false, 
+                    message: '評分未達門檻（' + scoreResult.score.toFixed(1) + '/' + scoreResult.threshold + '）' 
+                };
+            }
             return { 
                 success: false, 
-                message: `評分未達門檻（${scoreResult.score.toFixed(1)}/${scoreResult.threshold}）` 
+                message: '需要先提交營運申請並通過審批後，才能正式進駐'
             };
         }
         
-        // 檢查是否已有辦公室
-        const regionState = regionSystemState.regions[regionId];
-        if (regionState && regionState.offices && regionState.offices.length > 0) {
-            return { success: false, message: '該區域已有據點' };
+        // 檢查是否已有正式辦公室
+        if (regionState?.unlocked && regionState.offices?.length > 0 && !regionState.offices[0].is_preliminary) {
+            return { success: false, message: '該區域已有正式據點' };
         }
         
         // 檢查資金
@@ -647,7 +742,7 @@ const RegionEngine = {
         if (playerState.cash < setupCost) {
             return { 
                 success: false, 
-                message: `資金不足，需要 $${setupCost}M` 
+                message: '資金不足，需要 $' + setupCost + 'M' 
             };
         }
         
@@ -655,14 +750,13 @@ const RegionEngine = {
         const newPlayer = JSON.parse(JSON.stringify(playerState));
         newPlayer.cash -= setupCost;
         
-        // 確保 region_system 存在
         if (!newPlayer.region_system) {
             newPlayer.region_system = this.createInitialState();
         }
         
-        // 更新區域狀態
         const newRegionState = newPlayer.region_system.regions[regionId];
         newRegionState.unlocked = true;
+        newRegionState.approval_granted = false; // 清除審批狀態（已使用）
         newRegionState.offices = [{
             level: 'liaison',
             established_turn: playerState.turn_count || 1
@@ -673,7 +767,58 @@ const RegionEngine = {
         return {
             success: true,
             newState: newPlayer,
-            message: `📍 已在 ${region.icon} ${region.name} 建立聯絡處（-$${setupCost}M）`
+            message: '📍 已在 ' + region.icon + ' ' + region.name + ' 建立聯絡處（-$' + setupCost + 'M）'
+        };
+    },
+    
+    /**
+     * 派駐資產到區域（統一接口，銜接 RegionAssetEngine）
+     * @param {Object} playerState - 玩家狀態
+     * @param {string} regionId - 區域ID
+     * @param {Object} assetInfo - 資產信息 { id, category }
+     * @returns {Object} 執行結果
+     */
+    assignAsset: function(playerState, regionId, assetInfo) {
+        console.log("🌐 [RegionEngine] assignAsset called:", { regionId, assetInfo });
+        
+        const RegionAssetEng = window.RegionAssetEngine;
+        if (!RegionAssetEng) {
+            return { success: false, message: '區域資產系統未載入' };
+        }
+        
+        // 檢查區域是否已正式解鎖
+        const regionState = playerState.region_system?.regions?.[regionId];
+        if (!regionState || !regionState.unlocked) {
+            return { success: false, message: '該區域尚未正式進駐，無法派駐資產' };
+        }
+        
+        // 檢查是否有正式辦公室（非預備據點）
+        const hasOfficialOffice = regionState.offices?.some(function(o) { return !o.is_preliminary; });
+        if (!hasOfficialOffice) {
+            return { success: false, message: '需要正式據點才能派駐資產' };
+        }
+        
+        // 委派給 RegionAssetEngine 處理
+        if (assetInfo && assetInfo.id && assetInfo.category) {
+            const result = RegionAssetEng.deployAsset(
+                playerState, 
+                assetInfo.id, 
+                assetInfo.category, 
+                regionId
+            );
+            
+            if (result.success && result.newState) {
+                result.player = result.newState;
+            }
+            return result;
+        }
+        
+        // 如果沒有提供完整的資產信息，返回需要打開面板的信號
+        return { 
+            success: true, 
+            uiAction: 'open_asset_panel',
+            regionId: regionId,
+            message: '請選擇要派駐的資產'
         };
     },
     
@@ -772,34 +917,70 @@ const RegionEngine = {
      * @returns {Object} 更新後的狀態
      */
     processTurnEnd: function(regionSystemState, turn) {
+        const config = window.RegionConfig;
         const newState = JSON.parse(JSON.stringify(regionSystemState));
+        const messages = [];
         
         // 更新各區域
-        Object.keys(newState.regions).forEach(regionId => {
+        Object.keys(newState.regions).forEach(function(regionId) {
             const regionState = newState.regions[regionId];
             
             // 累積存在時間
-            if (regionState.offices.length > 0) {
+            if (regionState.offices && regionState.offices.length > 0) {
                 regionState.presence_turns = (regionState.presence_turns || 0) + 1;
+                
+                // 處理預備據點的在地連結累積
+                var prelimOffice = regionState.offices[0];
+                if (prelimOffice && prelimOffice.is_preliminary) {
+                    var officeConfig = config.OFFICE_LEVELS[prelimOffice.level];
+                    if (officeConfig && officeConfig.local_bonus_per_turn) {
+                        prelimOffice.accumulated_local_bonus = 
+                            (prelimOffice.accumulated_local_bonus || officeConfig.local_bonus || 0) + 
+                            officeConfig.local_bonus_per_turn;
+                        
+                        var region = config.getRegion(regionId);
+                        if (region) {
+                            messages.push({
+                                text: region.icon + ' ' + region.name + ' 在地連結 +' + officeConfig.local_bonus_per_turn,
+                                type: 'info'
+                            });
+                        }
+                    }
+                }
             }
             
             // 處理進行中的申請
-            regionState.pending_applications = regionState.pending_applications
-                .map(app => ({
-                    ...app,
-                    remaining_turns: app.remaining_turns - 1
-                }))
-                .filter(app => {
-                    if (app.remaining_turns <= 0) {
-                        // 申請完成，加入已派駐資產
-                        regionState.assigned_assets.push(app.asset);
-                        return false;
-                    }
-                    return true;
-                });
+            if (regionState.pending_applications && regionState.pending_applications.length > 0) {
+                regionState.pending_applications = regionState.pending_applications
+                    .map(function(app) {
+                        return {
+                            type: app.type,
+                            submitted_turn: app.submitted_turn,
+                            remaining_turns: app.remaining_turns - 1,
+                            approval_type: app.approval_type
+                        };
+                    })
+                    .filter(function(app) {
+                        if (app.remaining_turns <= 0) {
+                            // 審批通過！設置 approval_granted 標記
+                            regionState.approval_granted = true;
+                            
+                            var region = config.getRegion(regionId);
+                            if (region) {
+                                messages.push({
+                                    text: '✅ ' + region.icon + ' ' + region.name + ' 營運許可審批通過！可以正式進駐',
+                                    type: 'success'
+                                });
+                            }
+                            return false;
+                        }
+                        return true;
+                    });
+            }
         });
         
         newState.turn_updated = turn;
+        newState._turn_messages = messages;
         
         return newState;
     },
