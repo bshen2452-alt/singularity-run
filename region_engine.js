@@ -629,22 +629,17 @@ const RegionEngine = {
         if (region.is_home) {
             return { success: false, message: '無法在母國建立據點' };
         }
+
+        
         
         const prelimConfig = config.OFFICE_LEVELS[type];
         if (!prelimConfig || !prelimConfig.is_preliminary) {
             return { success: false, message: '無效的預備據點類型' };
         }
         
-        // 檢查評分資格
+        // 預備據點不需要達到評分門檻，正是用來在門檻前累積在地連結的手段
         const regionSystemState = playerState.region_system || this.createInitialState();
-        const scoreResult = this.calculateRegionScore(regionId, playerState, regionSystemState, playerState.global_market);
         
-        if (!scoreResult.eligible) {
-            return { 
-                success: false, 
-                message: '評分未達門檻（' + scoreResult.score.toFixed(1) + '/' + scoreResult.threshold + '）' 
-            };
-        }
         
         // 檢查是否已有任何據點
         const regionState = regionSystemState.regions[regionId];

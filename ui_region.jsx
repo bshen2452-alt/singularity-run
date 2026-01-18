@@ -793,7 +793,21 @@
                                                 </div>
                                             </div>
                                         ) : (
+                                            // 未達門檻
                                             <div style={{ textAlign: 'center', padding: '16px', color: C.muted, fontSize: '0.9rem' }}>
+                                                                                                {/* 預備據點選項 */}
+                                                <div style={{ marginBottom: '12px' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: C.warn, marginBottom: '8px' }}>📌 預備據點（審批前）</div>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <button onClick={() => onAction?.('establish_preliminary', { regionId, preliminaryType: 'virtual_office' })}
+                                                            style={{ flex: 1, padding: '10px', background: 'rgba(255,208,0,0.1)', border: '1px solid rgba(255,208,0,0.4)', borderRadius: '6px', color: C.warn, cursor: 'pointer', fontSize: '0.8rem' }}>
+                                                            💻 虛擬辦公室<br/><span style={{ fontSize: '0.7rem', color: C.muted }}>{fmtCash(config.OFFICE_LEVELS?.virtual_office?.setup_cost || 10)}</span>
+                                                        </button>
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', color: C.muted, marginTop: '4px', textAlign: 'center' }}>
+                                                        預備據點每回合自動累積在地連結
+                                                    </div>
+                                                </div>
                                                 評分未達門檻，請先提升相關能力
                                             </div>
                                         )}
