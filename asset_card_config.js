@@ -89,13 +89,13 @@ const AssetCardConfig = {
             conflicts_with: []
         },
         renewable: {
-            id: 'renewable', name: '綠能整合', icon: '🌱',
-            description: '降低碳足跡與電費',
+            id: 'renewable', name: '自營能源', icon: '🌱',
+            description: '提升能源自主性',
             benefit_summary: 'ESG評分 ↑', cost_summary: '穩定性 ↓',
             levels: [
                 { level: 1, name: '屋頂太陽能系統', benefits: { energy_cost_mult: 0.9, esg_bonus: 3 }, costs: { power_variance: 0.1 }, upgrade_cost: { cash: 55, turns: 1 } },
-                { level: 2, name: 'PPA綠電採購合約', benefits: { energy_cost_mult: 0.75, esg_bonus: 8, green_percentage: 0.5 }, costs: { power_variance: 0.05 }, upgrade_cost: { cash: 130, turns: 2 } },
-                { level: 3, name: '自有再生能源場站', benefits: { energy_cost_mult: 0.55, esg_bonus: 15, green_percentage: 0.9 }, costs: { land_required: 10 }, upgrade_cost: { cash: 400, turns: 4 } }
+                { level: 2, name: '再生能源憑證', benefits: { energy_cost_mult: 0.75, esg_bonus: 8, green_percentage: 0.5 }, costs: { power_variance: 0.05 }, upgrade_cost: { cash: 130, turns: 2 } },
+                { level: 3, name: '自有模組化核電站SMRs', benefits: { energy_cost_mult: 0.55, esg_bonus: 15, green_percentage: 0.9 }, costs: { land_required: 10 }, upgrade_cost: { cash: 400, turns: 4 } }
             ],
             conflicts_with: []
         }

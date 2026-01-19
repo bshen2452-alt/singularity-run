@@ -632,6 +632,7 @@ function NewFacilityModal({ player, onAction, onClose }) {
     );
 }
 
+
 function SpaceCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false }) {
     const [showNewFacilityModal, setShowNewFacilityModal] = React.useState(false);
     

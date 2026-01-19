@@ -36,6 +36,8 @@
             
             // 算力技術
             architecture: { id: 'architecture', category: 'compute', name: '運算架構', icon: '🔧', maxLevel: 3 }
+
+
         };
         
         // 設施類型與可用技術路線的對應
