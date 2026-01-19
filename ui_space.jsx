@@ -8,6 +8,325 @@
 // ============================================
 
 // ============================================
+// 自營能源升級面板組件（設施內嵌）
+// ============================================
+
+function SelfPowerUpgradePanel({ facility, player, onAction }) {
+    // Tier2+ 才顯示
+    if ((player.mp_tier || 0) < 2) return null;
+    
+    const facilityConfig = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
+    if (!facilityConfig) return null;
+    
+    // 取得 renewable 相關的升級產品
+    const renewableProducts = ['renewable_lv1', 'renewable_lv2', 'renewable_lv3'];
+    const facilityState = player.facility_upgrade_state;
+    
+    // 收集三種自營能源選項的狀態
+    const energyOptions = renewableProducts.map(productId => {
+        const product = facilityConfig.getUpgradeProduct ? 
+            facilityConfig.getUpgradeProduct(productId) : null;
+        
+        if (!product) return null;
+        
+        const state = facilityState?.upgrade_products?.[productId];
+        const currentRenewableLevel = player.asset_upgrades?.power?.renewable || 0;
+        const targetLevel = product.upgrade_path?.target_level || 0;
+        
+        // 判斷狀態
+        let status = 'locked';
+        let statusText = '未解鎖';
+        let canStart = false;
+        
+        if (state) {
+            status = state.status;
+            if (status === 'researching') statusText = '研發中';
+            else if (status === 'constructing') statusText = '施工中';
+            else if (status === 'operating' || status === 'completed') statusText = '已完成';
+            else if (status === 'research_completed') statusText = '等待施工';
+        } else if (currentRenewableLevel >= targetLevel) {
+            status = 'completed';
+            statusText = '已完成';
+        } else {
+            const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
+            if (FacilityUpgradeEngine) {
+                const check = FacilityUpgradeEngine.canUnlockUpgrade(player, productId);
+                if (check.canUnlock) {
+                    status = 'available';
+                    statusText = '可研發';
+                    canStart = true;
+                } else {
+                    statusText = check.reason || '條件不足';
+                }
+            }
+        }
+        
+        return {
+            id: productId,
+            name: product.name,
+            icon: product.icon,
+            description: product.description,
+            status,
+            statusText,
+            canStart,
+            state,
+            product,
+            researchCost: product.development?.base_cost || 0,
+            constructionCost: product.development?.construction_cost || 0,
+            researchTurns: product.development?.research_turns || 0,
+            constructionTurns: product.development?.construction_turns || 0,
+            effects: product.completion_effects,
+            pros: product.pros || [],
+            cons: product.cons || []
+        };
+    }).filter(Boolean);
+    
+    if (energyOptions.length === 0) return null;
+    
+    const hasActiveProject = energyOptions.some(
+        opt => opt.status === 'researching' || opt.status === 'constructing'
+    );
+    
+    const handleStartResearch = (productId) => {
+        onAction('upgradeAsset', { assetType: 'power', pathId: 'renewable' });
+    };
+    
+    return (
+        <div style={{
+            marginTop: '10px',
+            padding: '10px',
+            background: 'var(--accent-green)08',
+            borderRadius: '6px',
+            border: '1px solid var(--accent-green)22'
+        }}>
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                marginBottom: '8px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚡</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent-green)' }}>
+                        自營能源升級
+                    </span>
+                </div>
+                {hasActiveProject && (
+                    <span style={{
+                        fontSize: '0.6rem',
+                        padding: '1px 5px',
+                        background: 'var(--accent-orange)33',
+                        color: 'var(--accent-orange)',
+                        borderRadius: '8px'
+                    }}>🔧 開發中</span>
+                )}
+            </div>
+            
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                選擇一種自營發電設施（三種類型為同層級選擇，可依需求挑選）
+            </div>
+            
+            <div style={{ display: 'grid', gap: '6px' }}>
+                {energyOptions.map(option => {
+                    const isActive = option.status === 'researching' || option.status === 'constructing';
+                    const isCompleted = option.status === 'completed' || option.status === 'operating';
+                    const canAfford = player.cash >= option.researchCost;
+                    
+                    return (
+                        <div key={option.id} style={{
+                            padding: '8px',
+                            background: isActive ? 'var(--accent-orange)11' : 
+                                        isCompleted ? 'var(--accent-green)11' : 'var(--bg-secondary)',
+                            borderRadius: '6px',
+                            border: '1px solid ' + (
+                                isActive ? 'var(--accent-orange)33' : 
+                                isCompleted ? 'var(--accent-green)33' : 'var(--border-color)'
+                            )
+                        }}>
+                            <div style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                marginBottom: '4px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '1rem' }}>{option.icon}</span>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                        {option.name}
+                                    </span>
+                                </div>
+                                <span style={{ 
+                                    fontSize: '0.6rem',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: isCompleted ? 'var(--accent-green)22' :
+                                               isActive ? 'var(--accent-orange)22' :
+                                               option.canStart ? 'var(--accent-cyan)22' : 'var(--bg-tertiary)',
+                                    color: isCompleted ? 'var(--accent-green)' :
+                                          isActive ? 'var(--accent-orange)' :
+                                          option.canStart ? 'var(--accent-cyan)' : 'var(--text-muted)'
+                                }}>
+                                    {option.statusText}
+                                </span>
+                            </div>
+                            
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                {option.description}
+                            </div>
+                            
+                            {isActive && option.state && (
+                                <div style={{ marginBottom: '6px' }}>
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between',
+                                        fontSize: '0.6rem',
+                                        marginBottom: '3px'
+                                    }}>
+                                        <span style={{ color: 'var(--accent-orange)' }}>
+                                            {option.status === 'researching' ? '🔬 研發中' : '🔧 施工中'}
+                                        </span>
+                                        <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                                            {option.status === 'researching' 
+                                                ? (option.state.research_progress?.toFixed(1) || 0) + '/' + (option.state.research_total || option.researchTurns)
+                                                : (option.state.construction_progress?.toFixed(1) || 0) + '/' + (option.state.construction_total || option.constructionTurns)
+                                            }
+                                        </span>
+                                    </div>
+                                    <div style={{
+                                        width: '100%',
+                                        height: '4px',
+                                        background: 'var(--bg-tertiary)',
+                                        borderRadius: '2px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div style={{
+                                            width: (option.status === 'researching' 
+                                                ? ((option.state.research_progress || 0) / (option.state.research_total || option.researchTurns) * 100)
+                                                : ((option.state.construction_progress || 0) / (option.state.construction_total || option.constructionTurns) * 100)
+                                            ) + '%',
+                                            height: '100%',
+                                            background: 'var(--accent-orange)',
+                                            transition: 'width 0.3s'
+                                        }} />
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {!isCompleted && !isActive && (
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(4, 1fr)',
+                                    gap: '4px',
+                                    fontSize: '0.6rem',
+                                    marginBottom: '6px'
+                                }}>
+                                    <div>
+                                        <span style={{ color: 'var(--text-muted)' }}>研發: </span>
+                                        <span style={{ color: 'var(--accent-yellow)', fontFamily: 'var(--font-mono)' }}>
+                                            ${option.researchCost}M
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'var(--text-muted)' }}>施工: </span>
+                                        <span style={{ color: 'var(--accent-yellow)', fontFamily: 'var(--font-mono)' }}>
+                                            ${option.constructionCost}M
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'var(--text-muted)' }}>研發期: </span>
+                                        <span style={{ color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }}>
+                                            {option.researchTurns}季
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span style={{ color: 'var(--text-muted)' }}>施工期: </span>
+                                        <span style={{ color: 'var(--accent-orange)', fontFamily: 'var(--font-mono)' }}>
+                                            {option.constructionTurns}季
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {option.effects && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                                    {option.effects.benefits?.energy_cost_mult && (
+                                        <span style={{
+                                            fontSize: '0.55rem',
+                                            padding: '2px 4px',
+                                            background: 'var(--accent-green)22',
+                                            color: 'var(--accent-green)',
+                                            borderRadius: '3px'
+                                        }}>
+                                            電費 {((1 - option.effects.benefits.energy_cost_mult) * 100).toFixed(0)}%↓
+                                        </span>
+                                    )}
+                                    {option.effects.benefits?.esg_bonus && (
+                                        <span style={{
+                                            fontSize: '0.55rem',
+                                            padding: '2px 4px',
+                                            background: 'var(--accent-cyan)22',
+                                            color: 'var(--accent-cyan)',
+                                            borderRadius: '3px'
+                                        }}>
+                                            ESG +{option.effects.benefits.esg_bonus}
+                                        </span>
+                                    )}
+                                    {option.effects.unlocks_department && (
+                                        <span style={{
+                                            fontSize: '0.55rem',
+                                            padding: '2px 4px',
+                                            background: 'var(--accent-purple)22',
+                                            color: 'var(--accent-purple)',
+                                            borderRadius: '3px'
+                                        }}>
+                                            🏢 解鎖部門
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                            
+                            {option.canStart && !hasActiveProject && (
+                                <button
+                                    onClick={() => handleStartResearch(option.id)}
+                                    disabled={!canAfford}
+                                    style={{
+                                        width: '100%',
+                                        padding: '6px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 600,
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        cursor: canAfford ? 'pointer' : 'not-allowed',
+                                        background: canAfford ? 'var(--accent-green)' : 'var(--bg-tertiary)',
+                                        color: canAfford ? 'white' : 'var(--text-muted)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    開始研發 (${option.researchCost}M)
+                                </button>
+                            )}
+                            
+                            {isCompleted && (
+                                <div style={{
+                                    textAlign: 'center',
+                                    fontSize: '0.65rem',
+                                    color: 'var(--accent-green)',
+                                    padding: '4px',
+                                    background: 'var(--accent-green)11',
+                                    borderRadius: '4px'
+                                }}>
+                                    ✓ 已完成 - 可選擇此電力供應
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ============================================
 // 設施技術升級面板組件
 // ============================================
 
@@ -1040,8 +1359,65 @@ function NewFacilitySection({ player, spaceConfig, energyConfig, onAction }) {
                             );
                         })}
                     </div>
+
+                    {/* 自營能源供電選項 (Tier2+) */}
+                    {(player.mp_tier || 0) >= 2 && (() => {
+                        const renewableLevel = player.asset_upgrades?.power?.renewable || 0;
+                        const completedEnergy = [];
+                        
+                        if (renewableLevel >= 1) completedEnergy.push({ id: 'self_gas', name: '🔥 自營燃氣電廠', cost: 0.85 });
+                        if (renewableLevel >= 2) completedEnergy.push({ id: 'self_renewable', name: '🌱 自營綠能電場', cost: 0.70 });
+                        if (renewableLevel >= 3) completedEnergy.push({ id: 'self_nuclear', name: '⚛️ 自營核電站', cost: 0.50 });
+                        
+                        if (completedEnergy.length === 0) return null;
+                        
+                        return (
+                            <div style={{ marginTop: '8px' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)', marginBottom: '6px' }}>
+                                    ⚡ 已研發的自營能源：
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                                    {completedEnergy.map(energy => {
+                                        const isSelected = selectedPower === energy.id;
+                                        return (
+                                            <div 
+                                                key={energy.id}
+                                                onClick={() => setSelectedPower(energy.id)}
+                                                style={{ 
+                                                    padding: '8px', 
+                                                    background: isSelected ? 'var(--accent-green)22' : 'var(--bg-secondary)',
+                                                    border: '2px solid ' + (isSelected ? 'var(--accent-green)' : 'var(--border-color)'),
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: isSelected ? 'var(--accent-green)' : 'var(--text-primary)', marginBottom: '2px' }}>
+                                                    {energy.name}
+                                                </div>
+                                                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                                                    {energy.cost}x成本
+                                                </div>
+                                                <div style={{ fontSize: '0.55rem', color: 'var(--accent-cyan)' }}>
+                                                    無簽約金
+                                                </div>
+                                                {isSelected && (
+                                                    <div style={{ fontSize: '0.55rem', color: 'var(--accent-green)', marginTop: '2px' }}>
+                                                        ✓
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
+
+            
             
             {/* 成本預估與確認 */}
             {costPreview && (
