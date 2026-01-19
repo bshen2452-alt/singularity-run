@@ -687,24 +687,139 @@
                 description: '自組織能源網路，可對外售電。',
                 pros: ['電網效率+50%', '可對外售電'],
                 cons: ['佔用6%算力']
-            }
-        },
-        
-        // ==========================================
-        // 多元能源升級整合至 energy_products
-        // ==========================================
-        // 注意：renewable升級路線整合至 energy_products_config.js
-        // 此處僅保留參照
-        RENEWABLE_INTEGRATION: {
-            note: 'renewable升級已整合至energy_products系統',
-            mapping: {
-                'renewable_lv1': 'renewable_farm',  // 對應綠能發電場
-                'renewable_lv2': 'renewable_farm',  // 擴展綠能發電場
-                'renewable_lv3': 'nuclear_plant'    // 核聚變實驗堆對應核電站
             },
-            department: {
-                id: 'green_energy',
-                unlock_condition: 'renewable_farm完成開發後解鎖'
+            
+            // ==========================================
+            // 自營能源升級線（整合 energy_products 系統）
+            // ==========================================
+            renewable_lv1: {
+                id: 'renewable_lv1',
+                name: '自營燃氣電廠研發',
+                upgrade_path: { type: 'power', path: 'renewable', target_level: 1 },
+                icon: '🔥',
+                category: 'infrastructure',
+                sub_category: 'facility_upgrade',
+                
+                unlock_requirements: {
+                    mp_tier: 2,
+                    cash_minimum: 450
+                },
+                
+                development: {
+                    research_turns: 2,
+                    construction_turns: 4,
+                    base_cost: 55,
+                    construction_cost: 400,
+                    turing_boost: 0.08,
+                    senior_boost: 0.04
+                },
+                
+                construction_impact: {
+                    power_loss_percent: 0.05,
+                    description: '燃氣電廠建設中'
+                },
+                
+                completion_effects: {
+                    benefits: { energy_cost_mult: 0.9, esg_bonus: 3 },
+                    costs: { power_variance: 0.1 },
+                    unlocks_energy_product: 'gas_plant'
+                },
+                
+                description: '研發自營燃氣電廠，建設期短、彈性輸出。完成後解鎖燃氣發電設施。',
+                pros: ['電力成本-10%', 'ESG+3', '彈性調整輸出', '可售電獲利'],
+                cons: ['燃料成本波動', '中等碳排']
+            },
+            
+            renewable_lv2: {
+                id: 'renewable_lv2',
+                name: '綠能發電場研發',
+                upgrade_path: { type: 'power', path: 'renewable', target_level: 2 },
+                icon: '🌱',
+                category: 'infrastructure',
+                sub_category: 'facility_upgrade',
+                
+                unlock_requirements: {
+                    mp_tier: 2,
+                    previous_upgrade: 'renewable_lv1',
+                    cash_minimum: 700
+                },
+                
+                development: {
+                    research_turns: 3,
+                    construction_turns: 6,
+                    base_cost: 130,
+                    construction_cost: 600,
+                    turing_boost: 0.10,
+                    senior_boost: 0.05
+                },
+                
+                construction_impact: {
+                    power_loss_percent: 0.03,
+                    description: '綠能發電場建設中'
+                },
+                
+                completion_effects: {
+                    benefits: { energy_cost_mult: 0.75, esg_bonus: 8, green_percentage: 0.5 },
+                    costs: { power_variance: 0.05 },
+                    unlocks_energy_product: 'renewable_farm',
+                    unlocks_department: 'green_energy'
+                },
+                
+                department_benefits: {
+                    id: 'green_energy',
+                    name: '綠能事業部',
+                    icon: '🌱',
+                    benefits: [
+                        '每季基礎收益 $8M',
+                        'ESG評分額外加成',
+                        '可承接綠電憑證業務'
+                    ]
+                },
+                
+                description: '研發太陽能與風力混合發電場，ESG加分明顯。完成後解鎖綠能事業部。',
+                pros: ['電力成本-25%', 'ESG+8', '解鎖綠能事業部', '低碳排'],
+                cons: ['季節波動±25%', '穩定性較低']
+            },
+            
+            renewable_lv3: {
+                id: 'renewable_lv3',
+                name: '模組化核電站(SMR)研發',
+                upgrade_path: { type: 'power', path: 'renewable', target_level: 3 },
+                icon: '⚛️',
+                category: 'infrastructure',
+                sub_category: 'facility_upgrade',
+                
+                unlock_requirements: {
+                    mp_tier: 3,
+                    previous_upgrade: 'renewable_lv2',
+                    cash_minimum: 1600,
+                    turing_required: 1
+                },
+                
+                development: {
+                    research_turns: 4,
+                    construction_turns: 12,
+                    base_cost: 400,
+                    construction_cost: 1500,
+                    turing_boost: 0.15,
+                    senior_boost: 0.05,
+                    requires_turing: true
+                },
+                
+                construction_impact: {
+                    power_loss_percent: 0.02,
+                    description: '核電站建設中（需核能許可）'
+                },
+                
+                completion_effects: {
+                    benefits: { energy_cost_mult: 0.55, esg_bonus: 15, green_percentage: 0.9 },
+                    costs: { land_required: 10 },
+                    unlocks_energy_product: 'nuclear_smr'
+                },
+                
+                description: '研發模組化小型核電站(SMR)，最低營運成本、最高穩定性。需Turing人才主導。',
+                pros: ['電力成本-45%', 'ESG+15（低碳）', '極高穩定性95%', '大容量400PF'],
+                cons: ['建設期長（12季）', '高額投資', '需Turing人才', '公眾形象負面']
             }
         },
         
