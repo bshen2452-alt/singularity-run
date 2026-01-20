@@ -780,9 +780,14 @@ function SpaceCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
 // ============================================
 
 function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false }) {
+    const [selectedStrategy, setSelectedStrategy] = React.useState(null);
+    const [showEnergyDetails, setShowEnergyDetails] = React.useState(false);
+    
     const config = window.AssetCardConfig;
     const upgrades = config?.POWER_UPGRADES || {};
     const playerUpgrades = player.asset_upgrades?.power || {};
+    const energyProductsConfig = window.ENERGY_PRODUCTS_CONFIG;
+    const EnergyProductsEngine = window.EnergyProductsEngine;
     
     const avgLevel = Object.keys(upgrades).length > 0 
         ? Math.round(Object.values(playerUpgrades).reduce((a, b) => a + b, 0) / Object.keys(upgrades).length)
@@ -803,30 +808,47 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
     const turnCount = player.turn_count || 0;
     const currentSeason = EnergyEng?.getCurrentSeason ? 
         EnergyEng.getCurrentSeason(turnCount) : 
-        { name: '春季', demand_multiplier: 1.0 };
+        { name: '春季', id: 'spring', demand_multiplier: 1.0 };
     
     // 計算能源成本
     const energySummary = EnergyEng?.calculateEnergyPrice ? 
         EnergyEng.calculateEnergyPrice(player, player.globalParams || {}, turnCount) : 
         { total_cost: 0, base_price: 1.0 };
     
-    // 獲取設施電力合約分布
+    // 自營能源狀態
+    const energyProductsState = player.energy_products_state || {};
+    const selfFacilities = energyProductsState.facilities || {};
+    const operatingFacilities = Object.values(selfFacilities).filter(f => f.status === 'operating');
+    const developingFacilities = Object.values(selfFacilities).filter(f => f.status === 'developing');
+    
+    // 自營能源總發電量與分配
+    const selfPowerGeneration = EnergyProductsEngine?.calculateTotalGeneration?.(player, currentSeason.id) || { total_generation: 0, total_capacity: 0, facilities: [] };
+    const powerDemand = player.pflops || 0;
+    const powerAllocation = EnergyProductsEngine?.allocatePower?.(player, selfPowerGeneration.total_generation, powerDemand) || { self_consumption: 0, power_sold: 0, grid_purchase: powerDemand, self_sufficiency: 0 };
+    
+    // 售電收入估算
+    const marketPrice = player.globalParams?.E_Price || 1.0;
+    const salesRevenueData = EnergyProductsEngine?.calculateSalesRevenue?.(player, powerAllocation.power_sold, currentSeason.id, marketPrice) || { revenue: 0 };
+    
+    // 維護成本
+    const maintenanceCost = EnergyProductsEngine?.calculateMaintenanceCost?.(player) || { total: 0, details: [] };
+    
+    // 電力分配策略
+    const currentStrategy = energyProductsState.power_allocation?.strategy || 'self_priority';
+    const allocationStrategies = energyProductsConfig?.POWER_ALLOCATION?.strategies || {};
+    
+    // 設施電力合約分布
     const facilities = spaceState?.facilities || [];
     const contractDistribution = {};
-    
-    // 自營能源名稱對應
     const selfPowerNames = {
         'self_gas': '🔥 自營燃氣',
         'self_renewable': '🌱 自營綠能',
         'self_nuclear': '⚛️ 自營核電'
     };
-    
     facilities.forEach(f => {
         if (f.status === 'completed') {
             const contractId = f.power_contract || 'grid_default';
             let contractName;
-            
-            // 檢查是否為自營能源
             if (selfPowerNames[contractId]) {
                 contractName = selfPowerNames[contractId];
             } else {
@@ -837,12 +859,21 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
         }
     });
     
-    // 檢查是否解鎖多元能源（renewable Lv.1+）
-    const hasRenewable = (playerUpgrades.renewable || 0) >= 1;
+    // 檢查是否解鎖自營能源
+    const renewableLevel = playerUpgrades.renewable || 0;
+    const hasRenewable = renewableLevel >= 1;
+    
+    // 處理策略切換
+    const handleStrategyChange = (strategyId) => {
+        if (EnergyProductsEngine?.setAllocationStrategy) {
+            EnergyProductsEngine.setAllocationStrategy(player, strategyId);
+            onAction('updatePlayerState', { player });
+        }
+    };
     
     return (
         <AssetCardBase
-            title="電力"
+            title="電力與自營能源"
             icon="⚡"
             color="#ffd000"
             level={avgLevel}
@@ -850,73 +881,338 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
             onToggle={onToggle}
             upgradeAvailable={showUpgrades && avgLevel < 3}
         >
+            {/* 電力狀態總覽 */}
             <div style={{ marginBottom: '12px' }}>
-                <StatRow 
-                    icon="📊" 
-                    label="供電穩定性" 
-                    value={powerStatus.percentage} 
-                    unit="%" 
-                    highlight 
-                    color={powerStatus.status === 'critical' ? 'var(--accent-red)' : 
-                           powerStatus.status === 'warning' ? 'var(--accent-yellow)' : 
-                           'var(--accent-green)'} 
-                />
-                <StatRow icon="🌡️" label="當前季節" value={currentSeason.name || '春季'} />
-                <StatRow icon="📈" label="季節需求" value={((currentSeason.demand_multiplier || 1) * 100).toFixed(0)} unit="%" />
-                <StatRow 
-                    icon="💰" 
-                    label="預估電費" 
-                    value={(energySummary.total_cost || 0).toFixed(1)} 
-                    unit=" M/季" 
-                    color="var(--accent-yellow)" 
-                />
-            </div>
-            
-            {/* 電力穩定性進度條 */}
-            <div style={{ marginBottom: '12px' }}>
-                <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ padding: '6px', background: 'var(--bg-tertiary)', borderRadius: '4px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>供電穩定性</div>
+                        <div style={{ 
+                            fontSize: '1.1rem', 
+                            fontWeight: 600,
+                            color: powerStatus.status === 'critical' ? 'var(--accent-red)' : 
+                                   powerStatus.status === 'warning' ? 'var(--accent-yellow)' : 'var(--accent-green)'
+                        }}>
+                            {powerStatus.percentage}%
+                        </div>
+                    </div>
+                    <div style={{ padding: '6px', background: 'var(--bg-tertiary)', borderRadius: '4px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>🌡️ {currentSeason.name}</div>
+                        <div style={{ 
+                            fontSize: '1.1rem', 
+                            fontWeight: 600,
+                            color: (currentSeason.demand_multiplier || 1) > 1 ? 'var(--accent-red)' : 'var(--accent-cyan)'
+                        }}>
+                            {((currentSeason.demand_multiplier || 1) * 100).toFixed(0)}%
+                        </div>
+                    </div>
+                </div>
+                
+                {/* 電費與收支 */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                    <div style={{ padding: '4px', background: 'var(--accent-yellow)11', borderRadius: '4px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--accent-yellow)' }}>電費支出</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-yellow)' }}>
+                            ${(energySummary.total_cost || 0).toFixed(1)}M
+                        </div>
+                    </div>
+                    <div style={{ padding: '4px', background: 'var(--accent-green)11', borderRadius: '4px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--accent-green)' }}>售電收入</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-green)' }}>
+                            ${(salesRevenueData.revenue || 0).toFixed(1)}M
+                        </div>
+                    </div>
+                    <div style={{ padding: '4px', background: 'var(--accent-red)11', borderRadius: '4px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--accent-red)' }}>維護成本</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-red)' }}>
+                            ${maintenanceCost.total.toFixed(1)}M
+                        </div>
+                    </div>
+                </div>
+                
+                {/* 穩定性進度條 */}
+                <div style={{ height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div style={{
-                        width: `${powerStatus.percentage}%`,
+                        width: powerStatus.percentage + '%',
                         height: '100%',
                         background: powerStatus.status === 'critical' ? 'var(--accent-red)' : 
-                                   powerStatus.status === 'warning' ? 'var(--accent-yellow)' : 
-                                   'var(--accent-cyan)',
+                                   powerStatus.status === 'warning' ? 'var(--accent-yellow)' : 'var(--accent-cyan)',
                         transition: 'width 0.3s'
                     }} />
                 </div>
             </div>
             
+            {/* 自營能源發電設施（已解鎖時顯示）*/}
+            {hasRenewable && (
+                <div style={{ 
+                    marginBottom: '12px', 
+                    padding: '10px', 
+                    background: 'var(--accent-green)08', 
+                    borderRadius: '6px', 
+                    border: '1px solid var(--accent-green)22' 
+                }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '8px'
+                    }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 600 }}>
+                            ⚡ 自營能源發電
+                        </div>
+                        <div style={{ 
+                            fontSize: '0.65rem', 
+                            padding: '2px 6px', 
+                            background: 'var(--accent-green)22', 
+                            borderRadius: '4px',
+                            color: 'var(--accent-green)'
+                        }}>
+                            自給率 {powerAllocation.self_sufficiency}%
+                        </div>
+                    </div>
+                    
+                    {/* 發電量與分配 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '8px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>發電容量</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
+                                {selfPowerGeneration.total_capacity} PF
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>自用電力</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-green)' }}>
+                                {powerAllocation.self_consumption.toFixed(1)} PF
+                            </div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>售出電力</div>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-yellow)' }}>
+                                {powerAllocation.power_sold.toFixed(1)} PF
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* 營運中設施列表 */}
+                    {operatingFacilities.length > 0 && (
+                        <div style={{ marginBottom: '8px' }}>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                                🏭 營運中設施
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {operatingFacilities.map(function(facility) {
+                                    var product = energyProductsConfig?.PRODUCTS?.[facility.productId];
+                                    var seasonalMult = product?.seasonal_performance?.[currentSeason.id] || 1.0;
+                                    return (
+                                        <div key={facility.id} style={{ 
+                                            padding: '4px 8px', 
+                                            background: 'var(--bg-secondary)', 
+                                            borderRadius: '4px',
+                                            fontSize: '0.65rem'
+                                        }}>
+                                            <span>{facility.icon} {facility.name}</span>
+                                            <span style={{ 
+                                                marginLeft: '4px',
+                                                color: seasonalMult >= 1 ? 'var(--accent-green)' : 'var(--accent-yellow)'
+                                            }}>
+                                                ({(seasonalMult * 100).toFixed(0)}%)
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* 建設中設施 */}
+                    {developingFacilities.length > 0 && (
+                        <div style={{ marginBottom: '8px' }}>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--accent-orange)', marginBottom: '4px' }}>
+                                🔧 建設中
+                            </div>
+                            {developingFacilities.map(function(facility) {
+                                var progressPercent = (facility.progress / facility.total_turns) * 100;
+                                return (
+                                    <div key={facility.id} style={{ 
+                                        padding: '6px', 
+                                        background: 'var(--accent-orange)11', 
+                                        borderRadius: '4px',
+                                        marginBottom: '4px'
+                                    }}>
+                                        <div style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            fontSize: '0.65rem',
+                                            marginBottom: '4px'
+                                        }}>
+                                            <span>{facility.icon} {facility.name}</span>
+                                            <span style={{ color: 'var(--accent-orange)' }}>
+                                                {Math.ceil(facility.total_turns - facility.progress)} 季
+                                            </span>
+                                        </div>
+                                        <div style={{ 
+                                            height: '4px', 
+                                            background: 'var(--bg-tertiary)', 
+                                            borderRadius: '2px', 
+                                            overflow: 'hidden' 
+                                        }}>
+                                            <div style={{
+                                                width: progressPercent + '%',
+                                                height: '100%',
+                                                background: 'var(--accent-orange)',
+                                                transition: 'width 0.3s'
+                                            }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                    
+                    {/* 電力分配策略選擇 */}
+                    {operatingFacilities.length > 0 && (
+                        <div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                                ⚙️ 電力分配策略
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                                {Object.entries(allocationStrategies).map(function([strategyId, strategy]) {
+                                    var isActive = currentStrategy === strategyId;
+                                    return (
+                                        <div 
+                                            key={strategyId}
+                                            onClick={function() { handleStrategyChange(strategyId); }}
+                                            style={{ 
+                                                padding: '6px', 
+                                                background: isActive ? 'var(--accent-cyan)22' : 'var(--bg-secondary)',
+                                                border: '1px solid ' + (isActive ? 'var(--accent-cyan)' : 'var(--border-color)'),
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                textAlign: 'center',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <div style={{ 
+                                                fontSize: '0.7rem', 
+                                                fontWeight: 600,
+                                                color: isActive ? 'var(--accent-cyan)' : 'var(--text-primary)'
+                                            }}>
+                                                {strategy.name}
+                                            </div>
+                                            <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>
+                                                {strategyId === 'self_priority' ? '自用→售電' :
+                                                 strategyId === 'balanced' ? '70%自用' : '30%自用'}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* 無設施時顯示提示 */}
+                    {operatingFacilities.length === 0 && developingFacilities.length === 0 && (
+                        <div style={{ 
+                            fontSize: '0.7rem', 
+                            color: 'var(--text-muted)', 
+                            textAlign: 'center',
+                            padding: '8px'
+                        }}>
+                            尚未建設自營能源設施<br/>
+                            <span style={{ fontSize: '0.65rem' }}>在「空間管理」中開始研發</span>
+                        </div>
+                    )}
+                </div>
+            )}
+            
             {/* 合約分布 */}
             {Object.keys(contractDistribution).length > 0 && (
                 <div style={{ marginBottom: '12px', padding: '8px', background: 'var(--bg-tertiary)', borderRadius: '6px' }}>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                        ⚡ 設施電力合約分布
+                        📊 設施電力來源分布
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {Object.entries(contractDistribution).map(([name, count]) => (
-                            <span key={name} style={{ 
-                                fontSize: '0.65rem', 
-                                padding: '2px 6px', 
-                                background: 'var(--accent-cyan)22', 
-                                borderRadius: '4px',
-                                color: 'var(--accent-cyan)'
-                            }}>
-                                {name}: {count}座
-                            </span>
-                        ))}
+                        {Object.entries(contractDistribution).map(function([name, count]) {
+                            var isSelfPower = name.includes('自營');
+                            return (
+                                <span key={name} style={{ 
+                                    fontSize: '0.65rem', 
+                                    padding: '2px 6px', 
+                                    background: isSelfPower ? 'var(--accent-green)22' : 'var(--accent-cyan)22', 
+                                    borderRadius: '4px',
+                                    color: isSelfPower ? 'var(--accent-green)' : 'var(--accent-cyan)'
+                                }}>
+                                    {name}: {count}座
+                                </span>
+                            );
+                        })}
                     </div>
                 </div>
             )}
             
-            {/* 自營能源選項（需要 renewable Lv.1+）*/}
+            {/* 能源產品比較表（可收合）*/}
             {hasRenewable && (
-                <div style={{ marginBottom: '12px', padding: '8px', background: 'var(--accent-green)11', borderRadius: '6px', border: '1px solid var(--accent-green)33' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--accent-green)', marginBottom: '6px' }}>
-                        🌱 自營能源可用
+                <div style={{ marginBottom: '12px' }}>
+                    <div 
+                        onClick={function() { setShowEnergyDetails(!showEnergyDetails); }}
+                        style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            padding: '6px 8px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.7rem',
+                            color: 'var(--text-muted)'
+                        }}
+                    >
+                        <span>📋 自營能源比較表</span>
+                        <span style={{ transform: showEnergyDetails ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                        新建設施時可選擇自營能源選項
-                    </div>
+                    
+                    {showEnergyDetails && energyProductsConfig?.COMPARISON_TABLE && (
+                        <div style={{ 
+                            marginTop: '6px', 
+                            padding: '8px', 
+                            background: 'var(--bg-secondary)', 
+                            borderRadius: '6px',
+                            overflowX: 'auto'
+                        }}>
+                            <table style={{ width: '100%', fontSize: '0.6rem', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        {energyProductsConfig.COMPARISON_TABLE.headers.map(function(h, i) {
+                                            return (
+                                                <th key={i} style={{ 
+                                                    padding: '4px', 
+                                                    textAlign: 'center', 
+                                                    borderBottom: '1px solid var(--border-color)',
+                                                    color: i === 0 ? 'var(--text-muted)' : 'var(--text-primary)'
+                                                }}>{h}</th>
+                                            );
+                                        })}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {energyProductsConfig.COMPARISON_TABLE.rows.map(function(row, i) {
+                                        return (
+                                            <tr key={i}>
+                                                {row.map(function(cell, j) {
+                                                    return (
+                                                        <td key={j} style={{ 
+                                                            padding: '3px', 
+                                                            textAlign: 'center',
+                                                            color: j === 0 ? 'var(--text-muted)' : 'var(--text-primary)'
+                                                        }}>{cell}</td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             )}
             
@@ -926,9 +1222,9 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 600 }}>
                         ⬆️ 技術升級
                     </div>
-                    {Object.entries(upgrades).map(([pathId, pathConfig]) => {
-                        const currentLevel = playerUpgrades[pathId] || 0;
-                        const canUpgradeResult = window.AssetCardEngine?.canUpgrade(player, 'power', pathId);
+                    {Object.entries(upgrades).map(function([pathId, pathConfig]) {
+                        var currentLevel = playerUpgrades[pathId] || 0;
+                        var canUpgradeResult = window.AssetCardEngine?.canUpgrade(player, 'power', pathId);
                         return (
                             <UpgradePathDisplay
                                 key={pathId}
