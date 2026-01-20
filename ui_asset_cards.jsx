@@ -815,44 +815,118 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
         EnergyEng.calculateEnergyPrice(player, player.globalParams || {}, turnCount) : 
         { total_cost: 0, base_price: 1.0 };
     
-    // 自營能源狀態
-    const energyProductsState = player.energy_products_state || {};
-    const selfFacilities = energyProductsState.facilities || {};
-    const operatingFacilities = Object.values(selfFacilities).filter(f => f.status === 'operating');
-    const developingFacilities = Object.values(selfFacilities).filter(f => f.status === 'developing');
+    // 自營能源配置對應
+    const selfPowerConfig = {
+        'self_gas': { 
+            id: 'self_gas', 
+            name: '自營燃氣電廠', 
+            icon: '🔥', 
+            productId: 'gas_plant',
+            cost_mult: 0.85,
+            stability: 0.85,
+            carbon: 0.40
+        },
+        'self_renewable': { 
+            id: 'self_renewable', 
+            name: '自營綠能電場', 
+            icon: '🌱', 
+            productId: 'renewable_farm',
+            cost_mult: 0.70,
+            stability: 0.60,
+            carbon: 0.05
+        },
+        'self_nuclear': { 
+            id: 'self_nuclear', 
+            name: '自營核電站', 
+            icon: '⚛️', 
+            productId: 'nuclear_smr',
+            cost_mult: 0.50,
+            stability: 0.95,
+            carbon: 0.02
+        }
+    };
     
-    // 自營能源總發電量與分配
-    const selfPowerGeneration = EnergyProductsEngine?.calculateTotalGeneration?.(player, currentSeason.id) || { total_generation: 0, total_capacity: 0, facilities: [] };
+    // 從 space_state.facilities 統計自營能源設施
+    const spaceFacilities = spaceState?.facilities || [];
+    const selfPowerFacilities = [];
+    const selfPowerSummary = { total_capacity: 0, by_type: {} };
+    
+    spaceFacilities.forEach(function(f) {
+        if (f.status === 'completed' && selfPowerConfig[f.power_contract]) {
+            const config = selfPowerConfig[f.power_contract];
+            const capacity = f.capacity || 50; // 設施容量 PF
+            
+            selfPowerFacilities.push({
+                id: f.id,
+                name: config.name,
+                icon: config.icon,
+                powerType: f.power_contract,
+                capacity: capacity,
+                facilityName: f.name || f.type
+            });
+            
+            selfPowerSummary.total_capacity += capacity;
+            if (!selfPowerSummary.by_type[f.power_contract]) {
+                selfPowerSummary.by_type[f.power_contract] = { count: 0, capacity: 0, config: config };
+            }
+            selfPowerSummary.by_type[f.power_contract].count++;
+            selfPowerSummary.by_type[f.power_contract].capacity += capacity;
+        }
+    });
+    
+    // 建設中的設施（使用自營能源）
+    const developingWithSelfPower = spaceFacilities.filter(function(f) {
+        return f.status === 'constructing' && selfPowerConfig[f.power_contract];
+    });
+    
+    // 計算自營能源發電量（基於季節影響）
+    var selfGeneration = 0;
+    Object.entries(selfPowerSummary.by_type).forEach(function([typeId, data]) {
+        var product = energyProductsConfig?.PRODUCTS?.[data.config.productId];
+        var seasonalMult = product?.seasonal_performance?.[currentSeason.id] || 1.0;
+        selfGeneration += data.capacity * seasonalMult;
+    });
+    
+    // 電力分配計算
     const powerDemand = player.pflops || 0;
-    const powerAllocation = EnergyProductsEngine?.allocatePower?.(player, selfPowerGeneration.total_generation, powerDemand) || { self_consumption: 0, power_sold: 0, grid_purchase: powerDemand, self_sufficiency: 0 };
+    const selfConsumption = Math.min(selfGeneration, powerDemand);
+    const powerSold = Math.max(0, selfGeneration - powerDemand);
+    const gridPurchase = Math.max(0, powerDemand - selfGeneration);
+    const selfSufficiency = powerDemand > 0 ? Math.round((selfConsumption / powerDemand) * 100) : 0;
     
     // 售電收入估算
     const marketPrice = player.globalParams?.E_Price || 1.0;
-    const salesRevenueData = EnergyProductsEngine?.calculateSalesRevenue?.(player, powerAllocation.power_sold, currentSeason.id, marketPrice) || { revenue: 0 };
+    const gridSellRatio = energyProductsConfig?.SYSTEM?.grid_sell_price_ratio || 0.7;
+    const salesRevenue = powerSold * marketPrice * gridSellRatio;
     
-    // 維護成本
-    const maintenanceCost = EnergyProductsEngine?.calculateMaintenanceCost?.(player) || { total: 0, details: [] };
+    // 維護成本計算
+    var maintenanceTotal = 0;
+    Object.entries(selfPowerSummary.by_type).forEach(function([typeId, data]) {
+        var product = energyProductsConfig?.PRODUCTS?.[data.config.productId];
+        var maintPerTurn = product?.operation?.maintenance_per_turn || 5;
+        maintenanceTotal += maintPerTurn * data.count;
+    });
     
     // 電力分配策略
+    const energyProductsState = player.energy_products_state || {};
     const currentStrategy = energyProductsState.power_allocation?.strategy || 'self_priority';
     const allocationStrategies = energyProductsConfig?.POWER_ALLOCATION?.strategies || {};
     
     // 設施電力合約分布
-    const facilities = spaceState?.facilities || [];
     const contractDistribution = {};
     const selfPowerNames = {
         'self_gas': '🔥 自營燃氣',
         'self_renewable': '🌱 自營綠能',
         'self_nuclear': '⚛️ 自營核電'
     };
-    facilities.forEach(f => {
+    spaceFacilities.forEach(function(f) {
         if (f.status === 'completed') {
-            const contractId = f.power_contract || 'grid_default';
-            let contractName;
+            var contractId = f.power_contract || 'grid_default';
+            var contractName;
             if (selfPowerNames[contractId]) {
                 contractName = selfPowerNames[contractId];
             } else {
-                const contractConfig = energyConfig.POWER_CONTRACTS?.[contractId] || {};
+                var contractConfig = energyConfig.POWER_CONTRACTS?.[contractId] || {};
                 contractName = contractConfig.display_name || contractConfig.name || '市電';
             }
             contractDistribution[contractName] = (contractDistribution[contractName] || 0) + 1;
@@ -863,12 +937,13 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
     const renewableLevel = playerUpgrades.renewable || 0;
     const hasRenewable = renewableLevel >= 1;
     
+    // 是否有自營能源設施
+    const hasSelfPowerFacilities = selfPowerFacilities.length > 0;
+    const hasDevelopingSelfPower = developingWithSelfPower.length > 0;
+    
     // 處理策略切換
     const handleStrategyChange = (strategyId) => {
-        if (EnergyProductsEngine?.setAllocationStrategy) {
-            EnergyProductsEngine.setAllocationStrategy(player, strategyId);
-            onAction('updatePlayerState', { player });
-        }
+        onAction('setEnergyAllocationStrategy', { strategyId: strategyId });
     };
     
     return (
@@ -918,13 +993,13 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                     <div style={{ padding: '4px', background: 'var(--accent-green)11', borderRadius: '4px', textAlign: 'center' }}>
                         <div style={{ fontSize: '0.6rem', color: 'var(--accent-green)' }}>售電收入</div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-green)' }}>
-                            ${(salesRevenueData.revenue || 0).toFixed(1)}M
+                            ${salesRevenue.toFixed(1)}M
                         </div>
                     </div>
                     <div style={{ padding: '4px', background: 'var(--accent-red)11', borderRadius: '4px', textAlign: 'center' }}>
                         <div style={{ fontSize: '0.6rem', color: 'var(--accent-red)' }}>維護成本</div>
                         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-red)' }}>
-                            ${maintenanceCost.total.toFixed(1)}M
+                            ${maintenanceTotal.toFixed(1)}M
                         </div>
                     </div>
                 </div>
@@ -966,7 +1041,7 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                             borderRadius: '4px',
                             color: 'var(--accent-green)'
                         }}>
-                            自給率 {powerAllocation.self_sufficiency}%
+                            自給率 {selfSufficiency}%
                         </div>
                     </div>
                     
@@ -975,47 +1050,52 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>發電容量</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>
-                                {selfPowerGeneration.total_capacity} PF
+                                {selfPowerSummary.total_capacity} PF
                             </div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>自用電力</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-green)' }}>
-                                {powerAllocation.self_consumption.toFixed(1)} PF
+                                {selfConsumption.toFixed(1)} PF
                             </div>
                         </div>
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>售出電力</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-yellow)' }}>
-                                {powerAllocation.power_sold.toFixed(1)} PF
+                                {powerSold.toFixed(1)} PF
                             </div>
                         </div>
                     </div>
                     
-                    {/* 營運中設施列表 */}
-                    {operatingFacilities.length > 0 && (
+                    {/* 各類型自營能源統計 */}
+                    {Object.keys(selfPowerSummary.by_type).length > 0 && (
                         <div style={{ marginBottom: '8px' }}>
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                                🏭 營運中設施
+                                🏭 自營能源設施
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                {operatingFacilities.map(function(facility) {
-                                    var product = energyProductsConfig?.PRODUCTS?.[facility.productId];
+                                {Object.entries(selfPowerSummary.by_type).map(function([typeId, data]) {
+                                    var product = energyProductsConfig?.PRODUCTS?.[data.config.productId];
                                     var seasonalMult = product?.seasonal_performance?.[currentSeason.id] || 1.0;
                                     return (
-                                        <div key={facility.id} style={{ 
-                                            padding: '4px 8px', 
+                                        <div key={typeId} style={{ 
+                                            padding: '6px 10px', 
                                             background: 'var(--bg-secondary)', 
                                             borderRadius: '4px',
                                             fontSize: '0.65rem'
                                         }}>
-                                            <span>{facility.icon} {facility.name}</span>
-                                            <span style={{ 
-                                                marginLeft: '4px',
-                                                color: seasonalMult >= 1 ? 'var(--accent-green)' : 'var(--accent-yellow)'
-                                            }}>
-                                                ({(seasonalMult * 100).toFixed(0)}%)
-                                            </span>
+                                            <div style={{ fontWeight: 600, marginBottom: '2px' }}>
+                                                {data.config.icon} {data.config.name}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px', color: 'var(--text-muted)' }}>
+                                                <span>{data.count}座</span>
+                                                <span>{data.capacity} PF</span>
+                                                <span style={{ 
+                                                    color: seasonalMult >= 1 ? 'var(--accent-green)' : 'var(--accent-yellow)'
+                                                }}>
+                                                    季節效率 {(seasonalMult * 100).toFixed(0)}%
+                                                </span>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -1023,14 +1103,17 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                         </div>
                     )}
                     
-                    {/* 建設中設施 */}
-                    {developingFacilities.length > 0 && (
+                    {/* 建設中設施（使用自營能源）*/}
+                    {hasDevelopingSelfPower && (
                         <div style={{ marginBottom: '8px' }}>
                             <div style={{ fontSize: '0.65rem', color: 'var(--accent-orange)', marginBottom: '4px' }}>
-                                🔧 建設中
+                                🔧 建設中（將使用自營能源）
                             </div>
-                            {developingFacilities.map(function(facility) {
-                                var progressPercent = (facility.progress / facility.total_turns) * 100;
+                            {developingWithSelfPower.map(function(facility) {
+                                var progressPercent = facility.construction_progress 
+                                    ? (facility.construction_progress / (facility.construction_total || 4)) * 100 
+                                    : 0;
+                                var powerConfig = selfPowerConfig[facility.power_contract];
                                 return (
                                     <div key={facility.id} style={{ 
                                         padding: '6px', 
@@ -1044,9 +1127,9 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                                             fontSize: '0.65rem',
                                             marginBottom: '4px'
                                         }}>
-                                            <span>{facility.icon} {facility.name}</span>
+                                            <span>{facility.name} → {powerConfig?.icon} {powerConfig?.name}</span>
                                             <span style={{ color: 'var(--accent-orange)' }}>
-                                                {Math.ceil(facility.total_turns - facility.progress)} 季
+                                                {Math.ceil((facility.construction_total || 4) - (facility.construction_progress || 0))} 季
                                             </span>
                                         </div>
                                         <div style={{ 
@@ -1069,7 +1152,7 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                     )}
                     
                     {/* 電力分配策略選擇 */}
-                    {operatingFacilities.length > 0 && (
+                    {hasSelfPowerFacilities && (
                         <div>
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
                                 ⚙️ 電力分配策略
@@ -1110,7 +1193,7 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                     )}
                     
                     {/* 無設施時顯示提示 */}
-                    {operatingFacilities.length === 0 && developingFacilities.length === 0 && (
+                    {!hasSelfPowerFacilities && !hasDevelopingSelfPower && (
                         <div style={{ 
                             fontSize: '0.7rem', 
                             color: 'var(--text-muted)', 
