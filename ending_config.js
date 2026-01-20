@@ -811,9 +811,9 @@ const EndingConfig = (function() {
                     // 滿足所有壟斷條件：等級 > 3、指定路線、極高資金與債務、正向現金流及強大算力
                     return player.mp_tier > 3 &&
                         player.route === 'Scaling Law' &&
-                        player.cash >= 900000000 &&
-                        player.debt >= 900000000 &&
-                        (player.product_state?.product_revenue || 0) >= 1000000 && 
+                        player.cash >= 70000 &&
+                        player.debt >= 90000 &&
+                        (player.product_state?.product_revenue || 0) >= 100 && 
                         player.model_power > 800;
                 },
                 warning: (player) => {
@@ -841,8 +841,8 @@ const EndingConfig = (function() {
                 check: (player) => {
                     return player.mp_tier > 3 &&
                            player.route === 'Scaling Law' &&
-                           player.cash < 700000000 &&
-                           player.debt > 900000000 &&
+                           player.cash < 70000 &&
+                           player.debt > 90000 &&
                            (player.product_state?.product_revenue || 0) < 1000000 && 
                            player.model_power > 800;
                 },
