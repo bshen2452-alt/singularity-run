@@ -866,7 +866,7 @@ const EndingConfig = (function() {
                 name: '下台一鞠躬',
                 type: '下台一鞠躬 - One Giant Leap for Mankind',
                 msg: '不是因為做不到，而是因為你選擇不去做。',
-                victory: false,
+                victory: true,
                 priority: 10,
                 check: (player) => {
                     return player.mp_tier >= 4 &&
