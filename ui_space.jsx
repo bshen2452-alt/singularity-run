@@ -5,6 +5,7 @@
 // 1. 容量總覽
 // 2. 現有設施管理（可收合清單，含電力合約）
 // 3. 新建設施（可收合區塊）
+// 4. 自營能源管理（Tier2+）
 // ============================================
 
 // ============================================
@@ -857,6 +858,65 @@ function FacilityPowerContractSelector({ facility, player, energyConfig, onActio
                     );
                 })}
             </div>
+            
+            {/* 自營能源選項 (Tier2+ 且已研發) */}
+            {(() => {
+                const renewableLevel = player.asset_upgrades?.power?.renewable || 0;
+                if (renewableLevel === 0) return null;
+                
+                const selfPowerOptions = [];
+                if (renewableLevel >= 1) selfPowerOptions.push({ id: 'self_gas', name: '🔥 自營燃氣電廠', cost: 0.85 });
+                if (renewableLevel >= 2) selfPowerOptions.push({ id: 'self_renewable', name: '🌱 自營綠能電場', cost: 0.70 });
+                if (renewableLevel >= 3) selfPowerOptions.push({ id: 'self_nuclear', name: '⚛️ 自營核電站', cost: 0.50 });
+                
+                return (
+                    <div style={{ marginTop: '8px' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)', marginBottom: '6px' }}>
+                            ⚡ 已研發的自營能源
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                            {selfPowerOptions.map(option => {
+                                const isCur = currentContract === option.id;
+                                return (
+                                    <div 
+                                        key={option.id}
+                                        onClick={() => !isCur && handleSwitchContract(option.id)}
+                                        style={{ 
+                                            padding: '8px', 
+                                            background: isCur ? 'var(--accent-green)22' : 'var(--bg-secondary)',
+                                            border: '1px solid ' + (isCur ? 'var(--accent-green)' : 'var(--border-color)'),
+                                            borderRadius: '6px',
+                                            cursor: isCur ? 'default' : 'pointer',
+                                            transition: 'all 0.2s',
+                                            textAlign: 'center'
+                                        }}
+                                    >
+                                        <div style={{ 
+                                            fontSize: '0.7rem', 
+                                            fontWeight: 600, 
+                                            color: isCur ? 'var(--accent-green)' : 'var(--text-primary)',
+                                            marginBottom: '2px'
+                                        }}>
+                                            {option.name}
+                                        </div>
+                                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                                            {option.cost}x成本
+                                        </div>
+                                        <div style={{ fontSize: '0.55rem', color: 'var(--accent-cyan)' }}>
+                                            無簽約金
+                                        </div>
+                                        {isCur && (
+                                            <div style={{ fontSize: '0.55rem', color: 'var(--accent-green)', marginTop: '2px' }}>
+                                                ✓ 當前
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

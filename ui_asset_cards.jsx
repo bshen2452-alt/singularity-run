@@ -813,11 +813,26 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
     // 獲取設施電力合約分布
     const facilities = spaceState?.facilities || [];
     const contractDistribution = {};
+    
+    // 自營能源名稱對應
+    const selfPowerNames = {
+        'self_gas': '🔥 自營燃氣',
+        'self_renewable': '🌱 自營綠能',
+        'self_nuclear': '⚛️ 自營核電'
+    };
+    
     facilities.forEach(f => {
         if (f.status === 'completed') {
             const contractId = f.power_contract || 'grid_default';
-            const contractConfig = energyConfig.POWER_CONTRACTS?.[contractId] || {};
-            const contractName = contractConfig.display_name || contractConfig.name || '市電';
+            let contractName;
+            
+            // 檢查是否為自營能源
+            if (selfPowerNames[contractId]) {
+                contractName = selfPowerNames[contractId];
+            } else {
+                const contractConfig = energyConfig.POWER_CONTRACTS?.[contractId] || {};
+                contractName = contractConfig.display_name || contractConfig.name || '市電';
+            }
             contractDistribution[contractName] = (contractDistribution[contractName] || 0) + 1;
         }
     });
@@ -917,7 +932,7 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
                         return (
                             <UpgradePathDisplay
                                 key={pathId}
-                                assetType="compute"
+                                assetType="power"
                                 pathId={pathId}
                                 pathConfig={pathConfig}
                                 currentLevel={currentLevel}
