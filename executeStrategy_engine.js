@@ -146,7 +146,7 @@ function executeStrategy(player, actionId, globalParams, params = {}) {
                     // 應用數據品質對MP的微調（高品質數據有額外加成）
                     if (consumptionEfficiency > 1.0) {
                         const bonusMP = actualGrowth * (consumptionEfficiency - 1.0) * 0.2;
-                        newPlayer.model_power = Math.min(1000, newPlayer.model_power + bonusMP);
+                        newPlayer.model_power = Math.min(1005, newPlayer.model_power + bonusMP);
                     }
                     
                     dataMessage = `, 數據 -${dataConsumed}`;

@@ -692,7 +692,7 @@ function executeAssetAction(player, actionId, params = {}, globalParams = { P_GP
             newPlayer.tech_levels[tech] = currentLevel + 1;
             
             // 升級效果
-            newPlayer.model_power = Math.min(1000, (newPlayer.model_power || 0) + 1);
+            newPlayer.model_power = Math.min(1005, (newPlayer.model_power || 0) + 1);
             newPlayer.hype = (newPlayer.hype || 0) + 5;
             
             // 技術路線特定效果

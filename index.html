@@ -953,7 +953,7 @@ function DoomGauge({ name, value, consecutive, player, rivals }) {
         if (name === 'commercial_ruin') {
             if (player.cash < 0) factors.push(`現金: $${player.cash.toFixed(0)}M (負債)`);
             if (player.debt > player.market_cap * 0.5) factors.push(`債務過高: ${((player.debt / player.market_cap) * 100).toFixed(0)}% 市值`);
-            const rival_avg_mc = rivals ? rivals.reduce((sum, r) => sum + (r.market_cap || 1005), 0) / rivals.length : 1000;
+            const rival_avg_mc = rivals ? rivals.reduce((sum, r) => sum + (r.market_cap || 1005), 0) / rivals.length : 1005;
             if (player.market_cap < rival_avg_mc * 0.5) factors.push(`市值落後: $${player.market_cap.toFixed(0)}M < 行業均值 50%`);
         } else if (name === 'internal_unraveling') {
             if (player.entropy > 50) factors.push(`熵值過高: ${player.entropy.toFixed(0)}%`);
