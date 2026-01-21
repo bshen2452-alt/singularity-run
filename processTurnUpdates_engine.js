@@ -588,15 +588,15 @@ function processTurnUpdates(player, rivals, globalParams) {
         // 產品線經驗訊息已在 engine 內處理
     }
 
-    // === 7.7 併購系統更新
+    // === 7.7 併購系統更新 ===
     const AcqInt = window.AcquisitionIntegration;
     if (AcqInt && AcqInt.processQuarterlyUpdate) {
-        const acqResult = AcqInt.processQuarterlyUpdate(newPlayer, globalParams);
+        const acqResult = AcqInt.processQuarterlyUpdate(updatedPlayer, globalParams);
         if (acqResult.player) {
-            newPlayer = acqResult.player;
+            Object.assign(updatedPlayer, acqResult.player);
         }
         if (acqResult.messages) {
-            messages.push(...acqResult.messages);
+            milestoneMessages.push(...acqResult.messages);
         }
     }
 
