@@ -414,9 +414,6 @@ const FinancePanelUI = {
         );
     },
 
-    // ==========================================
-    // 3. 財務行動區
-    // ==========================================
     renderFinanceActions(player, globalParams, onAction, mpTier, isPublic) {
         return React.createElement('div', {
             className: 'finance-actions',
@@ -448,7 +445,12 @@ const FinancePanelUI = {
             // ==========================================
             // Post-IPO 階段
             // ==========================================
-            isPublic && this.renderPostIPOActions(player, globalParams, onAction)
+            isPublic && this.renderPostIPOActions(player, globalParams, onAction),
+
+            // ==========================================
+            // 併購中心 (Tier 4+) - 新增
+            // ==========================================
+            mpTier >= 4 && this.renderAcquisitionPanel(player, globalParams, onAction)
         );
     },
 
@@ -1404,6 +1406,17 @@ const FinancePanelUI = {
                 )
             )
         );
+    },
+
+    // ==========================================
+    // 併購中心面板 (Tier 4+)
+    // ==========================================
+    renderAcquisitionPanel(player, globalParams, onAction) {
+        const AcquisitionUI = window.AcquisitionUI;
+        if (!AcquisitionUI) {
+            return null;
+        }
+        return AcquisitionUI.renderAcquisitionPanel(player, globalParams, onAction);
     },
 
     // ==========================================

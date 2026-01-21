@@ -588,6 +588,18 @@ function processTurnUpdates(player, rivals, globalParams) {
         // 產品線經驗訊息已在 engine 內處理
     }
 
+    // === 7.7 併購系統更新
+    const AcqInt = window.AcquisitionIntegration;
+    if (AcqInt && AcqInt.processQuarterlyUpdate) {
+        const acqResult = AcqInt.processQuarterlyUpdate(newPlayer, globalParams);
+        if (acqResult.player) {
+            newPlayer = acqResult.player;
+        }
+        if (acqResult.messages) {
+            messages.push(...acqResult.messages);
+        }
+    }
+
 
     // === 8. 市值更新 ===
     const calcFinances = window.calculateQuarterlyFinances || 

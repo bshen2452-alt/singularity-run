@@ -145,6 +145,7 @@ function createInitialPlayerState(routeName) {
             talent: { productivity: 0 },
             data: { synthesis: 0, marketplace: 0, privacy: 0 }
         },
+
         
         // ========================================
         // 事業線（Business Line）
@@ -164,6 +165,7 @@ function createInitialPlayerState(routeName) {
         departments: [],                         // @deprecated → 使用 functional_depts
         department_mastery: {},                  // @deprecated → 使用 functional_dept_mastery
         subsidiaries: [],                        // @deprecated → 使用 functional_subsidiaries
+        
         
         // Tier4 全球市場狀態（Tier4 解鎖後初始化）
         global_market: null,
@@ -217,7 +219,8 @@ function createInitialPlayerState(routeName) {
         initialState.industry_affinity_state = window.IndustryAffinityEngine.createInitialState(routeName);
         console.log('✓ Industry Affinity initialized for route: ' + routeName);
     }
-    
+
+
     return initialState;
 }
 

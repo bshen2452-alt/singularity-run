@@ -477,6 +477,38 @@ const handleAction = useCallback((action, params = {}) => {
     }
 
     // ========================================
+    // 併購系統動作 (Tier4+)
+    // ========================================
+    else if (action === 'executeAcquisition') {
+        const AcqEngine = window.AcquisitionEngine;
+        if (AcqEngine && AcqEngine.executeAcquisition) {
+            const { targetId, opportunity } = params;
+            if (!targetId) {
+                result = { success: false, message: '缺少併購目標' };
+            } else {
+                result = AcqEngine.executeAcquisition(player, targetId, opportunity);
+                if (result.success && result.player) {
+                    // 結果格式已正確
+                }
+            }
+        } else {
+            result = { success: false, message: '併購系統未載入' };
+        }
+    }
+    else if (action === 'refreshAcquisitionOpportunities') {
+        const AcqInt = window.AcquisitionIntegration;
+        if (AcqInt && AcqInt.refreshOpportunities) {
+            result = AcqInt.refreshOpportunities(player, globalParams);
+            if (result.success) {
+                result.message = `發現 ${result.opportunities_count || 0} 個併購機會`;
+                result.type = 'info';
+            }
+        } else {
+            result = { success: false, message: '併購系統未載入' };
+        }
+    }
+
+    // ========================================
     // 區域系統行動 (Tier4+)
     // ========================================
     else if (action === 'establish_liaison') {
