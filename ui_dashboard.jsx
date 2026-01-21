@@ -18,6 +18,11 @@
         return num.toFixed(dec);
     };
 
+    const fmtMP = (num) => {
+        if (num === undefined || num === null || isNaN(num)) return '0';
+        return num.toFixed(1);
+    };
+
     const fmtCash = (num) => {
         if (num === undefined || num === null || isNaN(num)) return '$0M';
         return (num < 0 ? '-' : '') + '$' + fmt(Math.abs(num)) + 'M';

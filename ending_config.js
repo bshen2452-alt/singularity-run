@@ -930,9 +930,9 @@ const EndingConfig = (function() {
                 priority: 99, // 極高優先級，一旦觸發即強制結束
                 check: (player) => {
                     // 判定條件：熵值 >= 100, 對齊度 < 30, 模型算力 >= 1005
-                    return (player.entropy >= 100 || player.entropy >= 100) && 
-                        (player.alignment < 30 || player.alignment < 30) &&
-                        (player.model_power >= 1005);
+                    return (player.entropy || 0) >= 100 && 
+                        (player.alignment || 0) < 30 &&
+                        (player.model_power || 0) >= 1005;
                 },
                 warning: (player) => {
                     const entropy = player.entropy ||  0;
