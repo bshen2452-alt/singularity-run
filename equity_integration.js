@@ -224,7 +224,7 @@
                 return player.stock_dilution || 1;
             }
 
-            const founderShares = equityState.founder_shares || 100;
+            const founderShares = equityState.founder_shares ?? 100;
             return 100 / founderShares;
         },
 

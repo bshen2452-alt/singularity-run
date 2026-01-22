@@ -70,7 +70,7 @@ const FinancePanelUI = {
 
     renderFounderControlPanel(player) {
         const equityState = player.equity_state;
-        const founderShares = equityState?.founder_shares || 100;
+        const founderShares = equityState?.founder_shares ?? 100;
         const investorShares = equityState?.investor_shares || 0;
         const publicShares = equityState?.public_shares || 0;
         const isPublic = equityState?.is_public || player.is_public || false;
@@ -205,7 +205,7 @@ const FinancePanelUI = {
         const factors = [];
 
         // 創辦人持股
-        const founderShares = equityState.founder_shares || 100;
+        const founderShares = equityState.founder_shares ?? 100;
         factors.push({ label: '創辦人持股', value: Math.round(founderShares) });
 
         // 投資人持股影響
