@@ -954,12 +954,12 @@ const EndingConfig = (function() {
                 id: 'faustian_bargain',
                 name: '禮崩樂壞',
                 type: '禮崩樂壞 - Faustian Bargain',
-                msg: '「不受信任的奇點。」\n\n追逐過程中拋棄了所有道德底線。現在你達成了AGI，沒有人相信你能控制它。',
+                msg: '「不受信任的奇點。」\n\n追逐過程中拋棄了所有道德底線。現在你達成了AGI，沒人相信你能控制它。',
                 victory: false,
                 priority: 25, // 高優先級，因為這通常是遊戲後期的關鍵轉折
                 check: (player) => {
                     // 達成條件：法規壓力滿載、對齊度極低、且模型算力達標
-                    return (player.regulation || 0) >= 100 && 
+                    return (player.regulation || 0) >= 95 && 
                            (player.alignment || 0) < 10 && 
                            (player.model_power || 0) >= 1005;
                 },
