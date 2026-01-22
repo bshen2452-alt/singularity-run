@@ -600,6 +600,19 @@ function processTurnUpdates(player, rivals, globalParams) {
         }
     }
 
+    // === 7.8 產業親和度每季更新 ===
+    const AffinityEngine = window.IndustryAffinityEngine;
+    if (AffinityEngine && AffinityEngine.processQuarterlyUpdate) {
+        const affinityResult = AffinityEngine.processQuarterlyUpdate(updatedPlayer);
+        if (affinityResult.player) {
+            updatedPlayer = affinityResult.player;
+        }
+        if (affinityResult.messages && affinityResult.messages.length > 0) {
+            affinityResult.messages.forEach(msg => {
+                milestoneMessages.push(msg);
+            });
+        }
+    }
 
     // === 8. 市值更新 ===
     const calcFinances = window.calculateQuarterlyFinances || 

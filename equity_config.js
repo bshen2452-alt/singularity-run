@@ -380,6 +380,11 @@
                 affinity_bonus: {
                     per_5_percent: 3        // 每5%投資人持股，親和度+3
                 },
+                // 持股維持親和度效果（每季自動維持）
+                affinity_maintenance: {
+                    quarterly_factor: 0.3,  // 每季維持係數（親和度加成 × 此係數）
+                    min_shares: 1           // 最低持股比例（低於此比例不維持）
+                },
                 // 融資效率
                 funding_efficiency: {
                     per_10_percent: 0.05    // 每10%持股，融資效率+5%

@@ -597,6 +597,41 @@
                 }
             }
 
+            // 6. 投資人持股維持產業親和度
+            const equityState = newPlayer.equity_state;
+            if (equityState && equityState.investor_records && equityState.investor_records.length > 0) {
+                const EquityConfig = window.EquityConfig;
+                const investorProfiles = EquityConfig?.STRATEGIC_FUNDING?.INVESTOR_PROFILES || {};
+                const shareEffectConfig = EquityConfig?.SHARE_EFFECTS?.investor?.affinity_bonus || { per_5_percent: 3 };
+                const maintenanceConfig = EquityConfig?.SHARE_EFFECTS?.investor?.affinity_maintenance || { quarterly_factor: 0.3, min_shares: 1 };
+                
+                // 遍歷每個投資人記錄
+                equityState.investor_records.forEach(record => {
+                    const profile = investorProfiles[record.profile];
+                    if (profile && profile.industries && record.shares >= maintenanceConfig.min_shares) {
+                        // 根據持股比例計算親和度維持量
+                        // 公式：每5%持股提供基礎親和度，乘以維持係數
+                        const baseAffinity = (record.shares / 5) * shareEffectConfig.per_5_percent;
+                        // 套用投資人類型的親和度乘數和每季維持係數
+                        const affinityMult = profile.affinity_mult || 1.0;
+                        const affinityMaintain = Math.floor(baseAffinity * affinityMult * maintenanceConfig.quarterly_factor);
+                        
+                        if (affinityMaintain > 0) {
+                            profile.industries.forEach(industryId => {
+                                if (industryId !== 'all' && state.affinity.hasOwnProperty(industryId)) {
+                                    state = this.modifyAffinity(
+                                        state,
+                                        industryId,
+                                        affinityMaintain,
+                                        profile.name + '持股維護 (' + record.shares.toFixed(1) + '%)'
+                                    );
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
             // 更新回合
             state.last_update_turn = newPlayer.turn_count || 0;
             newPlayer.industry_affinity_state = state;
