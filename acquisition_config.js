@@ -352,6 +352,362 @@
                     base_turns: 6,
                     skill_required: 'senior'
                 }
+            },
+
+            // ==========================================
+            // 能源供應商併購（對應 energy_products_config.PRODUCTS）
+            // ==========================================
+            
+            // 燃氣電廠供應商
+            energy_gas_supplier: {
+                id: 'energy_gas_supplier',
+                name: '燃氣發電供應商',
+                type: 'department',
+                icon: '🔥',
+                description: '專業燃氣發電廠營運商，可獲得穩定電力供應',
+                
+                // 對應 energy_products_config.PRODUCTS.gas_plant
+                related_energy_product: 'gas_plant',
+                acquisition_category: 'energy_supplier',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'energy',
+                        min_value: 25
+                    },
+                    random_chance: 0.30
+                },
+                
+                cost: {
+                    base: 280,
+                    variance: 0.20
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            energy: 15,
+                            enterprise: 5
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 8,
+                        energy_cost_reduction: 0.15,
+                        power_capacity_bonus: 200       // 200 PF 電力容量
+                    }
+                },
+                
+                integration: {
+                    base_turns: 4,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 綠能電廠供應商
+            energy_renewable_supplier: {
+                id: 'energy_renewable_supplier',
+                name: '綠能發電供應商',
+                type: 'department',
+                icon: '🌱',
+                description: '專業太陽能與風力發電營運商，ESG加分',
+                
+                related_energy_product: 'renewable_farm',
+                acquisition_category: 'energy_supplier',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'energy',
+                        min_value: 30
+                    },
+                    random_chance: 0.28
+                },
+                
+                cost: {
+                    base: 350,
+                    variance: 0.22
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            energy: 18,
+                            consumer: 8        // ESG 形象
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 6,
+                        energy_cost_reduction: 0.18,
+                        esg_bonus: 10,
+                        power_capacity_bonus: 150
+                    }
+                },
+                
+                integration: {
+                    base_turns: 5,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 核能電廠供應商（高門檻）
+            energy_nuclear_supplier: {
+                id: 'energy_nuclear_supplier',
+                name: '模組化核電供應商',
+                type: 'subsidiary',
+                icon: '⚛️',
+                description: '專業SMR核電站營運商，極高穩定性與大容量',
+                
+                related_energy_product: 'nuclear_smr',
+                acquisition_category: 'energy_supplier',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'energy',
+                        min_value: 50
+                    },
+                    random_chance: 0.15
+                },
+                
+                cost: {
+                    base: 800,
+                    variance: 0.25
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            energy: 30,
+                            defense: 10        // 能源安全
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 15,
+                        energy_cost_reduction: 0.30,
+                        power_stability: 0.95,
+                        power_capacity_bonus: 400
+                    }
+                },
+                
+                integration: {
+                    base_turns: 8,
+                    skill_required: 'turing'
+                }
+            },
+
+            // ==========================================
+            // 數據供應商併購（對應 data_config.DATA_TYPES）
+            // ==========================================
+            
+            // 基礎數據供應商（legal_low）
+            data_basic_supplier: {
+                id: 'data_basic_supplier',
+                name: '基礎數據供應商',
+                type: 'department',
+                icon: '📁',
+                description: '大型公開數據集供應商，提供基礎合規數據',
+                
+                // 對應 data_config.DATA_TYPES.legal_low
+                related_data_type: 'legal_low',
+                acquisition_category: 'data_supplier',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'data_provider',
+                        min_value: 15
+                    },
+                    random_chance: 0.40
+                },
+                
+                cost: {
+                    base: 100,
+                    variance: 0.15
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            data_provider: 10,
+                            research: 5
+                        },
+                        data_grant: {
+                            type: 'legal_low',
+                            amount: 200
+                        }
+                    },
+                    ongoing: {
+                        quarterly_data: {
+                            type: 'legal_low',
+                            amount: 50
+                        },
+                        data_cost_reduction: 0.10
+                    }
+                },
+                
+                integration: {
+                    base_turns: 2,
+                    skill_required: null
+                }
+            },
+
+            // 優質通用數據供應商（legal_high_broad）
+            data_premium_supplier: {
+                id: 'data_premium_supplier',
+                name: '優質數據供應商',
+                type: 'department',
+                icon: '💎',
+                description: '頂級通用數據供應商，提供高品質廣泛數據',
+                
+                related_data_type: 'legal_high_broad',
+                acquisition_category: 'data_supplier',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'data_provider',
+                        min_value: 30
+                    },
+                    random_chance: 0.28
+                },
+                
+                cost: {
+                    base: 220,
+                    variance: 0.20
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            data_provider: 18,
+                            research: 8
+                        },
+                        data_grant: {
+                            type: 'legal_high_broad',
+                            amount: 100
+                        }
+                    },
+                    ongoing: {
+                        quarterly_data: {
+                            type: 'legal_high_broad',
+                            amount: 30
+                        },
+                        data_cost_reduction: 0.15,
+                        research_efficiency: 0.05
+                    }
+                },
+                
+                integration: {
+                    base_turns: 4,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 專業領域數據供應商（legal_high_focused）
+            data_specialized_supplier: {
+                id: 'data_specialized_supplier',
+                name: '專業數據供應商',
+                type: 'department',
+                icon: '📊',
+                description: '垂直領域數據專家，提供專精高品質數據',
+                
+                related_data_type: 'legal_high_focused',
+                acquisition_category: 'data_supplier',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'data_provider',
+                        min_value: 25
+                    },
+                    random_chance: 0.32
+                },
+                
+                cost: {
+                    base: 180,
+                    variance: 0.18
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            data_provider: 15,
+                            enterprise: 5
+                        },
+                        data_grant: {
+                            type: 'legal_high_focused',
+                            amount: 80
+                        }
+                    },
+                    ongoing: {
+                        quarterly_data: {
+                            type: 'legal_high_focused',
+                            amount: 25
+                        },
+                        data_cost_reduction: 0.12,
+                        focused_data_bonus: 0.15        // 專精數據效率+15%
+                    }
+                },
+                
+                integration: {
+                    base_turns: 3,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 數據集團子公司（需先有基礎數據部門）
+            data_conglomerate: {
+                id: 'data_conglomerate',
+                name: '數據服務集團',
+                type: 'subsidiary',
+                icon: '🏛️',
+                description: '大型數據服務集團，整合多種數據資源',
+                
+                acquisition_category: 'data_supplier',
+                requires_department: 'data_basic_supplier',  // 需先有基礎數據部門
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'data_provider',
+                        min_value: 50
+                    },
+                    random_chance: 0.18
+                },
+                
+                cost: {
+                    base: 450,
+                    variance: 0.25
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            data_provider: 30,
+                            enterprise: 15,
+                            research: 10
+                        },
+                        data_grant: {
+                            type: 'legal_high_broad',
+                            amount: 200
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 12,
+                        quarterly_data: {
+                            type: 'legal_high_broad',
+                            amount: 50
+                        },
+                        data_cost_reduction: 0.25,
+                        data_contract_discount: 0.20    // 數據合約折扣20%
+                    }
+                },
+                
+                integration: {
+                    base_turns: 6,
+                    skill_required: 'turing'
+                }
             }
         },
 
@@ -449,6 +805,71 @@
                     reputation: 10
                 },
                 name: '全棧基礎設施'
+            },
+
+            // 能源供應商協同
+            energy_portfolio: {
+                required: ['energy_gas_supplier', 'energy_renewable_supplier'],
+                bonus: {
+                    energy_cost: -0.20,
+                    power_stability: 0.10,
+                    quarterly_revenue: 10
+                },
+                name: '多元能源組合'
+            },
+
+            energy_independence: {
+                required: ['energy_renewable_supplier', 'energy_nuclear_supplier'],
+                bonus: {
+                    energy_cost: -0.35,
+                    esg_bonus: 15,
+                    power_stability: 0.15
+                },
+                name: '清潔能源自主'
+            },
+
+            // 數據供應商協同
+            data_coverage: {
+                required: ['data_basic_supplier', 'data_premium_supplier'],
+                bonus: {
+                    data_cost: -0.20,
+                    quarterly_data_bonus: 30,
+                    research_efficiency: 0.08
+                },
+                name: '數據廣度覆蓋'
+            },
+
+            data_excellence: {
+                required: ['data_premium_supplier', 'data_specialized_supplier'],
+                bonus: {
+                    data_cost: -0.15,
+                    research_efficiency: 0.15,
+                    focused_data_bonus: 0.20
+                },
+                name: '數據品質領先'
+            },
+
+            data_empire: {
+                required: ['data_basic_supplier', 'data_premium_supplier', 'data_conglomerate'],
+                bonus: {
+                    quarterly_revenue: 20,
+                    data_cost: -0.30,
+                    research_efficiency: 0.12,
+                    data_contract_discount: 0.30
+                },
+                name: '數據帝國'
+            },
+
+            // 跨領域協同
+            ai_infrastructure: {
+                required: ['compute_rental', 'data_premium_supplier', 'energy_renewable_supplier'],
+                bonus: {
+                    quarterly_revenue: 25,
+                    compute_efficiency: 0.15,
+                    research_efficiency: 0.10,
+                    esg_bonus: 10
+                },
+                name: 'AI基礎設施整合'
             }
         },
 

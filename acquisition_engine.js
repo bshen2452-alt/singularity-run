@@ -411,6 +411,30 @@
                 }
             }
 
+            // 立即效果：數據贈予（數據供應商）
+            if (target.effects?.immediate?.data_grant) {
+                const grant = target.effects.immediate.data_grant;
+                const dataType = grant.type;
+                const amount = grant.amount || 0;
+                
+                // 初始化數據存儲
+                if (!newPlayer.data_inventory) {
+                    newPlayer.data_inventory = {};
+                }
+                
+                // 根據數據類型增加對應存量
+                if (dataType === 'legal_low') {
+                    newPlayer.low_data = (newPlayer.low_data || 0) + amount;
+                    newPlayer.data_inventory.legal_low = (newPlayer.data_inventory.legal_low || 0) + amount;
+                } else if (dataType === 'legal_high_broad') {
+                    newPlayer.high_data = (newPlayer.high_data || 0) + amount;
+                    newPlayer.data_inventory.legal_high_broad = (newPlayer.data_inventory.legal_high_broad || 0) + amount;
+                } else if (dataType === 'legal_high_focused') {
+                    newPlayer.high_data = (newPlayer.high_data || 0) + amount;
+                    newPlayer.data_inventory.legal_high_focused = (newPlayer.data_inventory.legal_high_focused || 0) + amount;
+                }
+            }
+
             return {
                 success: true,
                 player: newPlayer,
@@ -560,6 +584,44 @@
             const synergies = this.calculateActiveSynergies(newPlayer);
             state.active_synergies = synergies;
 
+            // 7. 處理每季數據產出（數據供應商）
+            const effects = this.calculateOngoingEffects(newPlayer);
+            if (effects.quarterly_data) {
+                // 初始化數據存儲
+                if (!newPlayer.data_inventory) {
+                    newPlayer.data_inventory = {};
+                }
+                
+                let totalDataGained = 0;
+                
+                // 處理各類型數據產出
+                if (effects.quarterly_data.legal_low > 0) {
+                    const amount = effects.quarterly_data.legal_low;
+                    newPlayer.low_data = (newPlayer.low_data || 0) + amount;
+                    newPlayer.data_inventory.legal_low = (newPlayer.data_inventory.legal_low || 0) + amount;
+                    totalDataGained += amount;
+                }
+                if (effects.quarterly_data.legal_high_broad > 0) {
+                    const amount = effects.quarterly_data.legal_high_broad;
+                    newPlayer.high_data = (newPlayer.high_data || 0) + amount;
+                    newPlayer.data_inventory.legal_high_broad = (newPlayer.data_inventory.legal_high_broad || 0) + amount;
+                    totalDataGained += amount;
+                }
+                if (effects.quarterly_data.legal_high_focused > 0) {
+                    const amount = effects.quarterly_data.legal_high_focused;
+                    newPlayer.high_data = (newPlayer.high_data || 0) + amount;
+                    newPlayer.data_inventory.legal_high_focused = (newPlayer.data_inventory.legal_high_focused || 0) + amount;
+                    totalDataGained += amount;
+                }
+                
+                if (totalDataGained > 0) {
+                    messages.push({
+                        text: `📊 數據供應商提供 ${totalDataGained} 單位數據`,
+                        type: 'info'
+                    });
+                }
+            }
+
             return {
                 player: newPlayer,
                 messages
@@ -592,7 +654,19 @@
                 construction_cost: 0,
                 esg_bonus: 0,
                 operating_efficiency_penalty: 0,
-                loyalty_drain: 0
+                loyalty_drain: 0,
+                // 能源供應商效果
+                power_capacity_bonus: 0,
+                power_stability: 0,
+                // 數據供應商效果
+                data_cost_reduction: 0,
+                research_efficiency: 0,
+                focused_data_bonus: 0,
+                quarterly_data: {
+                    legal_low: 0,
+                    legal_high_broad: 0,
+                    legal_high_focused: 0
+                }
             };
 
             // 整合中單位的懲罰
@@ -621,6 +695,25 @@
                 if (ongoing.construction_speed) effects.construction_speed += ongoing.construction_speed;
                 if (ongoing.construction_cost) effects.construction_cost += ongoing.construction_cost;
                 if (ongoing.esg_bonus) effects.esg_bonus += ongoing.esg_bonus;
+                
+                // 能源供應商效果
+                if (ongoing.power_capacity_bonus) effects.power_capacity_bonus += ongoing.power_capacity_bonus;
+                if (ongoing.power_stability) effects.power_stability = Math.max(effects.power_stability, ongoing.power_stability);
+                
+                // 數據供應商效果
+                if (ongoing.data_cost_reduction) effects.data_cost_reduction += ongoing.data_cost_reduction;
+                if (ongoing.research_efficiency) effects.research_efficiency += ongoing.research_efficiency;
+                if (ongoing.focused_data_bonus) effects.focused_data_bonus += ongoing.focused_data_bonus;
+                
+                // 每季數據產出
+                if (ongoing.quarterly_data) {
+                    const qd = ongoing.quarterly_data;
+                    if (qd.type && qd.amount) {
+                        if (effects.quarterly_data[qd.type] !== undefined) {
+                            effects.quarterly_data[qd.type] += qd.amount;
+                        }
+                    }
+                }
             }
 
             // 協同效應加成
