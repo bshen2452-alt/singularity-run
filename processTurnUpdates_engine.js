@@ -605,7 +605,8 @@ function processTurnUpdates(player, rivals, globalParams) {
     if (AffinityEngine && AffinityEngine.processQuarterlyUpdate) {
         const affinityResult = AffinityEngine.processQuarterlyUpdate(updatedPlayer);
         if (affinityResult.player) {
-            updatedPlayer = affinityResult.player;
+            // 使用 Object.assign 更新屬性而非重新賦值
+            Object.assign(updatedPlayer, affinityResult.player);
         }
         if (affinityResult.messages && affinityResult.messages.length > 0) {
             affinityResult.messages.forEach(msg => {
