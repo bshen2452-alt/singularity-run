@@ -1133,6 +1133,7 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
         padding: '10px 16px',
         fontSize: '0.85rem',
         fontWeight: 600,
+        background: isActive ? 'var(--accent-purple)' : 'var(--bg-tertiary)',
         color: isActive ? '#f8f8f8' : 'var(--text-secondary)',
         border: 'none',
         borderRadius: '6px 6px 0 0',
