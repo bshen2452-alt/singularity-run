@@ -1,485 +1,396 @@
 // ============================================
-// 全球市場指標引擎 (Global Market Engine)
+// 全球市場指標配置 (Global Market Config)
 // ============================================
 // 設計原則：
-//   1. 純函數式設計，無副作用
-//   2. 接收數據參數，返回計算結果
-//   3. 不直接操作 DOM 或 UI 狀態
+//   1. 純數據配置，無邏輯混雜
+//   2. 定義 Tier4 階段的全球環境指標
+//   3. 指標影響所有區域的基礎營運成本
 // ============================================
 
-const GlobalMarketEngine = {
+const GlobalMarketConfig = {
     
     // ==========================================
-    // 初始化全球市場狀態
+    // 系統設定
     // ==========================================
-    
-    /**
-     * 建立初始全球市場狀態
-     * @returns {Object} 初始狀態
-     */
-    createInitialState: function() {
-        const config = window.GlobalMarketConfig;
-        if (!config) {
-            console.error('GlobalMarketConfig not found');
-            return null;
+    SYSTEM: {
+        unlock_tier: 1,                    // Tier1 即啟用（簡化版）
+        full_features_tier: 4,             // Tier4 啟用完整功能
+        update_frequency: 'per_turn',      // 每回合更新
+        volatility_base: 0.05,             // 基礎波動率 5%
+        max_index_value: 200,              // 指標上限
+        min_index_value: 20,               // 指標下限
+        equilibrium_pull: 0.02,            // 均衡回歸力道
+        
+        // Tier 分級波動率
+        tier_volatility_mult: {
+            1: 0.2,   // Tier1-2: 20% 波動（幾乎穩定）
+            2: 0.3,
+            3: 0.5,   // Tier3: 50% 波動
+            4: 1.0,   // Tier4+: 完整波動
+            5: 1.2    // Tier5: 120% 波動（更劇烈）
         }
-        
-        const indices = {};
-        config.getAllIndexIds().forEach(id => {
-            const indexConfig = config.getIndex(id);
-            indices[id] = {
-                value: indexConfig.base_value,
-                trend: 0,           // -1, 0, +1 表示趨勢
-                momentum: 0,        // 動量累積
-                event_modifier: 0,  // 事件造成的暫時修正
-                event_duration: 0   // 事件持續回合
-            };
-        });
-        
-        return {
-            indices: indices,
-            active_events: [],      // 進行中的全球事件
-            history: [],            // 歷史紀錄（用於圖表）
-            turn_updated: 0
-        };
     },
     
     // ==========================================
-    // 指標更新計算
+    // 全球市場指標定義
     // ==========================================
-    
-    /**
-     * 計算單一指標的自然波動
-     * @param {Object} indexState - 當前指標狀態
-     * @param {Object} indexConfig - 指標配置
-     * @param {number} randomSeed - 隨機種子 (0~1)
-     * @returns {number} 波動值
-     */
-    calculateNaturalVolatility: function(indexState, indexConfig, randomSeed) {
-        const config = window.GlobalMarketConfig;
-        const baseVol = indexConfig.volatility.base;
+    INDICES: {
+        interest_rate: {
+            id: 'interest_rate',
+            name: '基礎利率指數',
+            icon: '🏦',
+            description: '影響借貸成本與融資難度',
+            base_value: 100,
+            unit: '%',
+            display_formula: 'value / 20',  // 100 = 5% 利率
+            
+            // 影響層面
+            effects: {
+                credit_cost_mult: 'value / 100',           // 利率100=1x, 150=1.5x
+                loan_approval_mult: '200 / (100 + value)', // 利率越高越難貸款
+                investment_attractiveness: '150 / value'   // 利率越高外資越少
+            },
+            
+            // 波動特性
+            volatility: {
+                base: 0.03,
+                event_sensitivity: 0.8,      // 對事件敏感度
+                player_action_weight: 0.1    // 玩家行為影響權重
+            }
+        },
         
-        // 基礎隨機波動 (-1 to +1) * 波動率 * 基礎值
-        let change = (randomSeed * 2 - 1) * baseVol * indexState.value;
+        energy_price: {
+            id: 'energy_price',
+            name: '能源價格指數',
+            icon: '⚡',
+            description: '影響電力成本與資料中心營運',
+            base_value: 100,
+            unit: '點',
+            
+            effects: {
+                power_cost_mult: 'value / 100',
+                renewable_value: 'value / 80',             // 能源貴時綠能更有價值
+                datacenter_margin: '180 / (80 + value)'    // 能源貴時利潤壓縮
+            },
+            
+            volatility: {
+                base: 0.06,
+                event_sensitivity: 1.2,      // 能源對事件高度敏感
+                player_action_weight: 0.15,
+                seasonal_pattern: true       // 有季節性波動
+            }
+        },
         
-        // 動量效應
-        if (indexConfig.volatility.momentum) {
-            change += indexState.momentum * 0.3;
+        gpu_price: {
+            id: 'gpu_price',
+            name: 'GPU價格指數',
+            icon: '🎮',
+            description: '影響算力擴張成本與硬體投資',
+            base_value: 100,
+            unit: '點',
+            
+            effects: {
+                compute_cost_mult: 'value / 100',
+                hardware_investment_cost: 'value / 90',
+                chip_design_revenue: 'value / 100'         // GPU貴時自研晶片更賺
+            },
+            
+            volatility: {
+                base: 0.08,
+                event_sensitivity: 1.0,
+                player_action_weight: 0.2,   // 玩家搶購影響大
+                supply_chain_lag: 2          // 供應鏈延遲 2 回合
+            }
+        },
+        
+        market_confidence: {
+            id: 'market_confidence',
+            name: '市場信心指數',
+            icon: '📊',
+            description: '影響監管壓力與投資人態度',
+            base_value: 100,
+            unit: '點',
+            
+            effects: {
+                regulation_pressure_mult: '180 / (80 + value)', // 信心低=監管壓力高
+                fundraising_mult: 'value / 100',
+                public_trust_recovery: 'value / 120'
+            },
+            
+            volatility: {
+                base: 0.04,
+                event_sensitivity: 1.5,      // 對負面事件極度敏感
+                player_action_weight: 0.25,  // 大公司行為影響市場信心
+                momentum: true               // 有動量效應（漲跌會延續）
+            }
         }
-        
-        // 均衡回歸
-        const equilibrium = indexConfig.base_value;
-        const deviation = indexState.value - equilibrium;
-        const pullBack = -deviation * config.SYSTEM.equilibrium_pull;
-        change += pullBack;
-        
-        return change;
     },
     
-    /**
-     * 應用玩家/對手行為的影響
-     * @param {Object} marketState - 當前市場狀態
-     * @param {Array} actions - 本回合發生的行為列表
-     * @returns {Object} 各指標的影響值
-     */
-    calculateActionImpacts: function(marketState, actions) {
-        const config = window.GlobalMarketConfig;
-        const impacts = {};
-        
-        config.getAllIndexIds().forEach(id => {
-            impacts[id] = 0;
-        });
-        
-        if (!actions || !Array.isArray(actions)) return impacts;
-        
-        actions.forEach(action => {
-            const actionImpact = config.getActionImpact(action.type);
-            Object.entries(actionImpact).forEach(([indexId, value]) => {
-                if (impacts[indexId] !== undefined) {
-                    // 根據行為規模調整影響
-                    const scale = action.scale || 1;
-                    impacts[indexId] += value * scale;
-                }
-            });
-        });
-        
-        return impacts;
-    },
-    
-    /**
-     * 處理指標間的連動關係
-     * @param {Object} changes - 各指標的變動值
-     * @returns {Object} 連動後的變動值
-     */
-    applyCorrelations: function(changes) {
-        const config = window.GlobalMarketConfig;
-        const correlatedChanges = { ...changes };
-        
+    // ==========================================
+    // 指標連動規則
+    // ==========================================
+    CORRELATIONS: {
         // 正相關
-        config.CORRELATIONS.positive.forEach(corr => {
-            const sourceChange = changes[corr.from] || 0;
-            correlatedChanges[corr.to] = (correlatedChanges[corr.to] || 0) + 
-                sourceChange * corr.strength;
-        });
-        
+        positive: [
+            { from: 'energy_price', to: 'gpu_price', strength: 0.3 },
+            { from: 'interest_rate', to: 'market_confidence', strength: -0.2 }
+        ],
         // 負相關
-        config.CORRELATIONS.negative.forEach(corr => {
-            const sourceChange = changes[corr.from] || 0;
-            correlatedChanges[corr.to] = (correlatedChanges[corr.to] || 0) - 
-                sourceChange * corr.strength;
-        });
-        
-        return correlatedChanges;
-    },
-    
-    /**
-     * 檢查並觸發隨機事件
-     * @param {Object} marketState - 當前市場狀態
-     * @param {number} randomSeed - 隨機種子
-     * @param {number} tier - 玩家Tier（Tier4+才有隨機事件）
-     * @returns {Object|null} 觸發的事件或 null
-     */
-    checkForRandomEvent: function(marketState, randomSeed, tier = 1) {
-        // Tier4 以下不觸發隨機事件
-        if (tier < 4) return null;
-        
-        const config = window.GlobalMarketConfig;
-        const events = config.EVENT_IMPACTS;
-        
-        // 避免事件堆疊過多
-        if (marketState.active_events.length >= 3) return null;
-        
-        for (const [eventId, eventConfig] of Object.entries(events)) {
-            // 檢查是否已有同類事件進行中
-            const alreadyActive = marketState.active_events.some(e => e.id === eventId);
-            if (alreadyActive) continue;
-            
-            if (randomSeed < eventConfig.probability) {
-                // 計算事件影響值
-                const effects = {};
-                Object.entries(eventConfig.effects).forEach(([indexId, range]) => {
-                    const magnitude = range.min + Math.random() * (range.max - range.min);
-                    effects[indexId] = Math.round(magnitude);
-                });
-                
-                return {
-                    id: eventId,
-                    effects: effects,
-                    duration: eventConfig.duration,
-                    remaining: eventConfig.duration
-                };
-            }
-            
-            // 使用新的隨機值檢查下一個事件
-            randomSeed = Math.random();
-        }
-        
-        return null;
-    },
-    
-    /**
-     * 更新全球市場狀態（單回合）
-     * @param {Object} marketState - 當前市場狀態
-     * @param {Object} params - 參數
-     * @param {Array} params.actions - 本回合行為列表
-     * @param {number} params.turn - 當前回合
-     * @param {number} params.quarter - 當前季度 (1-4)
-     * @param {number} params.tier - 玩家當前Tier（影響波動率）
-     * @returns {Object} 新的市場狀態
-     */
-    updateMarket: function(marketState, params = {}) {
-        const config = window.GlobalMarketConfig;
-        const { actions = [], turn = 0, quarter = 1, tier = 1 } = params;
-        
-        // 取得 Tier 對應的波動率乘數
-        const tierVolatilityMult = config.SYSTEM.tier_volatility_mult[Math.min(tier, 5)] || 0.2;
-        
-        // 複製狀態
-        const newState = JSON.parse(JSON.stringify(marketState));
-        
-        // 1. 計算各指標變動
-        const changes = {};
-        config.getAllIndexIds().forEach(id => {
-            changes[id] = 0;
-        });
-        
-        // 1a. 自然波動（乘以 Tier 波動率）
-        config.getAllIndexIds().forEach(id => {
-            const indexConfig = config.getIndex(id);
-            const indexState = newState.indices[id];
-            const randomSeed = Math.random();
-            const baseChange = this.calculateNaturalVolatility(indexState, indexConfig, randomSeed);
-            changes[id] += baseChange * tierVolatilityMult;
-        });
-        
-        // 1b. 行為影響
-        const actionImpacts = this.calculateActionImpacts(marketState, actions);
-        Object.entries(actionImpacts).forEach(([id, impact]) => {
-            changes[id] += impact;
-        });
-        
-        // 1c. 進行中事件的持續影響
-        newState.active_events.forEach(event => {
-            Object.entries(event.effects).forEach(([indexId, value]) => {
-                // 事件影響逐漸衰減
-                const decayFactor = event.remaining / event.duration;
-                changes[indexId] += value * 0.3 * decayFactor;
-            });
-        });
-        
-        // 1d. 季節性調整
-        config.getAllIndexIds().forEach(id => {
-            const seasonal = config.SEASONAL_MODIFIERS[id];
-            if (seasonal) {
-                const qKey = `Q${quarter}`;
-                const modifier = seasonal[qKey] || 1;
-                const indexConfig = config.getIndex(id);
-                changes[id] += (modifier - 1) * indexConfig.base_value * 0.1 * tierVolatilityMult;
-            }
-        });
-        
-        // 2. 應用連動關係
-        const correlatedChanges = this.applyCorrelations(changes);
-        
-        // 3. 更新指標值
-        config.getAllIndexIds().forEach(id => {
-            const indexState = newState.indices[id];
-            const oldValue = indexState.value;
-            
-            // 應用變動
-            let newValue = oldValue + correlatedChanges[id];
-            
-            // 限制範圍
-            newValue = Math.max(config.SYSTEM.min_index_value, newValue);
-            newValue = Math.min(config.SYSTEM.max_index_value, newValue);
-            newValue = Math.round(newValue * 10) / 10;
-            
-            // 更新趨勢
-            indexState.trend = Math.sign(newValue - oldValue);
-            
-            // 更新動量
-            const indexConfig = config.getIndex(id);
-            if (indexConfig.volatility.momentum) {
-                indexState.momentum = indexState.momentum * 0.7 + (newValue - oldValue) * 0.3;
-            }
-            
-            indexState.value = newValue;
-        });
-        
-        // 4. 處理進行中事件
-        newState.active_events = newState.active_events
-            .map(event => ({ ...event, remaining: event.remaining - 1 }))
-            .filter(event => event.remaining > 0);
-        
-        // 5. 檢查新事件（Tier4+）
-        const newEvent = this.checkForRandomEvent(newState, Math.random(), tier);
-        if (newEvent) {
-            newState.active_events.push(newEvent);
-            
-            // 新事件的即時衝擊
-            Object.entries(newEvent.effects).forEach(([indexId, value]) => {
-                if (newState.indices[indexId]) {
-                    newState.indices[indexId].value += value * 0.5;
-                    newState.indices[indexId].value = Math.max(
-                        config.SYSTEM.min_index_value,
-                        Math.min(config.SYSTEM.max_index_value, newState.indices[indexId].value)
-                    );
-                }
-            });
-        }
-        
-        // 6. 記錄歷史
-        const historyEntry = {
-            turn: turn,
-            indices: {}
-        };
-        config.getAllIndexIds().forEach(id => {
-            historyEntry.indices[id] = newState.indices[id].value;
-        });
-        newState.history.push(historyEntry);
-        
-        // 限制歷史長度
-        if (newState.history.length > 50) {
-            newState.history = newState.history.slice(-50);
-        }
-        
-        newState.turn_updated = turn;
-        
-        return newState;
+        negative: [
+            { from: 'market_confidence', to: 'interest_rate', strength: 0.15 },
+            { from: 'gpu_price', to: 'market_confidence', strength: 0.1 }
+        ]
     },
     
     // ==========================================
-    // 指標效果計算
+    // 指標區間與狀態
     // ==========================================
+    THRESHOLDS: {
+        critical_low: 40,    // 極低：可能觸發特殊事件
+        low: 70,             // 偏低
+        normal_low: 90,      // 正常偏低
+        normal_high: 110,    // 正常偏高
+        high: 140,           // 偏高
+        critical_high: 170   // 極高：可能觸發特殊事件
+    },
     
-    /**
-     * 計算指標對特定效果的乘數
-     * @param {Object} marketState - 市場狀態
-     * @param {string} indexId - 指標ID
-     * @param {string} effectKey - 效果鍵
-     * @returns {number} 乘數值
-     */
-    calculateEffectMultiplier: function(marketState, indexId, effectKey) {
-        const config = window.GlobalMarketConfig;
-        const indexConfig = config.getIndex(indexId);
-        if (!indexConfig || !indexConfig.effects[effectKey]) return 1;
+    STATUS_LABELS: {
+        critical_low: { label: '極低', color: '#22c55e', icon: '📉' },
+        low: { label: '偏低', color: '#84cc16', icon: '↘️' },
+        normal: { label: '正常', color: '#6b7280', icon: '➡️' },
+        high: { label: '偏高', color: '#f59e0b', icon: '↗️' },
+        critical_high: { label: '極高', color: '#ef4444', icon: '📈' }
+    },
+    
+    // ==========================================
+    // 玩家/對手行為對指標的影響
+    // ==========================================
+    ACTION_IMPACTS: {
+        // 大規模算力採購
+        massive_compute_purchase: {
+            gpu_price: +5,
+            energy_price: +2
+        },
+        // 能源設施建設
+        energy_facility_construction: {
+            energy_price: -2
+        },
+        // AI 安全事故
+        ai_safety_incident: {
+            market_confidence: -15,
+            interest_rate: +3
+        },
+        // 成功 IPO
+        successful_ipo: {
+            market_confidence: +5
+        },
+        // 大規模裁員
+        mass_layoff: {
+            market_confidence: -3
+        },
+        // 監管處罰
+        regulatory_penalty: {
+            market_confidence: -8
+        },
+        // 技術突破公告
+        tech_breakthrough: {
+            market_confidence: +10,
+            gpu_price: +3
+        },
+        // 新區域進駐（多家同時）
+        region_expansion_rush: {
+            energy_price: +3,
+            gpu_price: +2
+        },
         
-        const value = marketState.indices[indexId].value;
-        const formula = indexConfig.effects[effectKey];
+        // === 對手行為影響（RivalBehaviorEngine） ===
         
-        // 解析簡單公式
-        try {
-            // 替換 value 變數
-            const expression = formula.replace(/value/g, value);
-            // 安全計算（僅允許數字和基本運算）
-            if (/^[\d\s\+\-\*\/\(\)\.]+$/.test(expression)) {
-                return eval(expression);
-            }
-        } catch (e) {
-            console.warn('Effect formula error:', e);
+        // 對手安全對齊行為
+        rival_safety_focus: {
+            market_confidence: +2
+        },
+        // 對手合規整改
+        rival_compliance_action: {
+            market_confidence: +1,
+            interest_rate: -1
+        },
+        // 對手內部重組
+        rival_restructure: {
+            market_confidence: -2
+        },
+        // 對手市場擴張
+        rival_expansion: {
+            gpu_price: +1,
+            market_confidence: +1
+        },
+        // 對手算力囤積
+        rival_compute_purchase: {
+            gpu_price: +3,
+            energy_price: +1
+        },
+        // 對手里程碑成功
+        rival_milestone_success: {
+            market_confidence: +5,
+            gpu_price: +2
+        },
+        // 對手里程碑失敗
+        rival_milestone_failure: {
+            market_confidence: -3
+        },
+        // 對手安全事故
+        rival_safety_incident: {
+            market_confidence: -8,
+            interest_rate: +2
         }
-        
-        return 1;
-    },
-    
-    /**
-     * 取得所有指標的當前效果乘數
-     * @param {Object} marketState - 市場狀態
-     * @returns {Object} 效果乘數集合
-     */
-    getAllEffectMultipliers: function(marketState) {
-        const config = window.GlobalMarketConfig;
-        const multipliers = {};
-        
-        config.getAllIndexIds().forEach(indexId => {
-            const indexConfig = config.getIndex(indexId);
-            Object.keys(indexConfig.effects).forEach(effectKey => {
-                const mult = this.calculateEffectMultiplier(marketState, indexId, effectKey);
-                multipliers[`${indexId}_${effectKey}`] = mult;
-            });
-        });
-        
-        return multipliers;
-    },
-    
-    /**
-     * 取得綜合成本乘數
-     * @param {Object} marketState - 市場狀態
-     * @returns {Object} 各類成本乘數
-     */
-    getCostMultipliers: function(marketState) {
-        return {
-            credit: this.calculateEffectMultiplier(marketState, 'interest_rate', 'credit_cost_mult'),
-            power: this.calculateEffectMultiplier(marketState, 'energy_price', 'power_cost_mult'),
-            compute: this.calculateEffectMultiplier(marketState, 'gpu_price', 'compute_cost_mult'),
-            regulation: this.calculateEffectMultiplier(marketState, 'market_confidence', 'regulation_pressure_mult')
-        };
     },
     
     // ==========================================
-    // 查詢與分析
+    // 隨機事件對指標的影響
     // ==========================================
-    
-    /**
-     * 取得指標摘要
-     * @param {Object} marketState - 市場狀態
-     * @returns {Array} 指標摘要列表
-     */
-    getIndicesSummary: function(marketState) {
-        const config = window.GlobalMarketConfig;
-        
-        return config.getAllIndexIds().map(id => {
-            const indexConfig = config.getIndex(id);
-            const indexState = marketState.indices[id];
-            const status = config.getStatusLabel(indexState.value);
-            
-            return {
-                id: id,
-                name: indexConfig.name,
-                icon: indexConfig.icon,
-                value: indexState.value,
-                displayValue: config.getDisplayValue(id, indexState.value),
-                unit: indexConfig.unit,
-                trend: indexState.trend,
-                status: status
-            };
-        });
+    EVENT_IMPACTS: {
+        // 地緣政治
+        geopolitical_tension: {
+            probability: 0.08,
+            effects: {
+                gpu_price: { min: +10, max: +25 },
+                market_confidence: { min: -10, max: -5 },
+                energy_price: { min: +5, max: +15 }
+            },
+            duration: 3
+        },
+        // 能源危機
+        energy_crisis: {
+            probability: 0.05,
+            effects: {
+                energy_price: { min: +20, max: +40 },
+                gpu_price: { min: +5, max: +10 }
+            },
+            duration: 4
+        },
+        // 晶片短缺
+        chip_shortage: {
+            probability: 0.06,
+            effects: {
+                gpu_price: { min: +15, max: +35 }
+            },
+            duration: 5
+        },
+        // 央行政策轉向
+        central_bank_pivot: {
+            probability: 0.1,
+            effects: {
+                interest_rate: { min: -15, max: +20 }
+            },
+            duration: 6
+        },
+        // AI 泡沫擔憂
+        ai_bubble_concern: {
+            probability: 0.07,
+            effects: {
+                market_confidence: { min: -20, max: -10 },
+                interest_rate: { min: +5, max: +10 }
+            },
+            duration: 3
+        },
+        // 技術樂觀浪潮
+        tech_optimism_wave: {
+            probability: 0.08,
+            effects: {
+                market_confidence: { min: +10, max: +20 },
+                gpu_price: { min: +5, max: +10 }
+            },
+            duration: 2
+        },
+        // 綠能突破
+        renewable_breakthrough: {
+            probability: 0.04,
+            effects: {
+                energy_price: { min: -10, max: -20 }
+            },
+            duration: 4
+        }
     },
     
-    /**
-     * 取得市場整體健康度
-     * @param {Object} marketState - 市場狀態
-     * @returns {Object} 健康度評估
-     */
-    getMarketHealth: function(marketState) {
-        const config = window.GlobalMarketConfig;
-        let score = 100;
-        const issues = [];
-        
-        config.getAllIndexIds().forEach(id => {
-            const value = marketState.indices[id].value;
-            const indexConfig = config.getIndex(id);
-            
-            if (value >= config.THRESHOLDS.critical_high) {
-                score -= 20;
-                issues.push(`${indexConfig.name} 過高`);
-            } else if (value >= config.THRESHOLDS.high) {
-                score -= 10;
-            } else if (value <= config.THRESHOLDS.critical_low) {
-                score -= 15;
-                issues.push(`${indexConfig.name} 過低`);
-            }
-        });
-        
-        // 事件影響
-        score -= marketState.active_events.length * 5;
-        
-        return {
-            score: Math.max(0, score),
-            level: score >= 80 ? 'healthy' : score >= 50 ? 'stressed' : 'crisis',
-            issues: issues,
-            active_events: marketState.active_events.map(e => e.id)
-        };
-    },
-    
-    /**
-     * 預測指標趨勢
-     * @param {Object} marketState - 市場狀態
-     * @param {string} indexId - 指標ID
-     * @param {number} turns - 預測回合數
-     * @returns {Object} 預測結果
-     */
-    predictTrend: function(marketState, indexId, turns = 3) {
-        const indexState = marketState.indices[indexId];
-        const config = window.GlobalMarketConfig;
-        const indexConfig = config.getIndex(indexId);
-        
-        // 簡單線性預測 + 均衡回歸
-        const currentTrend = indexState.momentum || indexState.trend * 2;
-        const equilibriumPull = (indexConfig.base_value - indexState.value) * config.SYSTEM.equilibrium_pull;
-        
-        const predictedChange = (currentTrend + equilibriumPull) * turns;
-        const predictedValue = Math.round((indexState.value + predictedChange) * 10) / 10;
-        
-        return {
-            current: indexState.value,
-            predicted: Math.max(config.SYSTEM.min_index_value, 
-                       Math.min(config.SYSTEM.max_index_value, predictedValue)),
-            direction: Math.sign(predictedChange),
-            confidence: marketState.active_events.length === 0 ? 'high' : 'low'
-        };
+    // ==========================================
+    // 季節性調整（可選）
+    // ==========================================
+    SEASONAL_MODIFIERS: {
+        energy_price: {
+            Q1: 1.1,   // 冬季用電高峰
+            Q2: 0.95,
+            Q3: 1.05,  // 夏季冷氣
+            Q4: 1.0
+        }
     }
+};
+
+// ==========================================
+// 輔助函數
+// ==========================================
+
+/**
+ * 取得指標配置
+ */
+GlobalMarketConfig.getIndex = function(indexId) {
+    return this.INDICES[indexId] || null;
+};
+
+/**
+ * 取得所有指標ID
+ */
+GlobalMarketConfig.getAllIndexIds = function() {
+    return Object.keys(this.INDICES);
+};
+
+/**
+ * 取得指標狀態標籤
+ */
+GlobalMarketConfig.getStatusLabel = function(value) {
+    const t = this.THRESHOLDS;
+    if (value <= t.critical_low) return this.STATUS_LABELS.critical_low;
+    if (value <= t.low) return this.STATUS_LABELS.low;
+    if (value <= t.normal_high) return this.STATUS_LABELS.normal;
+    if (value <= t.high) return this.STATUS_LABELS.high;
+    return this.STATUS_LABELS.critical_high;
+};
+
+/**
+ * 取得行為對指標的影響
+ */
+GlobalMarketConfig.getActionImpact = function(actionId) {
+    return this.ACTION_IMPACTS[actionId] || {};
+};
+
+/**
+ * 取得事件配置
+ */
+GlobalMarketConfig.getEventImpact = function(eventId) {
+    return this.EVENT_IMPACTS[eventId] || null;
+};
+
+/**
+ * 計算指標顯示值
+ */
+GlobalMarketConfig.getDisplayValue = function(indexId, rawValue) {
+    const index = this.getIndex(indexId);
+    if (!index || !index.display_formula) return rawValue;
+    
+    // 簡單公式解析
+    if (index.display_formula === 'value / 20') {
+        return (rawValue / 20).toFixed(1);
+    }
+    return rawValue;
 };
 
 // ==========================================
 // 全局暴露
 // ==========================================
 if (typeof window !== 'undefined') {
-    window.GlobalMarketEngine = GlobalMarketEngine;
+    window.GlobalMarketConfig = GlobalMarketConfig;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = GlobalMarketEngine;
+    module.exports = GlobalMarketConfig;
 }
 
-console.log('✓ Global Market Engine loaded');
+console.log('✓ Global Market Config loaded');

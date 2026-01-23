@@ -388,8 +388,13 @@ function handleEndTurn(player, rivals, globalParams) {
         }
 
         // ============================================
-        // 3. 更新競爭對手
+        // 3. 更新競爭對手（整合 RivalBehaviorEngine）
         // ============================================
+        // 收集對手行為產生的市場影響（用於後續全球市場更新）
+        let rivalBehaviorMarketActions = [];
+        
+        // 優先使用 RivalBehaviorEngine（在 processTurnUpdates 中處理）
+        // 這裡保留 RivalInvestmentEngine 的更新作為補充
         if (RivalEng.updateRival) {
             newRivals = newRivals.map(rival => {
                 const result = RivalEng.updateRival(rival, newGlobalParams);
@@ -745,7 +750,7 @@ function handleEndTurn(player, rivals, globalParams) {
                 rivalMilestoneResult.events.forEach(evt => {
                     messages.push({
                         text: evt.message,
-                        type: evt.eventType || 'info'
+                        type: evt.eventType || "info"
                     });
                 });
             }
@@ -760,11 +765,29 @@ function handleEndTurn(player, rivals, globalParams) {
                     }
                     if (bonus.description) {
                         messages.push({
-                            text: `📈 ${bonus.description}`,
-                            type: 'info'
+                            text: "📈 " + bonus.description,
+                            type: "info"
                         });
                     }
                 });
+            }
+            
+            // 整合對手里程碑的全球市場影響（RivalBehaviorEngine）
+            if (rivalMilestoneResult.marketActions && rivalMilestoneResult.marketActions.length > 0 && newPlayer.global_market && window.GlobalMarketEngine) {
+                rivalMilestoneResult.marketActions.forEach(action => {
+                    newPlayer.global_market = window.GlobalMarketEngine.updateMarket(
+                        newPlayer.global_market,
+                        { actions: [action], turn: newPlayer.turn_count || 0 }
+                    );
+                });
+                
+                // 同步更新 globalParams
+                if (newPlayer.global_market.indices) {
+                    newGlobalParams.E_Price = (newPlayer.global_market.indices.energy_price?.value || 100) / 100;
+                    newGlobalParams.P_GPU = (newPlayer.global_market.indices.gpu_price?.value || 100) / 100;
+                    newGlobalParams.R_base = (newPlayer.global_market.indices.interest_rate?.value || 100) / 100;
+                    newGlobalParams.I_Hype = (newPlayer.global_market.indices.market_confidence?.value || 100) / 100;
+                }
             }
         }
 

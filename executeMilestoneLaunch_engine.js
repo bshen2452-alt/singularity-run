@@ -339,8 +339,49 @@ function getMilestoneLaunchInfo(player, tier) {
 
 /**
  * 對手里程碑檢查（每回合自動執行）
+ * 整合 RivalBehaviorEngine 的增強版
  */
 function checkRivalMilestone(rival, globalParams) {
+    // 優先使用 RivalBehaviorEngine
+    if (window.RivalBehaviorEngine && window.RivalBehaviorEngine.processRivalMilestoneAttempt) {
+        const result = window.RivalBehaviorEngine.processRivalMilestoneAttempt(rival);
+        
+        if (result.success === null) {
+            return { rival: result.rival, milestoneEvent: null, globalBonus: null, marketAction: null };
+        }
+        
+        let milestoneEvent = null;
+        let globalBonus = null;
+        
+        if (result.success) {
+            globalBonus = {
+                I_Hype: 0.03 * result.tier,
+                description: `${rival.name} 發布 ${result.tierName}，市場信心提升`
+            };
+            
+            milestoneEvent = {
+                type: 'rival_milestone_success',
+                rivalName: rival.name,
+                tier: result.tier,
+                tierName: result.tierName,
+                message: `🏆 ${rival.name} 成功發布 ${result.tierName}！`,
+                eventType: 'warning'
+            };
+        } else {
+            milestoneEvent = {
+                type: 'rival_milestone_fail',
+                rivalName: rival.name,
+                tier: result.tier,
+                tierName: result.tierName,
+                message: `⚠️ ${rival.name} 嘗試發布 ${result.tierName} 失敗`,
+                eventType: 'info'
+            };
+        }
+        
+        return { rival: result.rival, milestoneEvent, globalBonus, marketAction: result.marketAction };
+    }
+    
+    // === 回退邏輯 ===
     const MODEL_TIERS = GameConfig.COSTS.MODEL_TIERS;
     let milestoneEvent = null;
     let globalBonus = null;
@@ -381,6 +422,7 @@ function checkRivalMilestone(rival, globalParams) {
         rival.hype = Math.min(150, (rival.hype || 0) + 10);
         rival.trust = Math.min(100, (rival.trust || 0) + 5);
         rival.market_cap = (rival.market_cap || 500) * 1.1;
+        rival.just_achieved_milestone = true;  // 行為標記
         
         globalBonus = {
             I_Hype: 0.03 * nextTier,
@@ -399,6 +441,8 @@ function checkRivalMilestone(rival, globalParams) {
         rival.milestone_fail_count[nextTier] = failCount + 1;
         rival.mp = Math.max(tierData.mp, rival.mp - 1);  // 失敗後 MP 卡在門檻
         rival.hype = Math.max(0, (rival.hype || 0) - 10);
+        rival.entropy = Math.min(100, (rival.entropy || 0) + 5);  // 失敗增加熵值
+        rival.just_failed_milestone = true;  // 行為標記
         
         milestoneEvent = {
             type: 'rival_milestone_fail',

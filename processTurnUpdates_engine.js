@@ -203,8 +203,16 @@ function calculateDerivedStats(player, globalParams) {
  * @param {Object} globalParams - 全球參數
  * @returns {Array} - 更新後的競爭對手陣列
  */
-function updateRivalsState(rivals, player, globalParams) {
-    return rivals.map(rival => {
+function updateRivalsState(rivals, player, globalParams, globalMarket) {
+    // 優先使用新的 RivalBehaviorEngine
+    if (window.RivalBehaviorEngine && window.RivalBehaviorConfig) {
+        return window.RivalBehaviorEngine.processAllRivals(rivals, player, globalMarket);
+    }
+    
+    // === 回退邏輯（RivalBehaviorEngine 未載入時）===
+    console.warn('RivalBehaviorEngine not loaded, using fallback logic');
+    
+    const updatedRivals = rivals.map(rival => {
         const updated = { ...rival };
         const config = rival.config || {};
         
@@ -296,6 +304,13 @@ function updateRivalsState(rivals, player, globalParams) {
         
         return updated;
     });
+    
+    // 回退模式返回格式與新引擎一致
+    return {
+        rivals: updatedRivals,
+        marketActions: [],
+        messages: []
+    };
 }
 
 function processTurnUpdates(player, rivals, globalParams) {
@@ -304,10 +319,14 @@ function processTurnUpdates(player, rivals, globalParams) {
     let updatedGlobalParams = { ...globalParams };
     
     // === 0. 更新競爭對手狀態（AI行動）===
-    let updatedRivals = updateRivalsState(rivals, player, globalParams);
+    // 傳入全球市場狀態（如果有）
+    const rivalUpdateResult = updateRivalsState(rivals, player, globalParams, updatedPlayer.global_market);
+    let updatedRivals = rivalUpdateResult.rivals;
+    const rivalMarketActions = rivalUpdateResult.marketActions || [];
+    const rivalMessages = rivalUpdateResult.messages || [];
     
-    // 里程碑相關訊息收集
-    let milestoneMessages = [];
+    // 里程碑相關訊息收集（包含對手行為訊息）
+    let milestoneMessages = [...rivalMessages];
     
     // === 1. 處理財務行動冷卻 ===
     if (updatedPlayer.finance_cooldowns) {
@@ -745,12 +764,21 @@ function processTurnUpdates(player, rivals, globalParams) {
             }
             
             // 對手行為影響
-            updatedRivals.forEach(function(rival) {
-                const rivalMpChange = rival.mp - (rivals.find(function(r) { return r.name === rival.name; })?.mp || rival.mp);
-                if (rivalMpChange > 10) {
-                    turnActions.push({ type: 'tech_breakthrough', scale: 0.3 });
-                }
-            });
+            // 整合對手行為引擎產生的市場影響
+            if (rivalMarketActions && rivalMarketActions.length > 0) {
+                rivalMarketActions.forEach(function(action) {
+                    turnActions.push(action);
+                });
+            } else {
+                // 回退邏輯
+                updatedRivals.forEach(function(rival) {
+                    const originalRival = rivals.find(function(r) { return r.name === rival.name; });
+                    const rivalMpChange = rival.mp - (originalRival?.mp || rival.mp);
+                    if (rivalMpChange > 10) {
+                        turnActions.push({ type: "tech_breakthrough", scale: 0.3 });
+                    }
+                });
+            }
             
             // 計算當前季度 (1-4)
             const currentQuarter = ((updatedPlayer.turn_count - 1) % 4) + 1;
