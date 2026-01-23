@@ -21,8 +21,14 @@ function AssetCardBase({
     isExpanded, 
     onToggle, 
     children,
-    upgradeAvailable = false
+    upgradeAvailable = false,
+    hideHeader = false
 }) {
+    // 隱藏標題模式：直接渲染內容
+    if (hideHeader) {
+        return <div>{children}</div>;
+    }
+    
     return (
         <div style={{
             background: 'var(--bg-secondary)',
@@ -633,7 +639,7 @@ function NewFacilityModal({ player, onAction, onClose }) {
 }
 
 
-function SpaceCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false }) {
+function SpaceCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, hideHeader = false }) {
     const [showNewFacilityModal, setShowNewFacilityModal] = React.useState(false);
     
     const config = window.AssetCardConfig;
@@ -665,6 +671,7 @@ function SpaceCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
     
     return (
         <AssetCardBase
+            hideHeader={hideHeader}
             title="空間"
             icon="🏢"
             color="#aa44ff"
@@ -779,7 +786,7 @@ function SpaceCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
 // 電力卡片（Tier 2+ 開放）
 // ============================================
 
-function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false }) {
+function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, hideHeader = false }) {
     const [selectedStrategy, setSelectedStrategy] = React.useState(null);
     const [showEnergyDetails, setShowEnergyDetails] = React.useState(false);
     
@@ -948,6 +955,7 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
     
     return (
         <AssetCardBase
+            hideHeader={hideHeader}
             title="電力與自營能源"
             icon="⚡"
             color="#ffd000"
@@ -1339,7 +1347,7 @@ function PowerCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgr
 // 算力卡片（始終開放）- 整合完整功能
 // ============================================
 
-function ComputeCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, globalParams, derived }) {
+function ComputeCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, globalParams, derived, hideHeader = false }) {
     const [quantity, setQuantity] = React.useState(10);
     const [rentOutQty, setRentOutQty] = React.useState(5);
     const [rentOutTurns, setRentOutTurns] = React.useState(4);
@@ -1376,6 +1384,7 @@ function ComputeCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUp
     
     return (
         <AssetCardBase
+            hideHeader={hideHeader}
             title="算力"
             icon="🖥️"
             color="#00f5ff"
@@ -1575,7 +1584,7 @@ function ComputeCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUp
 // 人力卡片（始終開放）- 整合完整功能
 // ============================================
 
-function TalentCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, derived }) {
+function TalentCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, derived, hideHeader = false }) {
     const [fireType, setFireType] = React.useState('junior');
     const [fireQty, setFireQty] = React.useState(1);
     const [showInfo, setShowInfo] = React.useState(null);
@@ -1621,6 +1630,7 @@ function TalentCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpg
     
     return (
         <AssetCardBase
+            hideHeader={hideHeader}
             title="人力"
             icon="👥"
             color="#00ff88"
@@ -2093,7 +2103,7 @@ function DataContractModal({ player, onAction, onClose }) {
 // 數據卡片（始終開放）- 整合完整功能
 // ============================================
 
-function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false }) {
+function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgrades = false, hideHeader = false }) {
     const [purchaseQty, setPurchaseQty] = React.useState(100);
     const [activeTab, setActiveTab] = React.useState('overview');
     const [showContractModal, setShowContractModal] = React.useState(false);
@@ -2209,6 +2219,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
     
     return (
         <AssetCardBase
+            hideHeader={hideHeader}
             title="數據"
             icon="📊"
             color="#ff6b6b"
@@ -2782,18 +2793,64 @@ function DepartmentUnlockHint({ unlockableDepartments, activeDepartments, onEsta
     );
 }
 
+
+
+
 // ============================================
-// 主要資產卡片面板
+// 分頁標籤按鈕組件
+// ============================================
+
+function AssetTabButton({ id, icon, label, isActive, isLocked, onClick, color }) {
+    return (
+        <button
+            onClick={() => !isLocked && onClick(id)}
+            style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+                padding: '8px 4px',
+                background: isActive ? `${color}22` : 'transparent',
+                border: 'none',
+                borderBottom: isActive ? `2px solid ${color}` : '2px solid transparent',
+                color: isLocked ? 'var(--text-muted)' : isActive ? color : 'var(--text-secondary)',
+                cursor: isLocked ? 'not-allowed' : 'pointer',
+                opacity: isLocked ? 0.5 : 1,
+                transition: 'all 0.2s',
+                fontSize: '0.75rem',
+                minWidth: '60px'
+            }}
+        >
+            <span style={{ fontSize: '1.1rem', filter: isLocked ? 'grayscale(1)' : 'none' }}>
+                {isLocked ? '🔒' : icon}
+            </span>
+            <span style={{ fontWeight: isActive ? 600 : 400 }}>{label}</span>
+        </button>
+    );
+}
+
+// ============================================
+// 主要資產卡片面板（分頁模式）
 // ============================================
 
 function AssetCardsPanel({ player, onAction, globalParams, derived }) {
-    const [expandedCards, setExpandedCards] = React.useState({
-        space: false,
-        power: false,
-        compute: true,
-        talent: false,
-        data: false
-    });
+    const tier = player.mp_tier || 0;
+    const isTier2 = tier >= 2;
+    const isTier3 = tier >= 3;
+    
+    // 分頁定義
+    const tabs = [
+        { id: 'space', icon: '🏢', label: '空間', color: '#aa44ff', unlockTier: 2 },
+        { id: 'power', icon: '⚡', label: '電力', color: '#ffd000', unlockTier: 2 },
+        { id: 'compute', icon: '🖥️', label: '算力', color: 'var(--accent-cyan)', unlockTier: 0 },
+        { id: 'talent', icon: '👥', label: '人力', color: 'var(--accent-green)', unlockTier: 0 },
+        { id: 'data', icon: '📊', label: '數據', color: 'var(--accent-magenta)', unlockTier: 0 }
+    ];
+    
+    // 找出第一個已解鎖的分頁作為預設
+    const defaultTab = tabs.find(t => tier >= t.unlockTier)?.id || 'compute';
+    const [activeTab, setActiveTab] = React.useState(defaultTab);
     
     const unlockableDepartments = React.useMemo(() => {
         if (!window.AssetCardConfig) return [];
@@ -2805,20 +2862,82 @@ function AssetCardsPanel({ player, onAction, globalParams, derived }) {
         return window.AssetCardConfig.checkGeneralistPenalty(player.asset_upgrades);
     }, [player.asset_upgrades]);
     
-    const toggleCard = (cardId) => {
-        setExpandedCards(prev => ({ ...prev, [cardId]: !prev[cardId] }));
-    };
-    
     const handleUpgrade = (assetType, pathId) => {
         onAction('upgradeAsset', { assetType, pathId });
     };
     
-    const tier = player.mp_tier || 0;
-    const isTier2 = tier >= 2;
-    const isTier3 = tier >= 3;
-    
-    // 合併 globalParams
     const effectiveGlobalParams = globalParams || player.globalParams || {};
+    
+    // 渲染當前分頁內容
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'space':
+                return isTier2 ? (
+                    <SpaceCard 
+                        player={player}
+                        onAction={onAction}
+                        onUpgrade={handleUpgrade}
+                        isExpanded={true}
+                        onToggle={() => {}}
+                        showUpgrades={isTier3}
+                        hideHeader={true}
+                    />
+                ) : null;
+            case 'power':
+                return isTier2 ? (
+                    <PowerCard 
+                        player={player}
+                        onAction={onAction}
+                        onUpgrade={handleUpgrade}
+                        isExpanded={true}
+                        onToggle={() => {}}
+                        showUpgrades={isTier3}
+                        hideHeader={true}
+                    />
+                ) : null;
+            case 'compute':
+                return (
+                    <ComputeCard 
+                        player={player}
+                        onAction={onAction}
+                        onUpgrade={handleUpgrade}
+                        isExpanded={true}
+                        onToggle={() => {}}
+                        showUpgrades={isTier3}
+                        globalParams={effectiveGlobalParams}
+                        derived={derived}
+                        hideHeader={true}
+                    />
+                );
+            case 'talent':
+                return (
+                    <TalentCard 
+                        player={player}
+                        onAction={onAction}
+                        onUpgrade={handleUpgrade}
+                        isExpanded={true}
+                        onToggle={() => {}}
+                        showUpgrades={isTier3}
+                        derived={derived}
+                        hideHeader={true}
+                    />
+                );
+            case 'data':
+                return (
+                    <DataCard 
+                        player={player}
+                        onAction={onAction}
+                        onUpgrade={handleUpgrade}
+                        isExpanded={true}
+                        onToggle={() => {}}
+                        showUpgrades={isTier3}
+                        hideHeader={true}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
     
     return (
         <div style={{ display: 'grid', gap: '12px' }}>
@@ -2842,70 +2961,40 @@ function AssetCardsPanel({ player, onAction, globalParams, derived }) {
                 activeDepartments={player.functional_depts || player.departments || []}
                 onEstablish={(deptId) => onAction('establishDepartment', { departmentId: deptId })}
             />
-            {/* 職能部門提示已移至商品面板的 OrganizationPanel */}
             
-            {/* 排序：空間 → 電力 → 算力 → 人力 → 數據 */}
+            {/* 分頁標籤列 */}
+            <div style={{
+                display: 'flex',
+                background: 'var(--bg-secondary)',
+                borderRadius: '8px 8px 0 0',
+                borderBottom: '1px solid var(--border-color)',
+                overflow: 'hidden'
+            }}>
+                {tabs.map(tab => (
+                    <AssetTabButton
+                        key={tab.id}
+                        id={tab.id}
+                        icon={tab.icon}
+                        label={tab.label}
+                        color={tab.color}
+                        isActive={activeTab === tab.id}
+                        isLocked={tier < tab.unlockTier}
+                        onClick={setActiveTab}
+                    />
+                ))}
+            </div>
             
-            {/* 空間卡片：Tier 2+ 開放 */}
-            {isTier2 ? (
-                <SpaceCard 
-                    player={player}
-                    onAction={onAction}
-                    onUpgrade={handleUpgrade}
-                    isExpanded={expandedCards.space}
-                    onToggle={() => toggleCard('space')}
-                    showUpgrades={isTier3}
-                />
-            ) : (
-                <LockedAssetCard title="空間" icon="🏢" color="#aa44ff" unlockTier={2} currentTier={tier} />
-            )}
-            
-            {/* 電力卡片：Tier 2+ 開放 */}
-            {isTier2 ? (
-                <PowerCard 
-                    player={player}
-                    onAction={onAction}
-                    onUpgrade={handleUpgrade}
-                    isExpanded={expandedCards.power}
-                    onToggle={() => toggleCard('power')}
-                    showUpgrades={isTier3}
-                />
-            ) : (
-                <LockedAssetCard title="電力" icon="⚡" color="#ffd000" unlockTier={2} currentTier={tier} />
-            )}
-            
-            {/* 算力卡片：始終開放 */}
-            <ComputeCard 
-                player={player}
-                onAction={onAction}
-                onUpgrade={handleUpgrade}
-                isExpanded={expandedCards.compute}
-                onToggle={() => toggleCard('compute')}
-                showUpgrades={isTier3}
-                globalParams={effectiveGlobalParams}
-                derived={derived}
-            />
-            
-            {/* 人力卡片：始終開放 */}
-            <TalentCard 
-                player={player}
-                onAction={onAction}
-                onUpgrade={handleUpgrade}
-                isExpanded={expandedCards.talent}
-                onToggle={() => toggleCard('talent')}
-                showUpgrades={isTier3}
-                derived={derived}
-            />
-            
-            {/* 數據卡片：始終開放 */}
-            <DataCard 
-                player={player}
-                onAction={onAction}
-                onUpgrade={handleUpgrade}
-                isExpanded={expandedCards.data}
-                onToggle={() => toggleCard('data')}
-                showUpgrades={isTier3}
-            />
+            {/* 分頁內容區域 */}
+            <div style={{
+                background: 'var(--bg-secondary)',
+                borderRadius: '0 0 8px 8px',
+                border: '1px solid var(--border-color)',
+                borderTop: 'none',
+                padding: '12px',
+                minHeight: '300px'
+            }}>
+                {renderTabContent()}
+            </div>
         </div>
     );
 }
@@ -2916,6 +3005,7 @@ function AssetCardsPanel({ player, onAction, globalParams, derived }) {
 
 window.AssetCardComponents = {
     AssetCardBase,
+    AssetTabButton,
     LockedAssetCard,
     StatRow,
     UpgradePathDisplay,
