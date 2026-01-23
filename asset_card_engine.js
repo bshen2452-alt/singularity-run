@@ -543,6 +543,19 @@ const AssetCardEngine = {
                 }
             }
             
+            // 獲取派駐區域信息
+            let deployedRegion = null;
+            const deployment = player.asset_deployment_state?.functional_deployments?.[deptId];
+            if (deployment && deployment.status === 'deployed' && deployment.regionId) {
+                const RegionConf = window.RegionConfig;
+                const region = RegionConf?.getRegion?.(deployment.regionId);
+                deployedRegion = region ? {
+                    id: deployment.regionId,
+                    name: region.name,
+                    icon: region.icon
+                } : { id: deployment.regionId, name: deployment.regionId, icon: '🌍' };
+            }
+            
             result.push({
                 id: deptId,
                 name: dept.name,
@@ -557,7 +570,8 @@ const AssetCardEngine = {
                 evolvesTo: dept.evolves_to,
                 benefits_summary: dept.benefits_summary || [],
                 base_revenue: dept.base_revenue,
-                base_operating_cost: dept.base_operating_cost
+                base_operating_cost: dept.base_operating_cost,
+                deployedRegion
             });
         }
         
@@ -609,6 +623,19 @@ const AssetCardEngine = {
             
             const revenueCalc = this.calculateSubsidiaryRevenue(player, subId);
             
+            // 獲取派駐區域信息
+            let deployedRegion = null;
+            const deployment = player.asset_deployment_state?.functional_deployments?.[subId];
+            if (deployment && deployment.status === 'deployed' && deployment.regionId) {
+                const RegionConf = window.RegionConfig;
+                const region = RegionConf?.getRegion?.(deployment.regionId);
+                deployedRegion = region ? {
+                    id: deployment.regionId,
+                    name: region.name,
+                    icon: region.icon
+                } : { id: deployment.regionId, name: deployment.regionId, icon: '🌍' };
+            }
+            
             summary.push({
                 id: subId,
                 name: sub.name,
@@ -619,7 +646,8 @@ const AssetCardEngine = {
                 revenue: revenueCalc.revenue,
                 operatingCost: revenueCalc.cost,
                 netIncome: revenueCalc.net,
-                passive_effects: sub.passive_effects || {}
+                passive_effects: sub.passive_effects || {},
+                deployedRegion
             });
         }
         

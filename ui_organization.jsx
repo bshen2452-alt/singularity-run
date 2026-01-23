@@ -209,12 +209,26 @@ const UISubsidiary = {
         }, [
             // 標題
             React.createElement('div', { key: 'header', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' } }, [
-                React.createElement('div', { key: 'name', style: { display: 'flex', alignItems: 'center', gap: '6px' } }, [
+                React.createElement('div', { key: 'name', style: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' } }, [
                     React.createElement('span', { key: 'icon', style: { fontSize: '1.2rem' } }, sub.icon),
-                    React.createElement('span', { key: 'text', style: { color: 'var(--text-primary)', fontWeight: 'bold', fontSize: '0.9rem' } }, sub.name)
+                    React.createElement('span', { key: 'text', style: { color: 'var(--text-primary)', fontWeight: 'bold', fontSize: '0.9rem' } }, sub.name),
+                    // 派駐區域標記
+                    sub.deployedRegion && React.createElement('span', { 
+                        key: 'region-badge', 
+                        style: { 
+                            background: 'var(--accent-cyan)22', 
+                            color: 'var(--accent-cyan)', 
+                            padding: '2px 8px', 
+                            borderRadius: '8px', 
+                            fontSize: '0.6rem', 
+                            fontWeight: 600
+                        } 
+                    }, '🌍 派駐: ' + sub.deployedRegion.icon + ' ' + sub.deployedRegion.name)
                 ]),
                 sub.special_ability && React.createElement('span', { key: 'ability', style: { background: 'var(--accent-yellow)22', padding: '3px 8px', borderRadius: '8px', fontSize: '0.6rem', color: 'var(--accent-yellow)' } }, sub.special_ability)
             ]),
+
+            
             
             // 描述
             React.createElement('div', { key: 'desc', style: { color: 'var(--text-muted)', fontSize: '0.7rem', marginBottom: '10px' } }, sub.description),
