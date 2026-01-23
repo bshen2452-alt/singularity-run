@@ -1130,7 +1130,7 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
     // 頁籤按鈕樣式
     const tabStyle = (isActive) => ({
         flex: 1,
-        padding: '10px 16px',
+        padding: '10px 8px',
         fontSize: '0.85rem',
         fontWeight: 600,
         background: isActive ? 'var(--accent-purple)' : 'var(--bg-tertiary)',
