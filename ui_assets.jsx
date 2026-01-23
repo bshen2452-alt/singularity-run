@@ -686,7 +686,7 @@ function DataPurchaseTier1({ player, quantity, setQuantity, onAction }) {
                 borderRadius: '4px',
                 textAlign: 'center'
             }}>
-                🔒 達成 Tier 2 里程碑解鎖數據清洗與合成功能
+                🔒 達成 Tier 2 里程碑解鎖數據清洗功能
             </div>
         </AssetCard>
     );

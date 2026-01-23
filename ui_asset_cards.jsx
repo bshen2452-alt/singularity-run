@@ -2578,7 +2578,7 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                             background: 'var(--bg-tertiary)',
                             borderRadius: '4px'
                         }}>
-                            🔒 達成 Tier 2 里程碑解鎖數據清洗與合成功能
+                            🔒 達成 Tier 2 里程碑解鎖數據清洗功能
                         </div>
                     )}
                 </div>
