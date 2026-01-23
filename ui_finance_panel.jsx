@@ -5,6 +5,263 @@
 // 功能：整合財務行動、創辦人掌控度、股權結構、IPO機制
 
 const FinancePanelUI = {
+    // ==========================================
+    // 標籤頁狀態管理
+    // ==========================================
+    _activeTab: 'funding',
+    
+    setActiveTab(tab) {
+        this._activeTab = tab;
+    },
+    
+    getActiveTab() {
+        return this._activeTab;
+    },
+
+    /**
+     * 渲染標籤頁切換器
+     */
+    renderTabSwitcher(onAction) {
+        const tabs = [
+            { id: 'funding', label: '資金調度', icon: '💵' },
+            { id: 'industry', label: '產業關係', icon: '🤝' }
+        ];
+        const self = this;
+        
+        return React.createElement('div', {
+            style: {
+                display: 'flex',
+                gap: '0.5rem',
+                marginBottom: '0.5rem'
+            }
+        },
+            tabs.map(tab => 
+                React.createElement('button', {
+                    key: tab.id,
+                    onClick: () => {
+                        self.setActiveTab(tab.id);
+                        if (onAction) onAction({ type: 'UI_REFRESH' });
+                    },
+                    style: {
+                        flex: 1,
+                        padding: '0.6rem 1rem',
+                        background: self.getActiveTab() === tab.id 
+                            ? 'linear-gradient(135deg, var(--accent-cyan)22, var(--accent-green)22)' 
+                            : 'var(--bg-tertiary)',
+                        border: self.getActiveTab() === tab.id 
+                            ? '1px solid var(--accent-cyan)' 
+                            : '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '8px',
+                        color: self.getActiveTab() === tab.id 
+                            ? 'var(--accent-cyan)' 
+                            : 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: self.getActiveTab() === tab.id ? 'bold' : 'normal',
+                        transition: 'all 0.2s ease'
+                    }
+                }, `${tab.icon} ${tab.label}`)
+            )
+        );
+    },
+
+    /**
+     * 資金調度標籤頁內容
+     */
+    renderFundingTab(player, globalParams, onAction, mpTier, isPublic) {
+        return React.createElement('div', {
+            style: { display: 'flex', flexDirection: 'column', gap: '1rem' }
+        },
+            this.renderFounderControlPanel(player),
+            this.renderFinanceActionsWithoutAcquisition(player, globalParams, onAction, mpTier, isPublic)
+        );
+    },
+
+    /**
+     * 產業關係標籤頁內容
+     */
+    renderIndustryRelationsTab(player, globalParams, onAction, mpTier) {
+        return React.createElement('div', {
+            style: { display: 'flex', flexDirection: 'column', gap: '1rem' }
+        },
+            this.renderIndustryAffinityChart(player),
+            mpTier >= 4 && this.renderAcquisitionPanel(player, globalParams, onAction)
+        );
+    },
+
+    /**
+     * 渲染產業親和度長條圖
+     */
+    renderIndustryAffinityChart(player) {
+        const affinityConfig = window.IndustryAffinityConfig;
+        const industries = affinityConfig?.INDUSTRIES || {};
+        const playerAffinity = player?.industry_affinity_state?.affinity || {};
+        const levelDescriptions = affinityConfig?.AFFINITY_EFFECTS?.level_descriptions || {};
+        
+        const getAffinityLevel = (value) => {
+            const thresholds = Object.keys(levelDescriptions).map(Number).sort((a, b) => b - a);
+            for (const threshold of thresholds) {
+                if (value >= threshold) {
+                    return levelDescriptions[threshold];
+                }
+            }
+            return levelDescriptions['-60'] || { name: '敵對', icon: '⚠️', color: '#ff4444' };
+        };
+        
+        const sortedIndustries = Object.entries(industries)
+            .map(([id, config]) => ({
+                id,
+                ...config,
+                affinity: playerAffinity[id] || 0,
+                level: getAffinityLevel(playerAffinity[id] || 0)
+            }))
+            .sort((a, b) => b.affinity - a.affinity);
+
+        return React.createElement('div', {
+            style: {
+                background: 'rgba(138,43,226,0.08)',
+                border: '1px solid rgba(138,43,226,0.3)',
+                borderRadius: '8px',
+                padding: '1rem'
+            }
+        },
+            React.createElement('div', {
+                style: { 
+                    fontSize: '1rem', 
+                    color: '#8a2be2', 
+                    marginBottom: '0.75rem',
+                    fontWeight: 'bold'
+                }
+            }, '🤝 產業親和度'),
+            
+            React.createElement('div', {
+                style: { 
+                    display: 'grid', 
+                    gap: '6px', 
+                    maxHeight: '300px', 
+                    overflowY: 'auto' 
+                }
+            },
+                sortedIndustries.map(ind =>
+                    React.createElement('div', {
+                        key: ind.id,
+                        style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 10px',
+                            background: 'var(--bg-tertiary)',
+                            borderRadius: '6px',
+                            borderLeft: `3px solid ${ind.color}`
+                        }
+                    },
+                        React.createElement('div', {
+                            style: { 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '6px',
+                                minWidth: '100px'
+                            }
+                        },
+                            React.createElement('span', { style: { fontSize: '1rem' } }, ind.icon),
+                            React.createElement('span', { 
+                                style: { fontSize: '0.75rem', color: 'var(--text-primary)' } 
+                            }, ind.name)
+                        ),
+                        React.createElement('div', {
+                            style: { flex: 1, position: 'relative' }
+                        },
+                            React.createElement('div', {
+                                style: {
+                                    height: '12px',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: '6px',
+                                    overflow: 'hidden',
+                                    position: 'relative'
+                                }
+                            },
+                                React.createElement('div', {
+                                    style: {
+                                        position: 'absolute',
+                                        left: '50%',
+                                        top: 0,
+                                        bottom: 0,
+                                        width: '1px',
+                                        background: 'var(--text-muted)',
+                                        opacity: 0.5
+                                    }
+                                }),
+                                React.createElement('div', {
+                                    style: {
+                                        position: 'absolute',
+                                        top: 0,
+                                        bottom: 0,
+                                        left: ind.affinity >= 0 ? '50%' : `${50 + (ind.affinity / 2)}%`,
+                                        width: `${Math.abs(ind.affinity) / 2}%`,
+                                        background: ind.affinity >= 0 
+                                            ? `linear-gradient(90deg, ${ind.color}88, ${ind.color})`
+                                            : `linear-gradient(90deg, var(--accent-red), var(--accent-red)88)`,
+                                        borderRadius: ind.affinity >= 0 ? '0 6px 6px 0' : '6px 0 0 6px',
+                                        transition: 'all 0.3s ease'
+                                    }
+                                })
+                            )
+                        ),
+                        React.createElement('div', {
+                            style: { 
+                                minWidth: '70px',
+                                textAlign: 'right',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                justifyContent: 'flex-end'
+                            }
+                        },
+                            React.createElement('span', {
+                                style: { 
+                                    fontFamily: 'var(--font-mono)',
+                                    fontSize: '0.75rem',
+                                    color: ind.affinity >= 0 ? ind.color : 'var(--accent-red)'
+                                }
+                            }, `${ind.affinity >= 0 ? '+' : ''}${ind.affinity}`),
+                            React.createElement('span', {
+                                style: { 
+                                    fontSize: '0.65rem',
+                                    padding: '1px 4px',
+                                    background: ind.level.color + '22',
+                                    color: ind.level.color,
+                                    borderRadius: '3px'
+                                }
+                            }, ind.level.icon)
+                        )
+                    )
+                )
+            )
+        );
+    },
+
+    /**
+     * 財務行動區（不含併購面板）- 給資金調度標籤用
+     */
+    renderFinanceActionsWithoutAcquisition(player, globalParams, onAction, mpTier, isPublic) {
+        return React.createElement('div', {
+            className: 'finance-actions',
+            style: {
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '8px',
+                padding: '1rem'
+            }
+        },
+            React.createElement('h3', {
+                style: { margin: '0 0 0.75rem 0', fontSize: '1rem', color: 'var(--text-primary)' }
+            }, '⚡ 財務行動'),
+
+            this.renderRegularFinanceActions(player, globalParams, onAction, mpTier, isPublic),
+            !isPublic && this.renderPreIPOFundingRounds(player, globalParams, onAction),
+            mpTier >= 2 && !isPublic && this.renderIPOSection(player, globalParams, onAction),
+            isPublic && this.renderPostIPOActions(player, globalParams, onAction)
+        );
+    },
 
     // ==========================================
     // 主渲染入口
@@ -56,11 +313,13 @@ const FinancePanelUI = {
                 }, isPublic ? '📈 上市公司' : '🔒 私有公司')
             ),
 
-            // 1. 創辦人掌控度面板 (IPO後整合股權結構)
-            this.renderFounderControlPanel(player),
+            // 標籤頁切換
+            this.renderTabSwitcher(onAction),
 
-            // 2. 財務行動區
-            this.renderFinanceActions(player, globalParams, onAction, mpTier, isPublic)
+            // 根據選中標籤渲染內容
+            this.getActiveTab() === 'funding'
+                ? this.renderFundingTab(player, globalParams, onAction, mpTier, isPublic)
+                : this.renderIndustryRelationsTab(player, globalParams, onAction, mpTier)
         );
     },
 
