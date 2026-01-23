@@ -1075,6 +1075,7 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
     const [showCatalog, setShowCatalog] = React.useState(false);
     const [showTuringPanel, setShowTuringPanel] = React.useState(false);
     const [showSeniorPanel, setShowSeniorPanel] = React.useState(false);
+    const [activeTab, setActiveTab] = React.useState('products'); // 'products' | 'organization'
     const ps = player.product_state;
     
     if (player.mp_tier < 1) {
@@ -1115,57 +1116,113 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
     }
     const availableSeniors = Math.max(0, totalSeniors - assignedSeniors);
     
+    // 檢查是否有組織架構內容可顯示
+    const orgConfig = window.AssetCardConfig;
+    const ProductLineEng = window.ProductLineEngine;
+    const hasUnlockableDepts = orgConfig?.getUnlockableDepartments ? 
+        orgConfig.getUnlockableDepartments(player.asset_upgrades).length > 0 : false;
+    const hasActiveDepts = (player.functional_depts?.length || 0) > 0;
+    const hasSubsidiaries = (player.functional_subsidiaries?.length || 0) > 0;
+    const hasProductLines = ProductLineEng?.getProductLineSummary ? 
+        ProductLineEng.getProductLineSummary(player).length > 0 : false;
+    const hasOrgContent = hasUnlockableDepts || hasActiveDepts || hasSubsidiaries || hasProductLines;
+    
+    // 頁籤按鈕樣式
+    const tabStyle = (isActive) => ({
+        flex: 1,
+        padding: '10px 16px',
+        fontSize: '0.85rem',
+        fontWeight: 600,
+        background: isActive ? 'var(--accent-purple)' : 'var(--bg-tertiary)',
+        color: isActive ? '#000' : 'var(--text-secondary)',
+        border: 'none',
+        borderRadius: '6px 6px 0 0',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '6px'
+    });
+    
     return (
         <Panel title="商品開發中心" icon="📦" color="var(--accent-purple)">
-            {/* 統計數據 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
-                <ProductStatValue label="專精度" value={`Lv.${ps?.mastery?.level || 0}`} icon="⭐" color="var(--accent-yellow)" />
-                <ProductStatValue label="開發中" value={developingCount} icon="🔨" color="var(--accent-cyan)" />
-                <ProductStatValue label="營運中" value={operatingCount} icon="✅" color="var(--accent-green)" />
-                <ProductStatValue label="商品收益" value={ps?.product_revenue || 0} prefix="$" suffix="M" icon="💰" color="var(--accent-yellow)" />
+            {/* 頁籤切換 */}
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', borderBottom: '2px solid var(--border-color)' }}>
+                <button 
+                    style={tabStyle(activeTab === 'products')}
+                    onClick={() => setActiveTab('products')}
+                >
+                    <span>🛒</span> 商品營運
+                </button>
+                {hasOrgContent && (
+                    <button 
+                        style={tabStyle(activeTab === 'organization')}
+                        onClick={() => setActiveTab('organization')}
+                    >
+                        <span>🏢</span> 組織架構
+                    </button>
+                )}
             </div>
             
-            {/* 人才狀態快覽 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ padding: '10px', background: 'var(--accent-magenta)11', borderRadius: '6px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--accent-magenta)' }}>🧠 Turing</div>
-                    <div style={{ fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{turingStatus.total} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>（可用 {turingStatus.available}）</span></div>
-                </div>
-                <div style={{ padding: '10px', background: 'var(--accent-cyan)11', borderRadius: '6px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)' }}>💼 Senior</div>
-                    <div style={{ fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{totalSeniors} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>（可用 {availableSeniors}）</span></div>
-                </div>
-            </div>
-            
-            {/* 算力分配橫條圖 */}
-            <ComputeAllocationBar player={player} derived={derived} />
-            
-            {/* 專精度進度 */}
-            <MasteryProgressDisplay mastery={ps?.mastery} player={player} />
-            
-            {/* 服務滿足率 */}
-            <ServiceFulfillmentDisplay fulfillment={ps?.product_fulfillment || ps?.service_quality} demand={ps?.product_demand} supply={derived?.inferencePflops} />
-            
-            {/* 開發中商品列表 */}
-            <DevelopingProductsList player={player} route={player.route} />
-            
-            {/* 已完成商品列表 */}
-            <CompletedProductsDisplay player={player} route={player.route} onAssignSenior={(productId, count) => onAction('assignSenior', { productId, count })} />
-            
-            {/* 組織架構面板（部門與事業部） */}
-            {window.OrganizationComponents?.OrganizationPanel && (
-                <window.OrganizationComponents.OrganizationPanel 
-                    player={player} 
-                    onAction={onAction}
-                />
+            {/* 商品營運頁籤內容 */}
+            {activeTab === 'products' && (
+                <>
+                    {/* 統計數據 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px' }}>
+                        <ProductStatValue label="專精度" value={`Lv.${ps?.mastery?.level || 0}`} icon="⭐" color="var(--accent-yellow)" />
+                        <ProductStatValue label="開發中" value={developingCount} icon="🔨" color="var(--accent-cyan)" />
+                        <ProductStatValue label="營運中" value={operatingCount} icon="✅" color="var(--accent-green)" />
+                        <ProductStatValue label="商品收益" value={ps?.product_revenue || 0} prefix="$" suffix="M" icon="💰" color="var(--accent-yellow)" />
+                    </div>
+                    
+                    {/* 人才狀態快覽 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                        <div style={{ padding: '10px', background: 'var(--accent-magenta)11', borderRadius: '6px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-magenta)' }}>🧠 Turing</div>
+                            <div style={{ fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{turingStatus.total} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>（可用 {turingStatus.available}）</span></div>
+                        </div>
+                        <div style={{ padding: '10px', background: 'var(--accent-cyan)11', borderRadius: '6px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)' }}>💼 Senior</div>
+                            <div style={{ fontSize: '1rem', fontFamily: 'var(--font-mono)' }}>{totalSeniors} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>（可用 {availableSeniors}）</span></div>
+                        </div>
+                    </div>
+                    
+                    {/* 算力分配橫條圖 */}
+                    <ComputeAllocationBar player={player} derived={derived} />
+                    
+                    {/* 專精度進度 */}
+                    <MasteryProgressDisplay mastery={ps?.mastery} player={player} />
+                    
+                    {/* 服務滿足率 */}
+                    <ServiceFulfillmentDisplay fulfillment={ps?.product_fulfillment || ps?.service_quality} demand={ps?.product_demand} supply={derived?.inferencePflops} />
+                    
+                    {/* 開發中商品列表 */}
+                    <DevelopingProductsList player={player} route={player.route} />
+                    
+                    {/* 已完成商品列表 */}
+                    <CompletedProductsDisplay player={player} route={player.route} onAssignSenior={(productId, count) => onAction('assignSenior', { productId, count })} />
+                    
+                    {/* 操作按鈕 */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '16px' }}>
+                        <GlowButton variant="primary" size="small" onClick={() => setShowCatalog(true)}>📋 商品目錄</GlowButton>
+                        <GlowButton variant="secondary" size="small" onClick={() => setShowTuringPanel(true)}>🧠 Turing</GlowButton>
+                        <GlowButton variant="warning" size="small" onClick={() => setShowSeniorPanel(true)}>👨‍💻 Senior</GlowButton>
+                    </div>
+                </>
             )}
             
-            {/* 操作按鈕 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '16px' }}>
-                <GlowButton variant="primary" size="small" onClick={() => setShowCatalog(true)}>📋 商品目錄</GlowButton>
-                <GlowButton variant="secondary" size="small" onClick={() => setShowTuringPanel(true)}>🧠 Turing</GlowButton>
-                <GlowButton variant="warning" size="small" onClick={() => setShowSeniorPanel(true)}>👨‍💻 Senior</GlowButton>
-            </div>
+            {/* 組織架構頁籤內容 */}
+            {activeTab === 'organization' && hasOrgContent && (
+                <div style={{ minHeight: '200px' }}>
+                    {window.OrganizationComponents?.OrganizationPanel && (
+                        <window.OrganizationComponents.OrganizationPanel 
+                            player={player} 
+                            onAction={onAction}
+                        />
+                    )}
+                </div>
+            )}
             
             {/* 彈窗 */}
             <ProductCatalogModal 
