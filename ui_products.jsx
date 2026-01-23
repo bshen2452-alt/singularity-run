@@ -1146,14 +1146,14 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
     });
     
     return (
-        <Panel title="商品開發中心" icon="📦" color="var(--accent-purple)">
+        <Panel title="企業營運中心" icon="📦" color="var(--accent-purple)">
             {/* 頁籤切換 */}
             <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', borderBottom: '2px solid var(--border-color)' }}>
                 <button 
                     style={tabStyle(activeTab === 'products')}
                     onClick={() => setActiveTab('products')}
                 >
-                    <span>🛒</span> 商品營運
+                    <span>🛒</span> 產品開發
                 </button>
                 {hasOrgContent && (
                     <button 
