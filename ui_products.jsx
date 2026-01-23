@@ -1130,11 +1130,11 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
     // 頁籤按鈕樣式
     const tabStyle = (isActive) => ({
         flex: 1,
-        padding: '10px 8px',
+        padding: '10px 16px',
         fontSize: '0.85rem',
         fontWeight: 600,
         background: isActive ? 'var(--accent-purple)' : 'var(--bg-tertiary)',
-        color: isActive ? '#f8f8f8' : 'var(--text-secondary)',
+        color: isActive ? '#000' : 'var(--text-secondary)',
         border: 'none',
         borderRadius: '6px 6px 0 0',
         cursor: 'pointer',
