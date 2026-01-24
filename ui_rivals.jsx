@@ -316,12 +316,109 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
  */
 function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBuyETF, onSellETF, disabled }) {
     const { Panel } = window.Components || {};
-    const [activeTab, setActiveTab] = React.useState('dashboard');
+    const [activeTab, setActiveTab] = React.useState("dashboard");
     
     // 獲取ETF價格
     const etfPrices = window.ETFEngine?.getAllETFPrices?.(globalParams, player?.turn_count) || {};
     const etfPortfolio = window.ETFEngine?.getETFPortfolioSummary?.(player, globalParams) || { holdings: [] };
     const rivalStocks = window.ETFEngine?.getRivalStockPrices?.(rivals, player) || [];
+    
+    // === 對手里程碑事件訊息（用於收縮時顯示） ===
+    const rivalEvents = React.useMemo(() => {
+        if (!rivals || rivals.length === 0) return [];
+        
+        const events = [];
+        const currentTurn = window.gameState?.player?.turn_count || 0;
+        
+        rivals.forEach(rival => {
+            // === 1. 檢查里程碑事件（優先級最高） ===
+            if (rival.last_milestone_event) {
+                const evt = rival.last_milestone_event;
+                // 只顯示最近1回合內的事件
+                if (currentTurn - (evt.turn || 0) <= 1) {
+                    if (evt.type === "success") {
+                        events.push({
+                            rivalName: rival.name,
+                            icon: "🏆",
+                            text: rival.name + " 發布 " + evt.tierName + "！",
+                            type: "success",
+                            priority: 5
+                        });
+                    } else if (evt.type === "failure") {
+                        events.push({
+                            rivalName: rival.name,
+                            icon: "❌",
+                            text: rival.name + " " + evt.tierName + " 發布失敗",
+                            type: "danger",
+                            priority: 4
+                        });
+                    }
+                }
+            }
+            
+            // === 2. 檢查風險反應行為 ===
+            if (rival.last_behavior && rival.last_behavior.riskLevel) {
+                const behavior = rival.last_behavior;
+                const behaviorConfig = window.RivalBehaviorConfig?.getBehavior?.(behavior.id);
+                const behaviorName = behaviorConfig?.name || behavior.id;
+                
+                if (behavior.riskLevel === "critical") {
+                    events.push({
+                        rivalName: rival.name,
+                        icon: "⚠️",
+                        text: rival.name + " 緊急" + behaviorName,
+                        type: "warning",
+                        priority: 3
+                    });
+                } else if (behavior.riskLevel === "warning") {
+                    events.push({
+                        rivalName: rival.name,
+                        icon: "⚡",
+                        text: rival.name + " " + behaviorName,
+                        type: "info",
+                        priority: 2
+                    });
+                }
+            }
+            
+            // === 3. 檢查高風險狀態 ===
+            if ((rival.entropy || 0) >= 70 && !events.find(e => e.rivalName === rival.name)) {
+                events.push({
+                    rivalName: rival.name,
+                    icon: "🔥",
+                    text: rival.name + " 熵值危險",
+                    type: "warning",
+                    priority: 3
+                });
+            }
+        });
+        
+        // 按優先級排序
+        events.sort((a, b) => b.priority - a.priority);
+        return events;
+    }, [rivals]);
+    
+    // 構建標題區域顯示的訊息（取最高優先級的事件）
+    const collapsedInfo = React.useMemo(() => {
+        if (rivalEvents && rivalEvents.length > 0) {
+            const topEvent = rivalEvents[0];
+            const colorMap = {
+                "success": { color: "var(--accent-green)", background: "var(--accent-green)22" },
+                "danger": { color: "var(--accent-red)", background: "var(--accent-red)22" },
+                "warning": { color: "var(--accent-orange)", background: "var(--accent-orange)22" },
+                "info": { color: "var(--accent-cyan)", background: "var(--accent-cyan)22" }
+            };
+            const style = colorMap[topEvent.type] || colorMap.info;
+            return {
+                icon: topEvent.icon,
+                text: topEvent.text,
+                color: style.color,
+                background: style.background,
+                pulse: topEvent.priority >= 4
+            };
+        }
+        return null;
+    }, [rivalEvents]);
     
     // 計算總投資價值
     const totalRivalInvestment = Object.values(player?.rival_investments || {}).reduce((s, v) => s + v, 0);
@@ -380,7 +477,8 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
         icon: '🏢',
         color: 'var(--accent-orange)',
         collapsible: true,
-        defaultCollapsed: true
+        defaultCollapsed: true,
+        collapsedInfo: collapsedInfo
     }, [
         // 標籤頁切換
         React.createElement('div', {
@@ -792,6 +890,58 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                         style: { color: 'var(--accent-magenta)', fontFamily: 'var(--font-mono)' }
                     }, `${formatToTwoDecimals(globalParams?.I_Hype || 1)}x`)
                 ])
+            ]),
+
+            // === 對手動態事件 ===
+            rivalEvents && rivalEvents.length > 0 && React.createElement("div", {
+                key: "rival-events",
+                style: {
+                    padding: "10px",
+                    background: "var(--bg-secondary)",
+                    borderRadius: "6px",
+                    border: "1px solid var(--accent-orange)33"
+                }
+            }, [
+                React.createElement("div", {
+                    key: "header",
+                    style: { 
+                        fontSize: "0.8rem", 
+                        color: "var(--accent-orange)", 
+                        marginBottom: "8px",
+                        fontWeight: 600
+                    }
+                }, "📢 對手動態"),
+                React.createElement("div", {
+                    key: "events-list",
+                    style: { display: "grid", gap: "6px" }
+                }, rivalEvents.slice(0, 5).map((evt, idx) => {
+                    const colorMap = {
+                        "success": { color: "var(--accent-green)", bg: "var(--accent-green)15" },
+                        "danger": { color: "var(--accent-red)", bg: "var(--accent-red)15" },
+                        "warning": { color: "var(--accent-orange)", bg: "var(--accent-orange)15" },
+                        "info": { color: "var(--accent-cyan)", bg: "var(--accent-cyan)15" }
+                    };
+                    const style = colorMap[evt.type] || colorMap.info;
+                    return React.createElement("div", {
+                        key: idx,
+                        style: {
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "6px 10px",
+                            background: style.bg,
+                            borderRadius: "4px",
+                            borderLeft: "3px solid " + style.color,
+                            fontSize: "0.75rem"
+                        }
+                    }, [
+                        React.createElement("span", { key: "icon" }, evt.icon),
+                        React.createElement("span", { 
+                            key: "text",
+                            style: { color: style.color, flex: 1 }
+                        }, evt.text)
+                    ]);
+                }))
             ]),
             
             // === 快捷提示 ===

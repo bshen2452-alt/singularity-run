@@ -68,7 +68,7 @@ function GlowButton({ children, onClick, variant = 'primary', disabled = false, 
 }
 
 // 面板組件
-function Panel({ title, icon, children, color = 'var(--accent-cyan)', className = '', collapsible = false, defaultCollapsed = false }) {
+function Panel({ title, icon, children, color = 'var(--accent-cyan)', className = '', collapsible = false, defaultCollapsed = false, collapsedInfo = null }) {
     const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
     const panelStyle = {
@@ -109,11 +109,31 @@ function Panel({ title, icon, children, color = 'var(--accent-cyan)', className 
                     {icon && <span style={{ fontSize: '1.2rem' }}>{icon}</span>}
                     {title}
                 </div>
-                {collapsible && (
-                    <span style={{ color: color, transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.3s' }}>
-                        ▼
-                    </span>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* 收縮時顯示的額外訊息 */}
+                    {collapsedInfo && (
+                        <div style={{ 
+                            fontSize: '0.75rem', 
+                            color: collapsedInfo.color || 'var(--text-secondary)',
+                            background: collapsedInfo.background || 'var(--bg-tertiary)',
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            maxWidth: '200px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            animation: collapsedInfo.pulse ? 'pulse 2s infinite' : 'none'
+                        }}>
+                            {collapsedInfo.icon && <span style={{ marginRight: '4px' }}>{collapsedInfo.icon}</span>}
+                            {collapsedInfo.text}
+                        </div>
+                    )}
+                    {collapsible && (
+                        <span style={{ color: color, transform: collapsed ? 'rotate(-90deg)' : 'rotate(0)', transition: 'transform 0.3s' }}>
+                            ▼
+                        </span>
+                    )}
+                </div>
             </div>
             {!collapsed && (
                 <div style={{ padding: '16px' }}>

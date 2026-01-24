@@ -365,8 +365,34 @@
             updatedRival.last_behavior = {
                 id: behaviorSelection.behaviorId,
                 reason: behaviorSelection.reason,
-                mp_growth: mpGrowth
+                riskLevel: behaviorSelection.riskLevel || 'normal',
+                mp_growth: mpGrowth,
+                turn: rival.turn_count || 0
             };
+            
+            // === 記錄里程碑事件（僅在尚未由 checkRivalMilestone 設置時） ===
+            if (!updatedRival.last_milestone_event) {
+                if (rival.just_achieved_milestone) {
+                    const MODEL_TIERS = window.GameConfig?.COSTS?.MODEL_TIERS;
+                    const tierName = MODEL_TIERS?.[rival.mp_tier]?.name || ('Tier ' + rival.mp_tier);
+                    updatedRival.last_milestone_event = {
+                        type: 'success',
+                        tier: rival.mp_tier,
+                        tierName: tierName,
+                        turn: rival.turn_count || 0
+                    };
+                } else if (rival.just_failed_milestone) {
+                    const MODEL_TIERS = window.GameConfig?.COSTS?.MODEL_TIERS;
+                    const nextTier = (rival.mp_tier || 0) + 1;
+                    const tierName = MODEL_TIERS?.[nextTier]?.name || ('Tier ' + nextTier);
+                    updatedRival.last_milestone_event = {
+                        type: 'failure',
+                        tier: nextTier,
+                        tierName: tierName,
+                        turn: rival.turn_count || 0
+                    };
+                }
+            }
             
             // 清除臨時標記
             delete updatedRival.just_failed_milestone;

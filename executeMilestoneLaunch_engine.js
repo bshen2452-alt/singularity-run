@@ -352,6 +352,15 @@ function checkRivalMilestone(rival, globalParams) {
         
         let milestoneEvent = null;
         let globalBonus = null;
+        const updatedRival = result.rival;
+        
+        // === 記錄里程碑事件到對手狀態 ===
+        updatedRival.last_milestone_event = {
+            type: result.success ? 'success' : 'failure',
+            tier: result.tier,
+            tierName: result.tierName,
+            turn: rival.turn_count || 0
+        };
         
         if (result.success) {
             globalBonus = {
@@ -378,7 +387,7 @@ function checkRivalMilestone(rival, globalParams) {
             };
         }
         
-        return { rival: result.rival, milestoneEvent, globalBonus, marketAction: result.marketAction };
+        return { rival: updatedRival, milestoneEvent, globalBonus, marketAction: result.marketAction };
     }
     
     // === 回退邏輯 ===
@@ -424,6 +433,14 @@ function checkRivalMilestone(rival, globalParams) {
         rival.market_cap = (rival.market_cap || 500) * 1.1;
         rival.just_achieved_milestone = true;  // 行為標記
         
+        // === 記錄里程碑事件到對手狀態 ===
+        rival.last_milestone_event = {
+            type: 'success',
+            tier: nextTier,
+            tierName: tierData.name,
+            turn: rival.turn_count || 0
+        };
+        
         globalBonus = {
             I_Hype: 0.03 * nextTier,
             description: `${rival.name} 發布 ${tierData.name}，市場信心提升`
@@ -444,6 +461,14 @@ function checkRivalMilestone(rival, globalParams) {
         rival.entropy = Math.min(100, (rival.entropy || 0) + 5);  // 失敗增加熵值
         rival.just_failed_milestone = true;  // 行為標記
         
+        // === 記錄里程碑事件到對手狀態 ===
+        rival.last_milestone_event = {
+            type: 'failure',
+            tier: nextTier,
+            tierName: tierData.name,
+            turn: rival.turn_count || 0
+        };
+        
         milestoneEvent = {
             type: 'rival_milestone_fail',
             rivalName: rival.name,
@@ -457,29 +482,17 @@ function checkRivalMilestone(rival, globalParams) {
     return { rival, milestoneEvent, globalBonus };
 }
 
-function processRivalMilestones(rivals, globalParams) {
-    const events = [];
-    const globalBonuses = [];
-    
-    const updatedRivals = rivals.map(rival => {
-        const result = checkRivalMilestone({ ...rival }, globalParams);
-        if (result.milestoneEvent) events.push(result.milestoneEvent);
-        if (result.globalBonus) globalBonuses.push(result.globalBonus);
-        return result.rival;
-    });
-    
-    return { rivals: updatedRivals, events, globalBonuses };
-}
-
 /**
  * 處理所有對手的里程碑檢查
+ * 整合 RivalBehaviorEngine 的市場影響
  * @param {Array} rivals - 對手列表
  * @param {Object} globalParams - 全局參數
- * @returns {Object} - { rivals, events, globalBonuses }
+ * @returns {Object} - { rivals, events, globalBonuses, marketActions }
  */
 function processRivalMilestones(rivals, globalParams) {
     const events = [];
     const globalBonuses = [];
+    const marketActions = [];  // 收集市場影響
     
     const updatedRivals = rivals.map(rival => {
         const result = checkRivalMilestone({ ...rival }, globalParams);
@@ -490,6 +503,10 @@ function processRivalMilestones(rivals, globalParams) {
         if (result.globalBonus) {
             globalBonuses.push(result.globalBonus);
         }
+        // 收集市場影響（來自 RivalBehaviorEngine）
+        if (result.marketAction) {
+            marketActions.push(result.marketAction);
+        }
         
         return result.rival;
     });
@@ -497,9 +514,11 @@ function processRivalMilestones(rivals, globalParams) {
     return {
         rivals: updatedRivals,
         events: events,
-        globalBonuses: globalBonuses
+        globalBonuses: globalBonuses,
+        marketActions: marketActions
     };
 }
+
 
 /**
  * 獲取里程碑發布的預估成功率
