@@ -35,7 +35,7 @@ function calculateQuarterlyFinances(player, rivals, globalParams) {
     let revenue = 0;
     
     // 1. 基礎模型收益 - 安全存取 model_power
-    const baseModelRevenue = (player.model_power || 1) * 2;
+    const baseModelRevenue = 0;
     revenue += baseModelRevenue;
     
 
