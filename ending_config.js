@@ -870,7 +870,7 @@ const EndingConfig = (function() {
                 priority: 10,
                 check: (player) => {
                     return player.mp_tier >= 4 &&
-                           player.turn_count > 12 &&
+                           player.turn_count > 100 &&
                            player.model_power >= 990 &&
                            player.model_power <= 999;
                 },
