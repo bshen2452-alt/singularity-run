@@ -40,70 +40,27 @@
         // ==========================================
         // 可併購的職能單位目標
         // ==========================================
-        // 僅限設施升級可成立的部門/子公司
+        // 對應 asset_card_config.FUNCTIONAL_DEPTS 的部門/子公司
         ACQUISITION_TARGETS: {
-            // 數據中心服務部（來自 cooling_lv2）
-            datacenter_services: {
-                id: 'datacenter_services',
-                name: '數據中心服務商',
-                type: 'department',          // 'department' 或 'subsidiary'
-                icon: '🏢',
-                description: '專業數據中心託管服務公司',
+            // ==========================================
+            // 部門併購（對應 FUNCTIONAL_DEPTS）
+            // ==========================================
+            
+            // 算力租賃部
+            compute_rental: {
+                id: 'compute_rental',
+                name: '算力租賃服務商',
+                type: 'department',
+                icon: '🖥️',
+                description: '專業雲端算力租賃與託管服務公司',
                 
-                // 對應的設施升級產品
-                related_facility_upgrade: 'cooling_lv2',
+                // 對應 asset_card_config.FUNCTIONAL_DEPTS.compute_rental
+                related_functional_dept: 'compute_rental',
                 
-                // 出現條件
                 availability: {
                     min_tier: 4,
                     required_affinity: {
                         industry: 'cloud_infra',
-                        min_value: 20
-                    },
-                    random_chance: 0.35       // 基礎出現機率
-                },
-                
-                // 成本範圍（M）
-                cost: {
-                    base: 150,
-                    variance: 0.20            // ±20% 浮動
-                },
-                
-                // 併購效果
-                effects: {
-                    immediate: {
-                        affinity_changes: {
-                            cloud_infra: 10,
-                            enterprise: 5
-                        }
-                    },
-                    ongoing: {
-                        quarterly_revenue: 5,     // 每季基礎收益 $5M
-                        capacity_bonus: 0.10      // 空間容量 +10%
-                    }
-                },
-                
-                // 整合期設定
-                integration: {
-                    base_turns: 3,
-                    skill_required: null          // 不需特殊人才
-                }
-            },
-
-            // 算力租賃部（來自 architecture_lv2）
-            compute_rental: {
-                id: 'compute_rental',
-                name: '雲端算力服務商',
-                type: 'department',
-                icon: '🖥️',
-                description: '專業算力租賃與託管服務',
-                
-                related_facility_upgrade: 'architecture_lv2',
-                
-                availability: {
-                    min_tier: 4,
-                    required_affinity: {
-                        industry: 'semiconductor',
                         min_value: 25
                     },
                     random_chance: 0.30
@@ -117,13 +74,14 @@
                 effects: {
                     immediate: {
                         affinity_changes: {
-                            semiconductor: 12,
-                            cloud_infra: 8
+                            cloud_infra: 12,
+                            semiconductor: 8
                         }
                     },
                     ongoing: {
-                        quarterly_revenue: 12,
-                        compute_efficiency: 0.08
+                        quarterly_revenue: 25,
+                        compute_utilization_bonus: 0.15,
+                        compute_rental_enabled: true
                     }
                 },
                 
@@ -133,66 +91,23 @@
                 }
             },
 
-            // 設施管理部（來自 modular_lv2）
-            facility_management: {
-                id: 'facility_management',
-                name: '模組化設施供應商',
+            // 能源科技部
+            energy_tech: {
+                id: 'energy_tech',
+                name: '能源科技服務商',
                 type: 'department',
-                icon: '🧱',
-                description: '專業模組化數據中心建造商',
+                icon: '⚡',
+                description: '結合儲能與微電網技術的能源解決方案公司',
                 
-                related_facility_upgrade: 'modular_lv2',
-                
-                availability: {
-                    min_tier: 4,
-                    required_affinity: {
-                        industry: 'enterprise',
-                        min_value: 15
-                    },
-                    random_chance: 0.40
-                },
-                
-                cost: {
-                    base: 120,
-                    variance: 0.15
-                },
-                
-                effects: {
-                    immediate: {
-                        affinity_changes: {
-                            enterprise: 8,
-                            cloud_infra: 5
-                        }
-                    },
-                    ongoing: {
-                        construction_speed: 0.15,     // 建設速度 +15%
-                        construction_cost: -0.10     // 建設成本 -10%
-                    }
-                },
-                
-                integration: {
-                    base_turns: 3,
-                    skill_required: null
-                }
-            },
-
-            // 綠電開發部（來自 solar_lv2）
-            green_energy: {
-                id: 'green_energy',
-                name: '綠電開發商',
-                type: 'department',
-                icon: '☀️',
-                description: '專業再生能源開發公司',
-                
-                related_facility_upgrade: 'solar_lv2',
+                related_functional_dept: 'energy_tech',
                 
                 availability: {
                     min_tier: 4,
                     required_affinity: {
                         industry: 'energy',
-                        min_value: 20
+                        min_value: 25
                     },
-                    random_chance: 0.35
+                    random_chance: 0.32
                 },
                 
                 cost: {
@@ -204,36 +119,633 @@
                     immediate: {
                         affinity_changes: {
                             energy: 15,
-                            consumer: 5        // ESG 形象提升
+                            consumer: 5
                         }
                     },
                     ongoing: {
-                        energy_cost_reduction: 0.12,
-                        esg_bonus: 5
+                        quarterly_revenue: 22,
+                        energy_cost_reduction: 0.10,
+                        esg_bonus: 8,
+                        energy_trading_enabled: true
                     }
                 },
                 
                 integration: {
                     base_turns: 4,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 硬體設計部
+            hardware_design: {
+                id: 'hardware_design',
+                name: 'AI晶片設計公司',
+                type: 'department',
+                icon: '🔧',
+                description: '專業AI晶片架構設計與IP授權公司',
+                
+                related_functional_dept: 'hardware_design',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'semiconductor',
+                        min_value: 35
+                    },
+                    random_chance: 0.25
+                },
+                
+                cost: {
+                    base: 280,
+                    variance: 0.25
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            semiconductor: 20,
+                            research: 10
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 45,
+                        chip_design_enabled: true,
+                        licensing_income: true,
+                        compute_efficiency_bonus: 0.15
+                    }
+                },
+                
+                integration: {
+                    base_turns: 5,
+                    skill_required: 'turing'
+                }
+            },
+
+            // 數據交易部
+            data_exchange: {
+                id: 'data_exchange',
+                name: '數據交易平台',
+                type: 'department',
+                icon: '📊',
+                description: '營運數據交易平台與合成數據服務',
+                
+                related_functional_dept: 'data_exchange',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'data_provider',
+                        min_value: 25
+                    },
+                    random_chance: 0.35
+                },
+                
+                cost: {
+                    base: 150,
+                    variance: 0.20
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            data_provider: 15,
+                            research: 8
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 20,
+                        data_exchange_enabled: true,
+                        synthetic_data_enabled: true,
+                        data_quality_bonus: 0.10
+                    }
+                },
+                
+                integration: {
+                    base_turns: 3,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 企業顧問部
+            enterprise_consulting: {
+                id: 'enterprise_consulting',
+                name: 'AI導入顧問公司',
+                type: 'department',
+                icon: '💼',
+                description: '提供AI導入與數位轉型顧問服務',
+                
+                related_functional_dept: 'enterprise_consulting',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'enterprise',
+                        min_value: 20
+                    },
+                    random_chance: 0.38
+                },
+                
+                cost: {
+                    base: 120,
+                    variance: 0.15
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            enterprise: 12,
+                            consumer: 5
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 18,
+                        consulting_enabled: true,
+                        enterprise_solutions: true,
+                        trust_bonus: 5
+                    }
+                },
+                
+                integration: {
+                    base_turns: 3,
                     skill_required: null
                 }
             },
 
-            // 數據中心服務子公司（進階版）
-            datacenter_subsidiary: {
-                id: 'datacenter_subsidiary',
-                name: '區域數據中心運營商',
-                type: 'subsidiary',
-                icon: '🏗️',
-                description: '大型區域數據中心運營子公司',
+            // 量化投資部
+            quant_trading: {
+                id: 'quant_trading',
+                name: '量化投資公司',
+                type: 'department',
+                icon: '📈',
+                description: '運用AI算力與數據進行量化交易策略',
                 
-                related_facility_upgrade: 'cooling_lv2',  // 需已有部門
-                requires_department: 'datacenter_services',
+                related_functional_dept: 'quant_trading',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'finance',
+                        min_value: 30
+                    },
+                    random_chance: 0.25
+                },
+                
+                cost: {
+                    base: 250,
+                    variance: 0.30
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            finance: 18,
+                            data_provider: 8
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 35,
+                        quant_trading_enabled: true,
+                        market_analysis: true,
+                        revenue_volatility: 0.3
+                    }
+                },
+                
+                integration: {
+                    base_turns: 4,
+                    skill_required: 'turing'
+                }
+            },
+
+            // 社群營運部
+            community_platform: {
+                id: 'community_platform',
+                name: '開發者社群平台',
+                type: 'department',
+                icon: '👥',
+                description: '經營AI開發者與用戶社群平台',
+                
+                related_functional_dept: 'community_platform',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'consumer',
+                        min_value: 20
+                    },
+                    random_chance: 0.40
+                },
+                
+                cost: {
+                    base: 100,
+                    variance: 0.15
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            consumer: 10,
+                            research: 5
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 15,
+                        community_enabled: true,
+                        network_effect: 0.05,
+                        talent_attraction_bonus: 0.10
+                    }
+                },
+                
+                integration: {
+                    base_turns: 2,
+                    skill_required: null
+                }
+            },
+
+            // 研究智庫部
+            research_institute: {
+                id: 'research_institute',
+                name: 'AI研究智庫',
+                type: 'department',
+                icon: '🔬',
+                description: '進行前沿AI研究與政策諮詢',
+                
+                related_functional_dept: 'research_institute',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'research',
+                        min_value: 25
+                    },
+                    random_chance: 0.28
+                },
+                
+                cost: {
+                    base: 180,
+                    variance: 0.20
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            research: 15,
+                            defense: 5
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 18,
+                        research_enabled: true,
+                        reputation_bonus: 10,
+                        breakthrough_chance: 0.05
+                    }
+                },
+                
+                integration: {
+                    base_turns: 4,
+                    skill_required: 'senior'
+                }
+            },
+
+            // ==========================================
+            // 子公司併購（對應 FUNCTIONAL_SUBSIDIARIES）
+            // ==========================================
+            
+            // 算力租賃公司
+            compute_rental_subsidiary: {
+                id: 'compute_rental_subsidiary',
+                name: '算力租賃公司',
+                type: 'subsidiary',
+                icon: '🖥️',
+                description: '獨立運營的雲端算力服務商',
+                
+                related_functional_dept: 'compute_rental',
+                requires_department: 'compute_rental',
                 
                 availability: {
                     min_tier: 4,
                     required_affinity: {
                         industry: 'cloud_infra',
+                        min_value: 50
+                    },
+                    random_chance: 0.20
+                },
+                
+                cost: {
+                    base: 400,
+                    variance: 0.25
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            cloud_infra: 20,
+                            semiconductor: 12
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 70,
+                        compute_rental_premium: 0.25,
+                        enterprise_contracts: true
+                    }
+                },
+                
+                integration: {
+                    base_turns: 6,
+                    skill_required: 'turing'
+                }
+            },
+
+            // 能源科技公司
+            energy_tech_subsidiary: {
+                id: 'energy_tech_subsidiary',
+                name: '能源科技公司',
+                type: 'subsidiary',
+                icon: '⚡',
+                description: '綠色能源與儲能解決方案供應商',
+                
+                related_functional_dept: 'energy_tech',
+                requires_department: 'energy_tech',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'energy',
+                        min_value: 50
+                    },
+                    random_chance: 0.22
+                },
+                
+                cost: {
+                    base: 350,
+                    variance: 0.25
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            energy: 25,
+                            consumer: 10
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 65,
+                        energy_cost_reduction: 0.15,
+                        esg_bonus: 15,
+                        gov_subsidy_eligible: true
+                    }
+                },
+                
+                integration: {
+                    base_turns: 6,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 硬體設計公司
+            hardware_design_subsidiary: {
+                id: 'hardware_design_subsidiary',
+                name: '硬體設計公司',
+                type: 'subsidiary',
+                icon: '🔧',
+                description: 'AI晶片設計與IP授權公司',
+                
+                related_functional_dept: 'hardware_design',
+                requires_department: 'hardware_design',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'semiconductor',
+                        min_value: 60
+                    },
+                    random_chance: 0.15
+                },
+                
+                cost: {
+                    base: 550,
+                    variance: 0.30
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            semiconductor: 30,
+                            research: 15
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 120,
+                        licensing_income_mult: 1.5,
+                        compute_efficiency_bonus: 0.20,
+                        foundry_partnership: true
+                    }
+                },
+                
+                integration: {
+                    base_turns: 7,
+                    skill_required: 'turing'
+                }
+            },
+
+            // 數據交易商
+            data_exchange_subsidiary: {
+                id: 'data_exchange_subsidiary',
+                name: '數據交易商',
+                type: 'subsidiary',
+                icon: '📊',
+                description: '數據資產交易與合成數據平台',
+                
+                related_functional_dept: 'data_exchange',
+                requires_department: 'data_exchange',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'data_provider',
+                        min_value: 50
+                    },
+                    random_chance: 0.22
+                },
+                
+                cost: {
+                    base: 320,
+                    variance: 0.22
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            data_provider: 22,
+                            enterprise: 10
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 55,
+                        data_monetization_mult: 1.4,
+                        platform_fee_rate: 0.08,
+                        data_network_effect: 0.15
+                    }
+                },
+                
+                integration: {
+                    base_turns: 5,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 企業顧問
+            enterprise_consulting_subsidiary: {
+                id: 'enterprise_consulting_subsidiary',
+                name: '企業顧問',
+                type: 'subsidiary',
+                icon: '💼',
+                description: 'AI導入與數位轉型顧問服務公司',
+                
+                related_functional_dept: 'enterprise_consulting',
+                requires_department: 'enterprise_consulting',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'enterprise',
+                        min_value: 45
+                    },
+                    random_chance: 0.25
+                },
+                
+                cost: {
+                    base: 250,
+                    variance: 0.20
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            enterprise: 18,
+                            consumer: 8
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 50,
+                        consulting_premium: 0.30,
+                        trust_bonus: 10,
+                        enterprise_pipeline: true
+                    }
+                },
+                
+                integration: {
+                    base_turns: 5,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 量化投資
+            quant_trading_subsidiary: {
+                id: 'quant_trading_subsidiary',
+                name: '量化投資',
+                type: 'subsidiary',
+                icon: '📈',
+                description: 'AI驅動的量化交易與資產管理公司',
+                
+                related_functional_dept: 'quant_trading',
+                requires_department: 'quant_trading',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'finance',
+                        min_value: 55
+                    },
+                    random_chance: 0.18
+                },
+                
+                cost: {
+                    base: 480,
+                    variance: 0.30
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            finance: 25,
+                            data_provider: 12
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 100,
+                        investment_returns: true,
+                        revenue_volatility: 0.4,
+                        alpha_generation: 0.25
+                    }
+                },
+                
+                integration: {
+                    base_turns: 6,
+                    skill_required: 'turing'
+                }
+            },
+
+            // 社群平台
+            community_platform_subsidiary: {
+                id: 'community_platform_subsidiary',
+                name: '社群平台',
+                type: 'subsidiary',
+                icon: '👥',
+                description: 'AI開發者與用戶社群生態平台',
+                
+                related_functional_dept: 'community_platform',
+                requires_department: 'community_platform',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'consumer',
+                        min_value: 45
+                    },
+                    random_chance: 0.25
+                },
+                
+                cost: {
+                    base: 220,
+                    variance: 0.20
+                },
+                
+                effects: {
+                    immediate: {
+                        affinity_changes: {
+                            consumer: 18,
+                            research: 8
+                        }
+                    },
+                    ongoing: {
+                        quarterly_revenue: 40,
+                        talent_attraction_mult: 1.3,
+                        community_growth_rate: 0.10,
+                        developer_ecosystem: true
+                    }
+                },
+                
+                integration: {
+                    base_turns: 4,
+                    skill_required: 'senior'
+                }
+            },
+
+            // 研究智庫
+            research_institute_subsidiary: {
+                id: 'research_institute_subsidiary',
+                name: '研究智庫',
+                type: 'subsidiary',
+                icon: '🔬',
+                description: '獨立AI研究機構與政策智庫',
+                
+                related_functional_dept: 'research_institute',
+                requires_department: 'research_institute',
+                
+                availability: {
+                    min_tier: 4,
+                    required_affinity: {
+                        industry: 'research',
                         min_value: 50
                     },
                     random_chance: 0.20
@@ -247,110 +759,22 @@
                 effects: {
                     immediate: {
                         affinity_changes: {
-                            cloud_infra: 20,
-                            enterprise: 10
+                            research: 22,
+                            defense: 10
                         }
                     },
                     ongoing: {
-                        quarterly_revenue: 15,
-                        capacity_bonus: 0.25,
-                        external_contracts: true    // 可接外部合約
+                        quarterly_revenue: 45,
+                        reputation_mult: 1.5,
+                        breakthrough_chance: 0.08,
+                        policy_influence: true,
+                        talent_quality_bonus: 0.15
                     }
                 },
                 
                 integration: {
                     base_turns: 6,
                     skill_required: 'turing'
-                }
-            },
-
-            // 算力服務子公司
-            compute_subsidiary: {
-                id: 'compute_subsidiary',
-                name: '算力即服務供應商',
-                type: 'subsidiary',
-                icon: '💻',
-                description: '大型雲端算力服務子公司',
-                
-                related_facility_upgrade: 'architecture_lv2',
-                requires_department: 'compute_rental',
-                
-                availability: {
-                    min_tier: 4,
-                    required_affinity: {
-                        industry: 'semiconductor',
-                        min_value: 55
-                    },
-                    random_chance: 0.18
-                },
-                
-                cost: {
-                    base: 400,
-                    variance: 0.30
-                },
-                
-                effects: {
-                    immediate: {
-                        affinity_changes: {
-                            semiconductor: 25,
-                            cloud_infra: 15
-                        }
-                    },
-                    ongoing: {
-                        quarterly_revenue: 20,
-                        compute_efficiency: 0.15,
-                        priority_supply: true       // GPU 優先供應
-                    }
-                },
-                
-                integration: {
-                    base_turns: 7,
-                    skill_required: 'turing'
-                }
-            },
-
-            // 能源子公司
-            energy_subsidiary: {
-                id: 'energy_subsidiary',
-                name: '獨立電力供應商',
-                type: 'subsidiary',
-                icon: '⚡',
-                description: '獨立發電與電網管理子公司',
-                
-                related_facility_upgrade: 'solar_lv2',
-                requires_department: 'green_energy',
-                
-                availability: {
-                    min_tier: 4,
-                    required_affinity: {
-                        industry: 'energy',
-                        min_value: 45
-                    },
-                    random_chance: 0.22
-                },
-                
-                cost: {
-                    base: 320,
-                    variance: 0.25
-                },
-                
-                effects: {
-                    immediate: {
-                        affinity_changes: {
-                            energy: 25,
-                            defense: 5             // 能源安全
-                        }
-                    },
-                    ongoing: {
-                        energy_cost_reduction: 0.25,
-                        power_stability: 0.98,
-                        esg_bonus: 10
-                    }
-                },
-                
-                integration: {
-                    base_turns: 6,
-                    skill_required: 'senior'
                 }
             },
 
@@ -718,14 +1142,14 @@
             // 親和度影響（每 10 點親和度）
             affinity_per_10: -0.05,          // -5% 成本
             
-            // 市場狀況
+            // 市場狀態
             market_conditions: {
                 bull: 1.15,                   // 牛市 +15%
                 neutral: 1.0,
                 bear: 0.85                    // 熊市 -15%
             },
             
-            // 競爭對手搶購
+            // 競爭對手涸購
             rival_competition: {
                 none: 1.0,
                 low: 1.10,
@@ -778,29 +1202,31 @@
         // 協同效應定義
         // ==========================================
         SYNERGY_EFFECTS: {
-            // 擁有多個相關單位的加成
-            datacenter_compute: {
-                required: ['datacenter_services', 'compute_rental'],
+            // 算力與數據組合
+            compute_data: {
+                required: ['compute_rental', 'data_exchange'],
                 bonus: {
-                    quarterly_revenue: 8,
+                    quarterly_revenue: 12,
                     efficiency: 0.10
                 },
-                name: '算力基礎設施整合'
+                name: '算力數據整合'
             },
             
-            energy_datacenter: {
-                required: ['green_energy', 'datacenter_services'],
+            // 能源與算力組合
+            energy_compute: {
+                required: ['energy_tech', 'compute_rental'],
                 bonus: {
                     energy_cost: -0.15,
                     esg_bonus: 8
                 },
-                name: '綠色數據中心'
+                name: '綠色算力中心'
             },
             
+            // 全棧基礎設施
             full_stack: {
-                required: ['datacenter_services', 'compute_rental', 'green_energy'],
+                required: ['compute_rental', 'energy_tech', 'data_exchange'],
                 bonus: {
-                    quarterly_revenue: 15,
+                    quarterly_revenue: 25,
                     all_costs: -0.10,
                     reputation: 10
                 },
@@ -870,6 +1296,39 @@
                     esg_bonus: 10
                 },
                 name: 'AI基礎設施整合'
+            },
+
+            // 研究與社群協同
+            research_community: {
+                required: ['research_institute', 'community_platform'],
+                bonus: {
+                    reputation_bonus: 15,
+                    talent_attraction_bonus: 0.20,
+                    breakthrough_chance: 0.03
+                },
+                name: '開放研究生態'
+            },
+
+            // 企業服務組合
+            enterprise_suite: {
+                required: ['enterprise_consulting', 'data_exchange'],
+                bonus: {
+                    quarterly_revenue: 15,
+                    enterprise_pipeline: true,
+                    trust_bonus: 8
+                },
+                name: '企業服務套件'
+            },
+
+            // 金融科技組合
+            fintech_synergy: {
+                required: ['quant_trading', 'data_premium_supplier'],
+                bonus: {
+                    quarterly_revenue: 18,
+                    alpha_generation: 0.10,
+                    volatility_reduction: 0.15
+                },
+                name: '金融科技整合'
             }
         },
 
@@ -939,6 +1398,22 @@
             }
         }
         return synergies;
+    };
+
+    /**
+     * 檢查目標是否對應 FUNCTIONAL_DEPTS
+     */
+    AcquisitionConfig.isLinkedToFunctionalDept = function(targetId) {
+        const target = this.ACQUISITION_TARGETS[targetId];
+        return target && target.related_functional_dept ? true : false;
+    };
+
+    /**
+     * 獲取對應的 FUNCTIONAL_DEPT ID
+     */
+    AcquisitionConfig.getLinkedFunctionalDeptId = function(targetId) {
+        const target = this.ACQUISITION_TARGETS[targetId];
+        return target ? target.related_functional_dept : null;
     };
 
     // ==========================================

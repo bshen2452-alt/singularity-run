@@ -539,7 +539,12 @@ const EVENT_POOL = {
         { desc: "獲得政府研究補助", effect: "cash_gain", value: 20 },
         { desc: "開源社群貢獻了優質代碼", effect: "mp_boost", value: 1 },
         { desc: "前員工創業成功，回饋投資", effect: "cash_gain", value: 15 },
-        { desc: "學術合作帶來數據資源", effect: "data_gain", value: 50 }
+        { desc: "學術合作帶來數據資源", effect: "data_gain", value: 50 },
+        //以下趣味事件，無影響
+        { desc: "統計顯示，新創前五年陣亡率99%", effect: "neutral", value: 5 },
+        { desc: "男子宣布與對話型AI結婚，網友表示太嫩了", effect: "neutral", value: 5 },
+        { desc: "猴子闖入AI實驗室，創造十四行詩", effect: "neutral", value: 5 },
+        { desc: "AI破解千古數學難題，答案為42", effect: "neutral", value: 5 }
     ],
     crisis: [
         { desc: "核心員工被挖角", effect: "talent_loss", value: 1 },

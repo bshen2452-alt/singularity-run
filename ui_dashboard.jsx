@@ -126,7 +126,7 @@
     }
 
     // ============================================
-    // 3. 回合摘要 (直接使用 processData)
+    // 3. 回合損益摘要 (直接使用 processData)
     // ============================================
     
     function TurnSummary({ player, processData, finances }) {
@@ -171,7 +171,7 @@
             <div style={card}>
                 <div onClick={() => setExpanded(!expanded)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: expanded ? '12px' : 0 }}>
                     <div style={{ fontSize: '0.85rem', color: C.muted }}>
-                        <span>📊 Q{player.turn_count} 回合摘要</span>
+                        <span>📊 Q{player.turn_count} 回合損益表</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: netFlow >= 0 ? C.pos : C.neg }}>
