@@ -49,9 +49,9 @@
     function KeyMetricsBar({ player, derived }) {
         const metrics = [
             { label: '營運資金', value: fmtCash(player.cash), color: player.cash >= 0 ? C.pos : C.neg, icon: '💵' },
-            { label: '算力需求', value: `${fmt(derived?.active_pflops)} PF`, color: C.cyan, icon: '💻' },
+            //{ label: '算力需求', value: `${fmt(derived?.active_pflops)} PF`, color: C.cyan, icon: '💻' },
             { label: 'MP進度', value: fmt(player.model_power), sub: `T${player.mp_tier}`, color: C.magenta, icon: '🧠' },
-            { label: '總員工數', value: (player.talent?.turing||0) + (player.talent?.senior||0) + (player.talent?.junior||0), color: C.pos, icon: '👥' },
+            //{ label: '總員工數', value: (player.talent?.turing||0) + (player.talent?.senior||0) + (player.talent?.junior||0), color: C.pos, icon: '👥' },
             { label: '公司市值', value: fmtCash(player.market_cap), color: C.cyan, icon: '📈' }
         ];
 
