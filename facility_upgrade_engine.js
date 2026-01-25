@@ -149,6 +149,7 @@
                 construction_progress: 0,
                 construction_total: dev.construction_turns,
                 started_turn: player.turn_count || 0,
+                progress_start_turn: (player.turn_count || 0) + 1,  // 下回合開始計算進度
                 assigned_senior: 0,
                 assigned_turing: 0
             };
@@ -182,6 +183,19 @@
                 return { success: false, message: '項目非研發中狀態' };
             }
             
+            // 檢查是否已到達進度開始回合（下回合才開始計算）
+            const currentTurn = player.turn_count || 0;
+            const progressStartTurn = productState.progress_start_turn || (productState.started_turn + 1);
+            if (currentTurn < progressStartTurn) {
+                // 還未到開始計算進度的回合，不更新進度
+                return {
+                    success: true,
+                    newState: player,
+                    message: "研發將於下回合開始計算進度",
+                    progress: 0,
+                    waitingToStart: true
+                };
+            }
             const product = config.getUpgradeProduct(productId);
             const dev = product.development;
             
@@ -284,7 +298,16 @@
             const changes = [];
             const completedIds = [];
             
+            const currentTurn = player.turn_count || 0;
+            
             for (const construction of newPlayer.facility_upgrade_state.active_constructions) {
+                // 檢查施工是否已開始（下回合才開始計算）
+                const constructionStartTurn = construction.start_turn || 0;
+                if (currentTurn < constructionStartTurn) {
+                    // 還未到開始計算的回合，跳過此項目
+                    continue;
+                }
+                
                 construction.remaining_turns -= 1;
                 
                 // 更新產品狀態
@@ -474,7 +497,12 @@
                 if (product.completion_effects.costs) {
                     for (const [key, value] of Object.entries(product.completion_effects.costs)) {
                         if (typeof value === 'number') {
-                            costs[key] = (costs[key] || 0) + value;
+                            // _mult 類型用乘法合併，其他用加法
+                            if (key.endsWith('_mult')) {
+                                costs[key] = (costs[key] || 1) * value;
+                            } else {
+                                costs[key] = (costs[key] || 0) + value;
+                            }
                         } else {
                             costs[key] = value;
                         }

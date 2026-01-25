@@ -94,6 +94,17 @@ function calculateQuarterlyFinances(player, rivals, globalParams) {
     const maintenanceCost = pflops * 0.1;
     opex += maintenanceCost;
     
+    // 3.5 設施升級維護成本加成
+    let facilityUpgradeMaintMult = 1.0;
+    if (window.FacilityUpgradeEngine && player.facility_upgrade_state) {
+        const upgradeEffects = window.FacilityUpgradeEngine.getAllActiveEffects(player);
+        if (upgradeEffects.costs && upgradeEffects.costs.maintenance_mult) {
+            facilityUpgradeMaintMult = upgradeEffects.costs.maintenance_mult;
+        }
+    }
+    const facilityUpgradeMaintenanceCost = maintenanceCost * (facilityUpgradeMaintMult - 1);
+    maintenanceCost += facilityUpgradeMaintenanceCost;
+
     // 4. 債務利息
     const debt = player.debt || 0;
     let interestRate = player.credit_interest_rate || 0.05;
@@ -120,6 +131,9 @@ function calculateQuarterlyFinances(player, rivals, globalParams) {
         cloud_cost: cloudCost,
         maintenance_cost: maintenanceCost,
         interest_cost: interestCost,
+        maintenance_cost: maintenanceCost - facilityUpgradeMaintenanceCost,  // 基礎維護
+        facility_upgrade_maintenance: facilityUpgradeMaintenanceCost,        // 升級額外維護
+        total_maintenance: maintenanceCost,                                   // 總維護成本
         
         net_cash_flow: netCashFlow
     };

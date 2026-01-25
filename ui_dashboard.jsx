@@ -150,8 +150,9 @@
 
         // 支出
         if (finances?.talent_cost > 0) expense.push({ label: '人事成本', value: finances.talent_cost, recurring: true });
-        if (finances?.cloud_cost > 0) expense.push({ label: '雲端租用', value: finances.cloud_cost, recurring: true });
+        if (finances?.cloud_cost > 0) expense.push({ label: '雲端租費', value: finances.cloud_cost, recurring: true });
         if (finances?.maintenance_cost > 0) expense.push({ label: '設備維護', value: finances.maintenance_cost, recurring: true });
+        if (finances?.facility_upgrade_maintenance > 0) {expense.push({ label: '設施升級', value: finances.facility_upgrade_maintenance, recurring: true });} 
         if (finances?.interest_cost > 0) expense.push({ label: '利息支出', value: finances.interest_cost, recurring: true });
 
         const totalIn = income.reduce((s, i) => s + i.value, 0);
