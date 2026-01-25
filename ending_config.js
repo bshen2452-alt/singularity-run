@@ -896,19 +896,19 @@ const EndingConfig = (function() {
                 id: 'clutch_time',
                 name: '決勝時刻',
                 type: '決勝時刻 - clutch time',
-                msg: '「市場終局MPV。」\n\n你公司 MP 突破了歷史紀錄，成為市場上不可撼動的冠軍。',
+                msg: '「市場終局MVP。」\n\n你公司 MP 突破了歷史紀錄，成為市場上最後的冠軍。',
                 victory: true,
                 priority: 1, // 優先級最低，確保特殊結局優先判定
                 // 判定邏輯
                 check: (player) => {
-                    return player.mp_tier >= 1005 && player.cash > 0; // 判定條件：MP 達到 1005 且仍在營運
+                    return (player.model_power || 0) >= 1005 && player.cash > 0; // 判定條件：MP 達到 1005 且仍在營運
                 },
                 // 預警與進度追蹤
                 warning: (player) => {
                     if (player.mp_tier >= 950) {
                         return {
                             active: true,
-                            turnsLeft: Math.max(1, Math.ceil((1005 - player.mp_tier) / 20)),
+                            turnsLeft: Math.max(1, Math.ceil((1005 - player.model_power) / 20)),
                             condition: '這是你的尖峰時刻',
                             severity: 'info' // 使用 info 等級，代表正面預警
                         };

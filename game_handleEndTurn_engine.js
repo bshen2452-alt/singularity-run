@@ -91,8 +91,7 @@ function calculateQuarterlyFinances(player, rivals, globalParams) {
     
     // 3. 自有算力維護成本
     const pflops = player.pflops || 0;
-    const maintenanceCost = pflops * 0.1;
-    opex += maintenanceCost;
+    let maintenanceCost = pflops * 0.1;
     
     // 3.5 設施升級維護成本加成
     let facilityUpgradeMaintMult = 1.0;
@@ -104,6 +103,7 @@ function calculateQuarterlyFinances(player, rivals, globalParams) {
     }
     const facilityUpgradeMaintenanceCost = maintenanceCost * (facilityUpgradeMaintMult - 1);
     maintenanceCost += facilityUpgradeMaintenanceCost;
+    opex += maintenanceCost;
 
     // 4. 債務利息
     const debt = player.debt || 0;
