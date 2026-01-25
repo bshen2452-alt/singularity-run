@@ -209,17 +209,19 @@
             if (nextTier > 5) return null;
             
             const nextThreshold = MODEL_TIERS[nextTier]?.mp || 9999;
-            const distanceToThreshold = nextThreshold - (rival.mp || 0);
+            const currentMP = rival.mp || 0;
+            const distanceToThreshold = nextThreshold - currentMP;
             
-            // 檢查是否剛失敗（有重組標記）
+            // 優先級1：檢查上回合里程碑結果
+            // 如果上回合里程碑失敗，執行內部重組
             if (rival.just_failed_milestone) {
                 return {
-                    behaviorId: milestoneBehavior.after_failure,
+                    behaviorId: 'internal_restructure',
                     reason: 'post_milestone_failure'
                 };
             }
             
-            // 檢查是否剛成功（有成功標記）
+            // 如果上回合里程碑成功，執行成功後行為
             if (rival.just_achieved_milestone) {
                 return {
                     behaviorId: milestoneBehavior.after_success,
@@ -227,12 +229,14 @@
                 };
             }
             
-            // 檢查是否接近門檻（距離5點以內）
-            if (distanceToThreshold > 0 && distanceToThreshold <= 5) {
+            // 優先級2：檢查是否應該衝刺里程碑
+            // 當 MP 已達到或接近門檻時（距離 <= 5 或 MP >= threshold）
+            if (currentMP >= nextThreshold || (distanceToThreshold > 0 && distanceToThreshold <= 5)) {
                 return {
-                    behaviorId: milestoneBehavior.near_threshold,
+                    behaviorId: 'milestone_sprint',
                     reason: 'near_milestone_threshold',
-                    distance: distanceToThreshold
+                    distance: distanceToThreshold,
+                    atThreshold: currentMP >= nextThreshold
                 };
             }
             
@@ -397,6 +401,7 @@
             // 清除臨時標記
             delete updatedRival.just_failed_milestone;
             delete updatedRival.just_achieved_milestone;
+            delete updatedRival.last_milestone_event;  // 清除上回合的里程碑事件
             
             return {
                 rival: updatedRival,
@@ -535,11 +540,15 @@
             const allMessages = [];
             
             const updatedRivals = rivals.map(rival => {
+                // 清除上回合的里程碑事件（本回合會在 processRivalMilestones 中重新設置）
+                const rivalWithCleanState = { ...rival };
+                delete rivalWithCleanState.last_milestone_event;
+                
                 // 選擇行為
-                const behaviorSelection = this.selectBehavior(rival, player, globalMarket);
+                const behaviorSelection = this.selectBehavior(rivalWithCleanState, player, globalMarket);
                 
                 // 執行行為
-                const result = this.executeBehavior(rival, behaviorSelection, globalMarket);
+                const result = this.executeBehavior(rivalWithCleanState, behaviorSelection, globalMarket);
                 
                 // 收集市場影響
                 result.marketActions.forEach(action => allMarketActions.push(action));
@@ -632,6 +641,14 @@
                 updatedRival.milestone_fail_count[nextTier] = 0;
                 updatedRival.just_achieved_milestone = true;
                 
+                // 記錄里程碑事件（供 UI 顯示）
+                updatedRival.last_milestone_event = {
+                    type: 'success',
+                    tier: nextTier,
+                    tierName: tierData.name,
+                    turn: rival.turn_count || 0
+                };
+                
                 // 成功獎勵
                 updatedRival.hype = Math.min(150, (updatedRival.hype || 0) + 10);
                 updatedRival.trust = Math.min(100, (updatedRival.trust || 50) + 5);
@@ -651,6 +668,14 @@
                 // 失敗
                 updatedRival.milestone_fail_count[nextTier] = failCount + 1;
                 updatedRival.just_failed_milestone = true;
+                
+                // 記錄里程碑事件（供 UI 顯示）
+                updatedRival.last_milestone_event = {
+                    type: 'failure',
+                    tier: nextTier,
+                    tierName: tierData.name,
+                    turn: rival.turn_count || 0
+                };
                 
                 // 失敗懲罰
                 updatedRival.hype = Math.max(0, (updatedRival.hype || 0) - 10);

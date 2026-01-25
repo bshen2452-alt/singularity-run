@@ -409,6 +409,7 @@ function getRivalStockPrices(rivals, player) {
             profitLossPercent: invested > 0 ? (profitLoss / invested) * 100 : 0,
             // 行為相關資訊
             last_behavior: rival.last_behavior,
+            last_milestone_event: rival.last_milestone_event,
             entropy: rival.entropy,
             trust: rival.trust,
             compliance_risk: rival.compliance_risk,

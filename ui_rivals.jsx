@@ -182,7 +182,7 @@ function ETFCard({ etf, priceInfo, holding, onBuy, onSell, playerCash, disabled 
 }
 
 /**
- * 競爭對手股票卡片
+ * 競爭對手股票卡片（含行為和里程碑顯示）
  */
 function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
     const [amount, setAmount] = React.useState(50);
@@ -190,6 +190,31 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
     // 獲取行為配置
     const getBehaviorDisplay = () => {
         const behavior = rivalStock.last_behavior;
+        const milestoneEvent = rivalStock.last_milestone_event;
+        
+        // 優先顯示里程碑事件結果
+        if (milestoneEvent) {
+            if (milestoneEvent.type === 'success') {
+                return {
+                    icon: '🏆',
+                    name: `發布 ${milestoneEvent.tierName || ('Tier ' + milestoneEvent.tier)}`,
+                    color: 'var(--accent-green)',
+                    bg: 'rgba(0, 255, 136, 0.15)',
+                    isMilestone: true,
+                    milestoneType: 'success'
+                };
+            } else if (milestoneEvent.type === 'failure') {
+                return {
+                    icon: '❌',
+                    name: `發布失敗 → 內部重組`,
+                    color: 'var(--accent-red)',
+                    bg: 'rgba(255, 51, 102, 0.15)',
+                    isMilestone: true,
+                    milestoneType: 'failure'
+                };
+            }
+        }
+        
         if (!behavior) return null;
         
         const behaviorConfig = window.RivalBehaviorConfig?.getBehavior?.(behavior.id);
@@ -213,9 +238,19 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
         };
         
         const style = getColorByBehavior(behavior.id);
+        
+        // 特殊處理：里程碑衝刺顯示目標
+        let displayName = behaviorConfig.name;
+        if (behavior.id === 'milestone_sprint' && behavior.reason === 'near_milestone_threshold') {
+            const MODEL_TIERS = window.GameConfig?.COSTS?.MODEL_TIERS;
+            const nextTier = (rivalStock.mp_tier || 0) + 1;
+            const tierName = MODEL_TIERS?.[nextTier]?.name?.split(':')[0] || ('Tier ' + nextTier);
+            displayName = `衝刺 ${tierName}`;
+        }
+        
         return {
             icon: behaviorConfig.icon,
-            name: behaviorConfig.name,
+            name: displayName,
             color: style.color,
             bg: style.bg,
             riskLevel: behavior.riskLevel
@@ -280,7 +315,7 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
             ])
         ]),
         
-        // 當前行為顯示
+        // 當前行為顯示（含里程碑事件）
         behaviorDisplay && React.createElement('div', {
             key: 'behavior',
             style: {
@@ -291,11 +326,13 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
                 background: behaviorDisplay.bg,
                 borderRadius: '4px',
                 marginBottom: '6px',
-                borderLeft: behaviorDisplay.riskLevel === 'critical' 
-                    ? '3px solid var(--accent-red)' 
-                    : behaviorDisplay.riskLevel === 'warning'
-                        ? '3px solid var(--accent-orange)'
-                        : '3px solid ' + behaviorDisplay.color
+                borderLeft: behaviorDisplay.isMilestone
+                    ? (behaviorDisplay.milestoneType === 'success' ? '3px solid var(--accent-green)' : '3px solid var(--accent-red)')
+                    : (behaviorDisplay.riskLevel === 'critical' 
+                        ? '3px solid var(--accent-red)' 
+                        : behaviorDisplay.riskLevel === 'warning'
+                            ? '3px solid var(--accent-orange)'
+                            : '3px solid ' + behaviorDisplay.color)
             }
         }, [
             React.createElement('span', { key: 'icon', style: { fontSize: '0.9rem' } }, behaviorDisplay.icon),
@@ -307,7 +344,20 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
                     fontWeight: 500
                 } 
             }, behaviorDisplay.name),
-            behaviorDisplay.riskLevel && behaviorDisplay.riskLevel !== 'normal' && React.createElement('span', {
+            // 里程碑標籤
+            behaviorDisplay.isMilestone && React.createElement('span', {
+                key: 'milestone-tag',
+                style: {
+                    fontSize: '0.6rem',
+                    padding: '1px 4px',
+                    borderRadius: '2px',
+                    background: behaviorDisplay.milestoneType === 'success' ? 'var(--accent-green)22' : 'var(--accent-red)22',
+                    color: behaviorDisplay.milestoneType === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
+                    marginLeft: 'auto'
+                }
+            }, behaviorDisplay.milestoneType === 'success' ? '里程碑' : '失敗'),
+            // 風險標籤
+            !behaviorDisplay.isMilestone && behaviorDisplay.riskLevel && behaviorDisplay.riskLevel !== 'normal' && React.createElement('span', {
                 key: 'risk',
                 style: {
                     fontSize: '0.6rem',
@@ -397,6 +447,7 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
         ])
     ]);
 }
+
 
 
 /**

@@ -374,6 +374,11 @@ function handleEndTurn(player, rivals, globalParams) {
                 
                 updated.mp = Math.min(1005, newMP);
                 
+                // 清除上回合的臨時標記
+                delete updated.just_failed_milestone;
+                delete updated.just_achieved_milestone;
+                delete updated.last_milestone_event;
+                
                 // 市值更新
                 const mpRatio = updated.mp / 1005;
                 const hypeEffect = Math.min(50, (updated.hype || 0) * 0.5);
