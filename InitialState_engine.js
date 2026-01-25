@@ -335,6 +335,9 @@ function createInitialRivalsState(playerRoute, rivalCount) {
             icon: r.icon,
             route: r.route,
             mp: 10 * (r.mp_mult || 1), // 初始MP基於路線乘數
+            mp_tier: 0, // 當前已達成里程碑的等級 (0-5)
+            mp_milestones: {}, // 已達成的里程碑記錄
+            milestone_fail_count: {}, // 里程碑失敗次數記錄
             market_cap: 500, // 初始市值
             hype: r.hype_add || 0,
             trust: r.trust_add || 0,

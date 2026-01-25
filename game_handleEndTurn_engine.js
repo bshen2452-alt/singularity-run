@@ -364,7 +364,9 @@ function handleEndTurn(player, rivals, globalParams) {
                 
                 if (nextTier <= 5 && MODEL_TIERS && MODEL_TIERS[nextTier]) {
                     const threshold = MODEL_TIERS[nextTier].mp;
-                    if (newMP >= threshold) {
+                    // 只有當 currentMP 還沒到達門檻時才限制
+                    // 如果 currentMP 已經 >= threshold（例如里程碑失敗後），允許繼續成長
+                    if (currentMP < threshold && newMP >= threshold) {
                         newMP = threshold;
                         updated.at_milestone_threshold = true;
                     }
