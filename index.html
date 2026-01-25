@@ -990,7 +990,7 @@ function EndingScreen({ ending, victory, player, onRestart }) {
             <div style={{ background: 'var(--bg-card)', padding: '24px 32px', borderRadius: '12px', marginBottom: '32px' }}>
                 <h3 style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>最終數據</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                    <StatValue label="Model Power" value={player.model_power} color="var(--accent-magenta)" />
+                    <StatValue label="最終MP" value={player.model_power} color="var(--accent-magenta)" />
                     <StatValue label="持續季數" value={player.turn_count} suffix="季" />
                     <StatValue label="最終市值" value={player.market_cap} prefix="$" suffix="M" />
                 </div>
