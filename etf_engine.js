@@ -396,7 +396,9 @@ function getRivalStockPrices(rivals, player) {
             name: rival.name,
             icon: rival.icon,
             style: rival.style,
+            route: rival.route,
             mp: rival.mp,
+            mp_tier: rival.mp_tier,
             basePrice,
             currentPrice,
             priceChange: ((currentPrice - basePrice) / basePrice) * 100,
@@ -404,7 +406,14 @@ function getRivalStockPrices(rivals, player) {
             estimatedShares,
             currentValue,
             profitLoss,
-            profitLossPercent: invested > 0 ? (profitLoss / invested) * 100 : 0
+            profitLossPercent: invested > 0 ? (profitLoss / invested) * 100 : 0,
+            // 行為相關資訊
+            last_behavior: rival.last_behavior,
+            entropy: rival.entropy,
+            trust: rival.trust,
+            compliance_risk: rival.compliance_risk,
+            just_achieved_milestone: rival.just_achieved_milestone,
+            just_failed_milestone: rival.just_failed_milestone
         };
     });
 }

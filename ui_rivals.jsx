@@ -187,6 +187,43 @@ function ETFCard({ etf, priceInfo, holding, onBuy, onSell, playerCash, disabled 
 function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
     const [amount, setAmount] = React.useState(50);
     
+    // 獲取行為配置
+    const getBehaviorDisplay = () => {
+        const behavior = rivalStock.last_behavior;
+        if (!behavior) return null;
+        
+        const behaviorConfig = window.RivalBehaviorConfig?.getBehavior?.(behavior.id);
+        if (!behaviorConfig) return null;
+        
+        // 根據行為類型決定顏色
+        const getColorByBehavior = (id) => {
+            const colorMap = {
+                'research_sprint': { color: 'var(--accent-magenta)', bg: 'var(--accent-magenta)15' },
+                'steady_research': { color: 'var(--accent-cyan)', bg: 'var(--accent-cyan)15' },
+                'safety_alignment': { color: 'var(--accent-green)', bg: 'var(--accent-green)15' },
+                'compliance_reform': { color: 'var(--accent-blue)', bg: 'var(--accent-blue)15' },
+                'pr_recovery': { color: 'var(--accent-orange)', bg: 'var(--accent-orange)15' },
+                'milestone_sprint': { color: 'var(--accent-yellow)', bg: 'var(--accent-yellow)15' },
+                'internal_restructure': { color: 'var(--accent-red)', bg: 'var(--accent-red)15' },
+                'market_expansion': { color: 'var(--accent-green)', bg: 'var(--accent-green)15' },
+                'compute_stockpile': { color: 'var(--accent-cyan)', bg: 'var(--accent-cyan)15' },
+                'defensive_stance': { color: 'var(--text-secondary)', bg: 'var(--bg-tertiary)' }
+            };
+            return colorMap[id] || { color: 'var(--text-secondary)', bg: 'var(--bg-tertiary)' };
+        };
+        
+        const style = getColorByBehavior(behavior.id);
+        return {
+            icon: behaviorConfig.icon,
+            name: behaviorConfig.name,
+            color: style.color,
+            bg: style.bg,
+            riskLevel: behavior.riskLevel
+        };
+    };
+    
+    const behaviorDisplay = getBehaviorDisplay();
+    
     return React.createElement('div', {
         style: {
             background: 'var(--bg-tertiary)',
@@ -210,7 +247,17 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
                 style: { display: 'flex', alignItems: 'center', gap: '6px' }
             }, [
                 React.createElement('span', { key: 'icon' }, rivalStock.icon),
-                React.createElement('span', { key: 'label', style: { fontWeight: 600 } }, rivalStock.name)
+                React.createElement('span', { key: 'label', style: { fontWeight: 600 } }, rivalStock.name),
+                rivalStock.route && React.createElement('span', {
+                    key: 'route',
+                    style: { 
+                        fontSize: '0.65rem', 
+                        color: 'var(--text-muted)',
+                        padding: '1px 4px',
+                        background: 'var(--bg-secondary)',
+                        borderRadius: '2px'
+                    }
+                }, rivalStock.route)
             ]),
             React.createElement('div', {
                 key: 'price',
@@ -222,7 +269,7 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
                         fontFamily: 'var(--font-mono)',
                         color: 'var(--accent-magenta)'
                     }
-                }, `MP ${formatToTwoDecimals(rivalStock.mp)}`),
+                }, `MP ${formatToTwoDecimals(rivalStock.mp)} T${rivalStock.mp_tier || 0}`),
                 React.createElement('div', {
                     key: 'stock',
                     style: { 
@@ -231,6 +278,46 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
                     }
                 }, `$${formatToTwoDecimals(rivalStock.currentPrice)} (${rivalStock.priceChange >= 0 ? '+' : ''}${formatToTwoDecimals(rivalStock.priceChange)}%)`)
             ])
+        ]),
+        
+        // 當前行為顯示
+        behaviorDisplay && React.createElement('div', {
+            key: 'behavior',
+            style: {
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 8px',
+                background: behaviorDisplay.bg,
+                borderRadius: '4px',
+                marginBottom: '6px',
+                borderLeft: behaviorDisplay.riskLevel === 'critical' 
+                    ? '3px solid var(--accent-red)' 
+                    : behaviorDisplay.riskLevel === 'warning'
+                        ? '3px solid var(--accent-orange)'
+                        : '3px solid ' + behaviorDisplay.color
+            }
+        }, [
+            React.createElement('span', { key: 'icon', style: { fontSize: '0.9rem' } }, behaviorDisplay.icon),
+            React.createElement('span', { 
+                key: 'name', 
+                style: { 
+                    fontSize: '0.75rem', 
+                    color: behaviorDisplay.color,
+                    fontWeight: 500
+                } 
+            }, behaviorDisplay.name),
+            behaviorDisplay.riskLevel && behaviorDisplay.riskLevel !== 'normal' && React.createElement('span', {
+                key: 'risk',
+                style: {
+                    fontSize: '0.6rem',
+                    padding: '1px 4px',
+                    borderRadius: '2px',
+                    background: behaviorDisplay.riskLevel === 'critical' ? 'var(--accent-red)22' : 'var(--accent-orange)22',
+                    color: behaviorDisplay.riskLevel === 'critical' ? 'var(--accent-red)' : 'var(--accent-orange)',
+                    marginLeft: 'auto'
+                }
+            }, behaviorDisplay.riskLevel === 'critical' ? '緊急' : '警戒')
         ]),
         
         // 持倉和盈虧
@@ -310,6 +397,7 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
         ])
     ]);
 }
+
 
 /**
  * 市場投資主面板（含儀表板）
@@ -890,58 +978,6 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                         style: { color: 'var(--accent-magenta)', fontFamily: 'var(--font-mono)' }
                     }, `${formatToTwoDecimals(globalParams?.I_Hype || 1)}x`)
                 ])
-            ]),
-
-            // === 對手動態事件 ===
-            rivalEvents && rivalEvents.length > 0 && React.createElement("div", {
-                key: "rival-events",
-                style: {
-                    padding: "10px",
-                    background: "var(--bg-secondary)",
-                    borderRadius: "6px",
-                    border: "1px solid var(--accent-orange)33"
-                }
-            }, [
-                React.createElement("div", {
-                    key: "header",
-                    style: { 
-                        fontSize: "0.8rem", 
-                        color: "var(--accent-orange)", 
-                        marginBottom: "8px",
-                        fontWeight: 600
-                    }
-                }, "📢 對手動態"),
-                React.createElement("div", {
-                    key: "events-list",
-                    style: { display: "grid", gap: "6px" }
-                }, rivalEvents.slice(0, 5).map((evt, idx) => {
-                    const colorMap = {
-                        "success": { color: "var(--accent-green)", bg: "var(--accent-green)15" },
-                        "danger": { color: "var(--accent-red)", bg: "var(--accent-red)15" },
-                        "warning": { color: "var(--accent-orange)", bg: "var(--accent-orange)15" },
-                        "info": { color: "var(--accent-cyan)", bg: "var(--accent-cyan)15" }
-                    };
-                    const style = colorMap[evt.type] || colorMap.info;
-                    return React.createElement("div", {
-                        key: idx,
-                        style: {
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "6px 10px",
-                            background: style.bg,
-                            borderRadius: "4px",
-                            borderLeft: "3px solid " + style.color,
-                            fontSize: "0.75rem"
-                        }
-                    }, [
-                        React.createElement("span", { key: "icon" }, evt.icon),
-                        React.createElement("span", { 
-                            key: "text",
-                            style: { color: style.color, flex: 1 }
-                        }, evt.text)
-                    ]);
-                }))
             ]),
             
             // === 快捷提示 ===

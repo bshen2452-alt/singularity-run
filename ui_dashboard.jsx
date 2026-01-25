@@ -732,12 +732,98 @@
     }
 
     // ============================================
+    // 6. 對手動態事件通知 (使用 EventNotificationPanel 風格)
+    // ============================================
+    
+    /**
+     * 從對手數據生成事件列表
+     */
+    function getRivalEvents(rivals) {
+        if (!rivals || rivals.length === 0) return [];
+        
+        const events = [];
+        rivals.forEach(rival => {
+            // 檢查最近的行為
+            if (rival.last_behavior) {
+                const behaviorConfig = window.RivalBehaviorConfig?.getBehavior?.(rival.last_behavior.id);
+                if (behaviorConfig && rival.last_behavior.reason) {
+                    // 風險相關行為
+                    if (rival.last_behavior.riskLevel === "critical") {
+                        events.push({
+                            rivalName: rival.name,
+                            icon: "⚠️",
+                            text: rival.name + " 緊急" + behaviorConfig.name,
+                            type: "warning",
+                            priority: 3
+                        });
+                    } else if (rival.last_behavior.reason.includes("milestone")) {
+                        events.push({
+                            rivalName: rival.name,
+                            icon: rival.just_achieved_milestone ? "🏆" : (rival.just_failed_milestone ? "❌" : "🎯"),
+                            text: rival.just_achieved_milestone 
+                                ? rival.name + " 里程碑成功！" 
+                                : (rival.just_failed_milestone 
+                                    ? rival.name + " 里程碑失敗" 
+                                    : rival.name + " 衝刺里程碑"),
+                            type: rival.just_achieved_milestone ? "success" : (rival.just_failed_milestone ? "danger" : "info"),
+                            priority: rival.just_achieved_milestone ? 5 : (rival.just_failed_milestone ? 4 : 2)
+                        });
+                    }
+                }
+            }
+            
+            // 直接檢查里程碑標記
+            if (rival.just_achieved_milestone && !events.find(e => e.rivalName === rival.name && e.type === "success")) {
+                const tierName = window.GameConfig?.COSTS?.MODEL_TIERS?.[rival.mp_tier]?.name || ("Tier " + rival.mp_tier);
+                events.push({
+                    rivalName: rival.name,
+                    icon: "🏆",
+                    text: rival.name + " 發布 " + tierName + "！",
+                    type: "success",
+                    priority: 5
+                });
+            }
+            if (rival.just_failed_milestone && !events.find(e => e.rivalName === rival.name && e.type === "danger")) {
+                events.push({
+                    rivalName: rival.name,
+                    icon: "❌",
+                    text: rival.name + " 發布失敗",
+                    type: "danger",
+                    priority: 4
+                });
+            }
+            
+            // 檢查高風險狀態
+            if ((rival.entropy || 0) >= 70) {
+                events.push({
+                    rivalName: rival.name,
+                    icon: "🔥",
+                    text: rival.name + " 熵值危險",
+                    type: "warning",
+                    priority: 3
+                });
+            }
+        });
+        
+        // 按優先級排序
+        events.sort((a, b) => b.priority - a.priority);
+        return events;
+    }
+    
+
+
+    // ============================================
     // 主儀表板
     // ============================================
     
-    function GameDashboardNew({ gameState, derived, processData, finances, messages, onAction }) {
+    function GameDashboardNew({ gameState, derived, processData, finances, messages, onAction, onInvestRival, onBuyETF, onSellETF }) {
         const { player, globalParams, rivals } = gameState;
         const route = window.GameConfig?.TECH_ROUTES?.[player.route] || {};
+
+        // 處理投資行為的回調（若未傳入則使用 onAction）
+        const handleInvestRival = onInvestRival || ((name, amount) => onAction?.('investRival', { rivalName: name, amount }));
+        const handleBuyETF = onBuyETF || ((etfId, amount) => onAction?.('buyETF', { etfId, amount }));
+        const handleSellETF = onSellETF || ((etfId, shares) => onAction?.('sellETF', { etfId, shares }));
 
         return (
             <div style={{ padding: '16px' }}>
@@ -764,6 +850,21 @@
                 <RiskDashboard player={player} derived={derived} rivals={rivals} />
                 <CompanyDetails player={player} derived={derived} />
                 <WorldEnvironment player={player} globalParams={globalParams} gameState={gameState} processData={processData} onAction={onAction} />
+                
+                {/* 市場投資面板 */}
+                {window.RivalsUI?.RivalsPanelEnhanced && (
+                    <div style={{ marginTop: '12px' }}>
+                        {React.createElement(window.RivalsUI.RivalsPanelEnhanced, {
+                            rivals: rivals,
+                            player: player,
+                            globalParams: globalParams,
+                            onInvestRival: handleInvestRival,
+                            onBuyETF: handleBuyETF,
+                            onSellETF: handleSellETF,
+                            disabled: false
+                        })}
+                    </div>
+                )}
             </div>
         );
     }
@@ -780,9 +881,9 @@
         RiskDashboard,
         CompanyDetails,
         WorldEnvironment,
-        EventNotificationPanel
+        EventNotificationPanel,
     };
 
-    console.log('✓ Dashboard UI loaded (with Risk Dashboard)');
+    console.log('✓ Dashboard UI loaded (with Risk Dashboard & Rival Events)');
 
 })();

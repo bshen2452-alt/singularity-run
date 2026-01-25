@@ -892,37 +892,7 @@ function ActionMenu({ gameState, derived, onAction, onEndTurn, usedActions }) {
     );
 }
 
-// 競爭對手面板
-function RivalsPanel({ rivals, playerInvestments, onInvest }) {
-    const [investAmounts, setInvestAmounts] = useState({});
-    return (
-        <Panel title="市場投資" icon="🏢" color="var(--accent-orange)" collapsible defaultCollapsed>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {rivals.map(rival => {
-                    const invested = playerInvestments[rival.name] || 0;
-                    const mpPercent = Math.min(100, (rival.mp / 1005) * 100);
-                    return (
-                        <div key={rival.name} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: '6px', fontSize: '0.85rem' }}>
-                            <span style={{ width: '24px' }}>{rival.icon}</span>
-                            <span style={{ width: '120px', fontWeight: 600, color: 'var(--text-primary)' }}>{rival.name}</span>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '100px', height: '6px', background: 'var(--bg-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${mpPercent}%`, height: '100%', background: 'var(--accent-magenta)', borderRadius: '3px' }} />
-                                </div>
-                                <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-magenta)', minWidth: '50px' }}>MP {rival.mp.toFixed(0)}</span>
-                            </div>
-                            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-yellow)', minWidth: '80px' }}>已投 ${invested.toFixed(0)}M</span>
-                            <input type="number" value={investAmounts[rival.name] || 50} onChange={(e) => setInvestAmounts({...investAmounts, [rival.name]: parseInt(e.target.value) || 0})} 
-                                style={{ width: '60px', padding: '4px 8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }} />
-                            <GlowButton variant="success" size="small" onClick={() => onInvest(rival.name, investAmounts[rival.name] || 50)}>+</GlowButton>
-                            <GlowButton variant="danger" size="small" onClick={() => onInvest(rival.name, -(investAmounts[rival.name] || 50))} disabled={invested < (investAmounts[rival.name] || 50)}>-</GlowButton>
-                        </div>
-                    );
-                })}
-            </div>
-        </Panel>
-    );
-}
+
 // Doom量表組件
 function DoomGauge({ name, value, consecutive, player, rivals }) {
     const info = getDoomLabelInfo(name);
@@ -1240,21 +1210,6 @@ function App() {
                     ) : (
                         <GameDashboard gameState={gameState} derived={derived} onAction={handleAction} />
                     )}
-                <div style={{ padding: '0 16px' }}>
-                    {window.RivalsUI ? React.createElement(window.RivalsUI.RivalsPanelEnhanced, {
-                        rivals: rivals,
-                        player: player,
-                        globalParams: globalParams,
-                        onInvestRival: handleInvestRival,
-                        onBuyETF: (etfId, amount) => handleAction('buyETF', { etfId, amount }),
-                        onSellETF: (etfId, shares) => handleAction('sellETF', { etfId, shares }),
-                        disabled: false
-                    }) : React.createElement(RivalsPanel, {
-                        rivals: rivals,
-                        playerInvestments: player.rival_investments || {},
-                        onInvest: handleInvestRival
-                    })}
-                                    </div>
                 <div style={{ padding: '16px' }}>
                     <Panel title="事件日誌" icon="📆" color="var(--accent-cyan)" collapsible>
                         <MessageLog messages={messages} />
