@@ -8,24 +8,52 @@
     'use strict';
     
     // ==========================================
-    // 設施技術配置（整合自 facility_upgrade）
+    // 獲取設施技術配置（從 facility_upgrade 系統）
     // ==========================================
     
-    var FACILITY_TECH_PATHS = {
-        cooling: { id: 'cooling', category: 'space', name: '冷卻系統', icon: '❄️', maxLevel: 3 },
-        modular: { id: 'modular', category: 'space', name: '模組化建造', icon: '🧱', maxLevel: 3 },
-        automation: { id: 'automation', category: 'space', name: '自動化運維', icon: '🤖', maxLevel: 3 },
-        storage: { id: 'storage', category: 'power', name: '儲能系統', icon: '🔋', maxLevel: 3 },
-        distribution: { id: 'distribution', category: 'power', name: '配電系統', icon: '🔌', maxLevel: 3 },
-        architecture: { id: 'architecture', category: 'compute', name: '運算架構', icon: '🔧', maxLevel: 3 }
-    };
+    /**
+     * 獲取技術路徑配置（從 facility_upgrade_products_config）
+     */
+    function getTechPathConfig(pathId) {
+        var upgradeConfig = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
+        if (!upgradeConfig) return null;
+        
+        // 從產品配置中推導技術路徑資訊
+        var allProducts = Object.assign({},
+            upgradeConfig.SPACE_UPGRADE_PRODUCTS || {},
+            upgradeConfig.POWER_UPGRADE_PRODUCTS || {},
+            upgradeConfig.COMPUTE_UPGRADE_PRODUCTS || {}
+        );
+        
+        // 找到該路徑的第一個產品以獲取基本資訊
+        for (var productId in allProducts) {
+            var product = allProducts[productId];
+            if (product.upgrade_path && product.upgrade_path.path === pathId) {
+                return {
+                    id: pathId,
+                    category: product.upgrade_path.type,
+                    name: product.name.replace(/Lv\.\d+.*$/, '').trim(),
+                    icon: product.icon,
+                    maxLevel: 3  // 預設最高等級
+                };
+            }
+        }
+        return null;
+    }
     
-    var FACILITY_TECH_COMPATIBILITY = {
-        edge_node: ['cooling', 'architecture'],
-        standard_campus: ['cooling', 'modular', 'automation', 'storage', 'distribution', 'architecture'],
-        hyperscale_cluster: ['cooling', 'modular', 'automation', 'storage', 'distribution', 'architecture'],
-        colocation: []
-    };
+    /**
+     * 獲取設施類型支援的技術路徑
+     */
+    function getFacilityTechCompatibility(facilityType) {
+        // 根據設施類型返回支援的技術路徑
+        var compatibility = {
+            edge_node: ['cooling', 'architecture'],
+            standard_campus: ['cooling', 'modular', 'automation', 'storage', 'distribution', 'architecture'],
+            hyperscale_cluster: ['cooling', 'modular', 'automation', 'storage', 'distribution', 'architecture'],
+            colocation: []
+        };
+        return compatibility[facilityType] || [];
+    }
     
     // ==========================================
     // 設施技術狀態管理
@@ -35,7 +63,7 @@
      * 為設施創建初始技術狀態
      */
     function createFacilityTechState(facilityType) {
-        var availablePaths = FACILITY_TECH_COMPATIBILITY[facilityType] || [];
+        var availablePaths = getFacilityTechCompatibility(facilityType);
         if (availablePaths.length === 0) return null;
         
         var levels = {};
@@ -55,31 +83,55 @@
      * 確保設施有技術狀態（遷移舊存檔）
      */
     function ensureFacilityTechState(facility) {
-        if (!facility.tech_levels && FACILITY_TECH_COMPATIBILITY[facility.type]) {
+        var availablePaths = getFacilityTechCompatibility(facility.type);
+        if (!facility.tech_levels && availablePaths.length > 0) {
             facility.tech_levels = createFacilityTechState(facility.type);
         }
         return facility;
     }
     
     /**
-     * 研發完成時同步到設施
+     * 從 facility_upgrade_state 同步已完成研發到設施的 available 狀態
+     * 注意：僅更新 available，不更新 current（由施工完成時更新）
      */
-    function syncResearchToFacility(facility, productId) {
+    function syncResearchToFacility(facility, playerState) {
         if (!facility.tech_levels) return facility;
+        if (!playerState.facility_upgrade_state) return facility;
         
-        var match = productId.match(/^(\w+)_lv(\d+)$/);
-        if (!match) return facility;
+        var upgradeConfig = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
+        if (!upgradeConfig) return facility;
         
-        var pathId = match[1];
-        var level = parseInt(match[2], 10);
+        var STATUS = upgradeConfig.UPGRADE_STATUS || {};
+        var upgradeProducts = playerState.facility_upgrade_state.upgrade_products || {};
         
-        var pathData = facility.tech_levels.levels[pathId];
-        if (!pathData) return facility;
-        
-        if (level > pathData.available) {
-            pathData.available = level;
-            if (pathData.current < level && pathData.status !== 'constructing') {
-                pathData.status = 'available';
+        // 遍歷所有已完成研發的產品
+        for (var productId in upgradeProducts) {
+            var productState = upgradeProducts[productId];
+            
+            // 只處理研發已完成的產品（包括 research_completed, COMPLETED, OPERATING）
+            if (productState.status !== 'research_completed' &&
+                productState.status !== STATUS.COMPLETED && 
+                productState.status !== STATUS.OPERATING) {
+                continue;
+            }
+            
+            // 解析產品 ID 獲取技術路徑和等級
+            var match = productId.match(/^(\w+)_lv(\d+)$/);
+            if (!match) continue;
+            
+            var pathId = match[1];
+            var level = parseInt(match[2], 10);
+            
+            var pathData = facility.tech_levels.levels[pathId];
+            if (!pathData) continue;
+            
+            // 更新 available（可施工等級），但不更新 current（實際應用等級）
+            if (level > pathData.available) {
+                pathData.available = level;
+                // 只在沒有施工中且 current 低於 available 時標記為 available
+                if (pathData.current < level && pathData.status !== 'constructing') {
+                    pathData.status = 'available';
+                }
             }
         }
         
@@ -181,11 +233,13 @@
             }
         }
         
-        var pathConfig = FACILITY_TECH_PATHS[pathId] || {};
+        var pathConfig = getTechPathConfig(pathId);
+        var pathName = pathConfig ? pathConfig.name : pathId;
+        
         return {
             success: true,
             newState: newState,
-            message: '🔧 開始施工：' + (pathConfig.name || pathId) + ' Lv.' + check.targetLevel
+            message: '🔧 開始施工：' + pathName + ' Lv.' + check.targetLevel
         };
     }
     
@@ -232,13 +286,13 @@
         
         Object.keys(facility.tech_levels.levels).forEach(function(pathId) {
             var pathData = facility.tech_levels.levels[pathId];
-            var pathConfig = FACILITY_TECH_PATHS[pathId] || {};
+            var pathConfig = getTechPathConfig(pathId) || { name: pathId, icon: '🔧' };
             var check = canStartTechConstruction(playerState, facilityId, pathId);
             
             summary.paths.push({
                 id: pathId,
-                name: pathConfig.name || pathId,
-                icon: pathConfig.icon || '🔧',
+                name: pathConfig.name,
+                icon: pathConfig.icon,
                 category: pathConfig.category || 'other',
                 currentLevel: pathData.current,
                 availableLevel: pathData.available,
@@ -288,15 +342,17 @@
                 facility.tech_levels.levels[project.pathId].construction_remaining = project.remaining;
                 
                 if (project.remaining <= 0) {
-                    // 施工完成
+                    // 施工完成：更新 current 等級
                     facility.tech_levels.levels[project.pathId].current = project.targetLevel;
                     facility.tech_levels.levels[project.pathId].status = 'completed';
                     facility.tech_levels.levels[project.pathId].construction_remaining = 0;
                     
-                    var pathConfig = FACILITY_TECH_PATHS[project.pathId] || {};
+                    var pathConfig = getTechPathConfig(project.pathId);
+                    var pathName = pathConfig ? pathConfig.name : project.pathId;
+                    
                     messages.push({
                         text: '✓ ' + facility.name + ' 完成技術升級：' + 
-                              (pathConfig.name || project.pathId) + ' Lv.' + project.targetLevel,
+                              pathName + ' Lv.' + project.targetLevel,
                         type: 'success'
                     });
                 } else {
@@ -449,7 +505,8 @@
     }
     
     /**
-     * 同步已完成研發到所有設施
+     * 同步已完成研發到所有設施的 available 狀態
+     * 注意：僅更新 available，不更新 current（由施工完成時更新）
      */
     function syncCompletedResearchToFacilities(playerState) {
         var upgradeConfig = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
@@ -462,23 +519,15 @@
         if (!spaceState || !spaceState.facilities) return playerState;
         
         var newState = JSON.parse(JSON.stringify(playerState));
-        var STATUS = upgradeConfig.UPGRADE_STATUS || {};
         
         // 確保所有設施有技術狀態
         newState.space_state.facilities = newState.space_state.facilities.map(function(f) {
             return ensureFacilityTechState(f);
         });
         
-        // 同步已完成的研發
-        Object.keys(facilityState.upgrade_products).forEach(function(productId) {
-            var productState = facilityState.upgrade_products[productId];
-            if (productState.status === STATUS.COMPLETED || 
-                productState.status === STATUS.OPERATING ||
-                productState.status === 'research_completed') {
-                newState.space_state.facilities = newState.space_state.facilities.map(function(f) {
-                    return syncResearchToFacility(f, productId);
-                });
-            }
+        // 同步已完成的研發到所有設施
+        newState.space_state.facilities = newState.space_state.facilities.map(function(f) {
+            return syncResearchToFacility(f, newState);
         });
         
         return newState;
@@ -503,9 +552,9 @@
         getFacilityTechSummary: getFacilityTechSummary,
         syncCompletedResearchToFacilities: syncCompletedResearchToFacilities,
         
-        // 配置
-        FACILITY_TECH_PATHS: FACILITY_TECH_PATHS,
-        FACILITY_TECH_COMPATIBILITY: FACILITY_TECH_COMPATIBILITY
+        // 配置獲取函數
+        getTechPathConfig: getTechPathConfig,
+        getFacilityTechCompatibility: getFacilityTechCompatibility
     };
     
     // 整合到 SpaceEngine
@@ -520,8 +569,8 @@
         window.SpaceEngine.canStartFacilityTechConstruction = canStartTechConstruction;
         window.SpaceEngine.getFacilityTechSummary = getFacilityTechSummary;
         window.SpaceEngine.calculateTechConstructionPenalty = calculateTechConstructionPenalty;
-        window.SpaceEngine.FACILITY_TECH_PATHS = FACILITY_TECH_PATHS;
-        window.SpaceEngine.FACILITY_TECH_COMPATIBILITY = FACILITY_TECH_COMPATIBILITY;
+        window.SpaceEngine.getTechPathConfig = getTechPathConfig;
+        window.SpaceEngine.getFacilityTechCompatibility = getFacilityTechCompatibility;
     }
     
     console.log('✓ Space Construction Patch 已載入（含設施技術施工）');
