@@ -837,7 +837,7 @@ const EquityUI = {
                                     cursor: 'pointer',
                                     fontSize: '0.85rem'
                                 },
-                                onClick: () => setInvestor(key)
+                                onClick: () => onInvestorChange(key)
                             }, inv.name)
                         )
                     )
