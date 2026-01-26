@@ -399,29 +399,6 @@ function StrategyActions({ gameState, derived, onAction, usedActions = {} }) {
 
     return (
         <div style={{ display: 'grid', gap: '12px' }}>
-            {/* 核心戰略區塊 */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>核心戰略 (每季限選一項)</h4>
-                {coreActionUsed && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', padding: '4px 8px', background: 'var(--accent-green)22', borderRadius: '4px' }}>✓ 本季已執行</span>}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                <div style={{ padding: '12px', background: usedActions.research ? 'var(--accent-cyan)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.research ? 'var(--accent-cyan)' : 'var(--accent-cyan)33'}` }}>
-                    <GlowButton variant="primary" onClick={() => onAction('research')} icon="🔬" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>全力研發</GlowButton>
-                    <div style={{ fontSize: '0.75rem', color: derived.active_pflops <= 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>{derived.active_pflops <= 0 ? '⚠️ 算力不足' : 'MP ↑↑ | 熵值 ↑↑'}
-                </div>
-                </div>
-                <div style={{ padding: '12px', background: usedActions.alignment ? 'var(--accent-green)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.alignment ? 'var(--accent-green)' : 'var(--accent-green)33'}` }}>
-                    <GlowButton variant="success" onClick={() => onAction('alignment')} icon="🛡️" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>安全對齊</GlowButton>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>對齊度 ↑ | 熵值 ↓↓</div>
-                </div>
-                <div style={{ padding: '12px', background: usedActions.marketing ? 'var(--accent-yellow)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.marketing ? 'var(--accent-yellow)' : 'var(--accent-yellow)33'}` }}>
-                    <GlowButton variant="warning" onClick={() => onAction('marketing')} icon="📣" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>市場營銷</GlowButton>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hype ↑↑ | Trust ↑</div>
-                </div>
-            </div>
-
-
-            
             {/* 里程碑發布準備完成 */}
             {launchableMilestones.length > 0 && (
                 <div style={{ marginTop: '16px', padding: '16px', background: 'var(--accent-magenta)11', borderRadius: '8px', border: '1px solid var(--accent-magenta)33' }}>
@@ -474,6 +451,27 @@ function StrategyActions({ gameState, derived, onAction, usedActions = {} }) {
                     </div>
                 </div>
             )}
+
+            {/* 核心戰略區塊 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h4 style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>核心戰略 (每季限選一項)</h4>
+                {coreActionUsed && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', padding: '4px 8px', background: 'var(--accent-green)22', borderRadius: '4px' }}>✓ 本季已執行</span>}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                <div style={{ padding: '12px', background: usedActions.research ? 'var(--accent-cyan)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.research ? 'var(--accent-cyan)' : 'var(--accent-cyan)33'}` }}>
+                    <GlowButton variant="primary" onClick={() => onAction('research')} icon="🔬" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>全力研發</GlowButton>
+                    <div style={{ fontSize: '0.75rem', color: derived.active_pflops <= 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>{derived.active_pflops <= 0 ? '⚠️ 算力不足' : 'MP ↑↑ | 熵值 ↑↑'}
+                </div>
+                </div>
+                <div style={{ padding: '12px', background: usedActions.alignment ? 'var(--accent-green)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.alignment ? 'var(--accent-green)' : 'var(--accent-green)33'}` }}>
+                    <GlowButton variant="success" onClick={() => onAction('alignment')} icon="🛡️" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>安全對齊</GlowButton>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>對齊度 ↑ | 熵值 ↓↓</div>
+                </div>
+                <div style={{ padding: '12px', background: usedActions.marketing ? 'var(--accent-yellow)22' : 'var(--bg-tertiary)', borderRadius: '8px', border: `1px solid ${usedActions.marketing ? 'var(--accent-yellow)' : 'var(--accent-yellow)33'}` }}>
+                    <GlowButton variant="warning" onClick={() => onAction('marketing')} icon="📣" disabled={coreActionUsed} style={{ width: '100%', marginBottom: '8px' }}>市場營銷</GlowButton>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hype ↑↑ | Trust ↑</div>
+                </div>
+            </div>
 
             {/* 路線專屬技能欄位 - 獨立冷卻 */}
             {window.RouteSkillPanel && (
