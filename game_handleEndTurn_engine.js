@@ -739,6 +739,11 @@ function handleEndTurn(player, rivals, globalParams) {
         // ============================================
         processData.globalEvent = globalEvent;
         processData.randomEvent = currentEvent;
+
+        // 🔍 调试：检查 ending 对象
+        if (ending) {
+            console.log('📦 Ending object before return:', { victory: ending.victory, type: ending.type });
+        }
         
         return {
             success: true,

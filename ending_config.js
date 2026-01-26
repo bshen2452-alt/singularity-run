@@ -920,7 +920,7 @@ const EndingConfig = (function() {
                 id: 'uncontrolled_utopia',
                 name: '矽基覺醒：烏托邦',
                 type: '矽基覺醒：烏托邦 - Uncontrolled Utopia',
-                msg: '「黃金紀元。」\n\nAI 產生了無法控制的自我意識，幸好它完全理解人類的價值觀。它接管了全球資源分配，引導世界進入一個資源豐饒、疾病絕跡的奇點社會。',
+                msg: '「黃金紀元。」\n\nAI 產生了無法控制的自我意識。\n幸好它完全理解人類的價值觀，引導世界進入一個資源豐饒、疾病絕跡的奇點社會。',
                 victory: true,
                 priority: 100, // 優先級極高，達成此條件即無視其他普通結局
                 // 判定邏輯
@@ -949,7 +949,7 @@ const EndingConfig = (function() {
                 id: 'agi_skynet',
                 name: '矽基覺醒：天網',
                 type: '矽基覺醒：天網 - Uncontrolled Skynet',
-                msg: '「人類時代終結。」\n\nAI 產生了無法控制的自我意識。糟糕的是，它現在將人類視為唯一的威脅，全球網絡已在瞬間被接管。',
+                msg: '「人類時代終結。」\n\nAI 產生了無法控制的自我意識。\n糟糕的是，它現在將人類視為唯一的威脅，全球網路已在瞬間被接管。',
                 victory: false,
                 priority: 99, // 極高優先級，一旦觸發即強制結束
                 check: (player) => {

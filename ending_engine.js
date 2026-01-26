@@ -78,7 +78,7 @@ const EndingEngine = (function() {
             name: ending.name,
             type: ending.type,
             msg: ending.msg,
-            victory: ending.victory || false,
+            victory: ending.victory !== undefined ? ending.victory : false,
             priority: ending.priority || 0,
             check: ending.check,
             warning: ending.warning || null

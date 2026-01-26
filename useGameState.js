@@ -809,6 +809,7 @@ function useGameState() {
         
         // 處理結局
         if (result.ending) {
+            console.log('🎮 useGameState receiving ending:', { victory: result.ending.victory, type: result.ending.type });
             setEnding(result.ending);
             setGamePhase('ended');
         }
