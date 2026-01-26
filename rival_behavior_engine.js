@@ -203,6 +203,8 @@
             if (!MODEL_TIERS) return null;
             
             const milestoneBehavior = routeStyle.milestone_behavior;
+            if (!milestoneBehavior) return null;
+            
             const currentTier = rival.mp_tier || 0;
             const nextTier = currentTier + 1;
             
@@ -213,15 +215,15 @@
             const distanceToThreshold = nextThreshold - currentMP;
             
             // 優先級1：檢查上回合里程碑結果
-            // 如果上回合里程碑失敗，執行內部重組
+            // 如果上回合里程碑失敗，執行配置的失敗後行為
             if (rival.just_failed_milestone) {
                 return {
-                    behaviorId: 'internal_restructure',
+                    behaviorId: milestoneBehavior.after_failure,
                     reason: 'post_milestone_failure'
                 };
             }
             
-            // 如果上回合里程碑成功，執行成功後行為
+            // 如果上回合里程碑成功，執行配置的成功後行為
             if (rival.just_achieved_milestone) {
                 return {
                     behaviorId: milestoneBehavior.after_success,
@@ -233,7 +235,7 @@
             // 當 MP 已達到或接近門檻時（距離 <= 5 或 MP >= threshold）
             if (currentMP >= nextThreshold || (distanceToThreshold > 0 && distanceToThreshold <= 5)) {
                 return {
-                    behaviorId: 'milestone_sprint',
+                    behaviorId: milestoneBehavior.near_threshold,
                     reason: 'near_milestone_threshold',
                     distance: distanceToThreshold,
                     atThreshold: currentMP >= nextThreshold

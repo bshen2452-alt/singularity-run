@@ -204,9 +204,12 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
                     milestoneType: 'success'
                 };
             } else if (milestoneEvent.type === 'failure') {
+                // 根據當前行為決定顯示（不同路線有不同的失敗後行為）
+                const afterBehavior = behavior ? window.RivalBehaviorConfig?.getBehavior?.(behavior.id) : null;
+                const afterBehaviorName = afterBehavior ? afterBehavior.name : '調整中';
                 return {
                     icon: '❌',
-                    name: `發布失敗 → 內部重組`,
+                    name: `發布失敗 → ${afterBehaviorName}`,
                     color: 'var(--accent-red)',
                     bg: 'rgba(255, 51, 102, 0.15)',
                     isMilestone: true,
@@ -239,9 +242,9 @@ function RivalStockCard({ rivalStock, onInvest, playerCash, disabled }) {
         
         const style = getColorByBehavior(behavior.id);
         
-        // 特殊處理：里程碑衝刺顯示目標
+        // 特殊處理：接近里程碑時顯示目標
         let displayName = behaviorConfig.name;
-        if (behavior.id === 'milestone_sprint' && behavior.reason === 'near_milestone_threshold') {
+        if (behavior.reason === 'near_milestone_threshold') {
             const MODEL_TIERS = window.GameConfig?.COSTS?.MODEL_TIERS;
             const nextTier = (rivalStock.mp_tier || 0) + 1;
             const tierName = MODEL_TIERS?.[nextTier]?.name?.split(':')[0] || ('Tier ' + nextTier);
