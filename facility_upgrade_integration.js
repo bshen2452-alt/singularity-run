@@ -2,10 +2,10 @@
 // 設施升級系統整合補丁 (facility_upgrade_integration.js)
 // ============================================
 // 功能：
-//   1. 整合 FacilityUpgradeEngine 到遊戲主循環
-//   2. 將施工影響套用到空間/電力/算力計算
-//   3. 連接 asset_card_engine 與新升級系統
-//   4. 整合 renewable 到 energy_products
+//   1. 整合 FacilityUpgradeEngine 到遊戲主循環（僅研發部分）
+//   2. 連接 asset_card_engine 與新升級系統
+//   3. 整合 renewable 到 energy_products
+//   4. 施工相關邏輯由 space_construction 負責
 // ============================================
 
 (function() {
@@ -24,12 +24,10 @@
             }
             
             this.extendAssetCardEngine();
-            this.extendSpaceEngine();
-            this.extendComputeEngine();
             this.extendProcessTurnUpdates();
             this.integrateRenewableToEnergyProducts();
             
-            console.log('✓ Facility Upgrade Integration initialized');
+            console.log('✓ Facility Upgrade Integration initialized (Research Only)');
             return true;
         },
         
@@ -56,7 +54,7 @@
                 if (config && config.getUpgradeProduct(productId)) {
                     const result = FacilityUpgradeEngine.canUnlockUpgrade(player, productId);
                     
-                    // 檢查是否已在研發/施工中
+                    // 檢查是否已在研發中或已完成研發
                     const facilityState = player.facility_upgrade_state;
                     const productState = facilityState?.upgrade_products?.[productId];
                     if (productState) {
@@ -73,11 +71,11 @@
                                 productId
                             };
                         }
-                        if (status === 'constructing') {
+                        if (status === 'research_completed') {
                             return { 
                                 canUpgrade: false, 
-                                reason: '施工中', 
-                                inProgress: true, 
+                                reason: '研發完成，請前往設施進行施工', 
+                                researchCompleted: true, 
                                 status, 
                                 cost: result.cost,
                                 productState,
@@ -85,10 +83,10 @@
                                 productId
                             };
                         }
-                        if (status === 'operating' || status === 'completed') {
+                        if (status === 'applied') {
                             return { 
                                 canUpgrade: false, 
-                                reason: '已完成', 
+                                reason: '已應用', 
                                 completed: true, 
                                 status, 
                                 cost: result.cost,
@@ -110,7 +108,7 @@
                 return originalCanUpgrade.call(this, player, assetType, pathId);
             };
             
-            // 替換 performUpgrade：重定向到新系統
+            // 替換 performUpgrade：重定向到新系統（開始研發）
             AssetCardEngine.performUpgrade = function(player, assetType, pathId) {
                 const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
                 const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
@@ -134,78 +132,10 @@
                 }
                 return this.getUpgradeSummary(player, assetType);
             };
-            
-            AssetCardEngine.getConstructionImpact = function(player) {
-                const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
-                if (FacilityUpgradeEngine) {
-                    return FacilityUpgradeEngine.calculateConstructionImpact(player);
-                }
-                return { capacity_loss_percent: 0, power_loss_percent: 0, compute_loss_percent: 0, descriptions: [] };
-            };
         },
         
         // ==========================================
-        // 擴展 SpaceEngine（應用容量損失）
-        // ==========================================
-        
-        extendSpaceEngine() {
-            const SpaceEngine = window.SpaceEngine;
-            if (!SpaceEngine) return;
-            
-            const originalGetTotalCapacity = SpaceEngine.getTotalCapacity;
-            
-            if (originalGetTotalCapacity) {
-                SpaceEngine.getTotalCapacity = function(player) {
-                    let capacity = originalGetTotalCapacity.call(this, player);
-                    
-                    const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
-                    if (FacilityUpgradeEngine) {
-                        const impact = FacilityUpgradeEngine.calculateConstructionImpact(player);
-                        if (impact.capacity_loss_percent > 0) {
-                            capacity = FacilityUpgradeEngine.applyConstructionPenalty(
-                                capacity, 
-                                impact.capacity_loss_percent
-                            );
-                        }
-                    }
-                    
-                    return capacity;
-                };
-            }
-        },
-        
-        // ==========================================
-        // 擴展 ComputeEngine（應用算力損失）
-        // ==========================================
-        
-        extendComputeEngine() {
-            const ComputeEngine = window.ComputeEngine;
-            if (!ComputeEngine) return;
-            
-            const originalGetTotalPflops = ComputeEngine.getTotalPflops;
-            
-            if (originalGetTotalPflops) {
-                ComputeEngine.getTotalPflops = function(player) {
-                    let pflops = originalGetTotalPflops.call(this, player);
-                    
-                    const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
-                    if (FacilityUpgradeEngine) {
-                        const impact = FacilityUpgradeEngine.calculateConstructionImpact(player);
-                        if (impact.compute_loss_percent > 0) {
-                            pflops = FacilityUpgradeEngine.applyConstructionPenalty(
-                                pflops, 
-                                impact.compute_loss_percent
-                            );
-                        }
-                    }
-                    
-                    return pflops;
-                };
-            }
-        },
-        
-        // ==========================================
-        // 擴展 processTurnUpdates（每回合處理進度）
+        // 擴展 processTurnUpdates（僅研發進度）
         // ==========================================
         
         extendProcessTurnUpdates() {
@@ -214,9 +144,8 @@
             }
             
             window._facilityUpgradeHooks.push({
-                name: 'processFacilityUpgrades',
-                priority: 50,
-                execute: function(player) {
+                name: 'facility_upgrade_research',
+                execute(player) {
                     const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
                     if (!FacilityUpgradeEngine) return player;
                     
@@ -228,7 +157,7 @@
                     
                     const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
                     for (const [productId, state] of Object.entries(facilityState.upgrade_products || {})) {
-                        if (state.status === config.UPGRADE_STATUS.RESEARCHING) {
+                        if (state.status === 'researching') {
                             const result = FacilityUpgradeEngine.processResearchProgress(
                                 newPlayer, 
                                 productId,
@@ -238,18 +167,10 @@
                             
                             if (result.success) {
                                 newPlayer = result.newState;
-                                if (result.construction_started) {
+                                if (result.research_completed) {
                                     messages.push(result.message);
                                 }
                             }
-                        }
-                    }
-                    
-                    const constructionResult = FacilityUpgradeEngine.processConstructionProgress(newPlayer);
-                    if (constructionResult.success) {
-                        newPlayer = constructionResult.newState;
-                        for (const change of constructionResult.changes) {
-                            messages.push(change.message);
                         }
                     }
                     
@@ -344,29 +265,6 @@
                 message: `已分配 ${seniorCount} Senior, ${turingCount} Turing 到研發項目`,
                 actionType: 'ASSIGN_RESEARCH_TALENT'
             };
-        },
-        
-        handleContinueConstruction(gameState, productId) {
-            const FacilityUpgradeEngine = window.FacilityUpgradeEngine;
-            if (!FacilityUpgradeEngine) {
-                return { success: false, message: '系統未初始化' };
-            }
-            
-            const result = FacilityUpgradeEngine.startConstruction(gameState.player, productId);
-            
-            if (result.success) {
-                return {
-                    success: true,
-                    newState: {
-                        ...gameState,
-                        player: result.newState
-                    },
-                    message: result.message,
-                    actionType: 'START_FACILITY_CONSTRUCTION'
-                };
-            }
-            
-            return result;
         }
     };
     
@@ -390,12 +288,6 @@
                         action.payload.productId,
                         action.payload.seniorCount,
                         action.payload.turingCount
-                    );
-                    
-                case 'START_FACILITY_CONSTRUCTION':
-                    return FacilityUpgradeIntegration.handleContinueConstruction(
-                        gameState,
-                        action.payload.productId
                     );
                     
                 default:
@@ -440,6 +332,6 @@
         });
     }
     
-    console.log('✓ Facility Upgrade Integration loaded');
+    console.log('✓ Facility Upgrade Integration loaded (Research Only)');
     
 })();

@@ -3,9 +3,9 @@
 // ============================================
 // 設計原則：
 //   1. 純函數式設計，僅接收數據/返回結果
-//   2. 處理研發期、施工期、完成邏輯
-//   3. 計算施工期間的產能損失
-//   4. 與產品系統整合接口
+//   2. 只處理研發期（LOCKED → RESEARCHING → RESEARCH_COMPLETED）
+//   3. 研發完成後標記為 'research_completed'，不直接修改設施狀態
+//   4. 施工由 space_construction 系統負責
 // ============================================
 
 (function() {
@@ -20,13 +20,7 @@
         createInitialState() {
             return {
                 // 升級產品狀態
-                upgrade_products: {},  // { productId: { status, research_progress, construction_progress, ... } }
-                
-                // 施工中的項目（影響產能）
-                active_constructions: [],  // [{ productId, type, remaining_turns, impact }]
-                
-                // 已完成的升級（效果生效中）
-                completed_upgrades: {},  // { type: { path: level } }
+                upgrade_products: {},  // { productId: { status, research_progress, ... } }
                 
                 // 解鎖的部門
                 unlocked_departments: []
@@ -53,7 +47,7 @@
             
             // 組裝成本資訊（供UI顯示）
             const cost = {
-                cash: dev.base_cost || 0,
+                research_cost: dev.base_cost || 0,
                 construction_cost: dev.construction_cost || 0,
                 total: (dev.base_cost || 0) + (dev.construction_cost || 0),
                 research_turns: dev.research_turns || 0,
@@ -69,8 +63,8 @@
             if (reqs.previous_upgrade) {
                 const facilityState = player.facility_upgrade_state || this.createInitialState();
                 const prevStatus = facilityState.upgrade_products[reqs.previous_upgrade];
-                if (!prevStatus || prevStatus.status !== config.UPGRADE_STATUS.COMPLETED && 
-                    prevStatus.status !== config.UPGRADE_STATUS.OPERATING) {
+                if (!prevStatus || (prevStatus.status !== 'research_completed' && 
+                    prevStatus.status !== 'applied')) {
                     return { canUnlock: false, reason: `需要先完成 ${reqs.previous_upgrade}`, cost };
                 }
             }
@@ -107,17 +101,14 @@
             const currentStatus = facilityState.upgrade_products[productId];
             if (currentStatus) {
                 const status = currentStatus.status;
-                if (status === config.UPGRADE_STATUS.RESEARCHING) {
+                if (status === 'researching') {
                     return { success: false, message: '該項目研發中' };
                 }
-                if (status === config.UPGRADE_STATUS.CONSTRUCTING) {
-                    return { success: false, message: '該項目施工中' };
-                }
-                if (status === config.UPGRADE_STATUS.COMPLETED || status === config.UPGRADE_STATUS.OPERATING) {
-                    return { success: false, message: '該項目已完成，請研發下一階段' };
-                }
                 if (status === 'research_completed') {
-                    return { success: false, message: '研發已完成，等待施工資金' };
+                    return { success: false, message: '研發已完成，請前往設施進行施工' };
+                }
+                if (status === 'applied') {
+                    return { success: false, message: '該項目已完成，請研發下一階段' };
                 }
             }
             
@@ -143,11 +134,9 @@
             
             // 設置研發狀態
             newPlayer.facility_upgrade_state.upgrade_products[productId] = {
-                status: config.UPGRADE_STATUS.RESEARCHING,
+                status: 'researching',
                 research_progress: 0,
                 research_total: dev.research_turns,
-                construction_progress: 0,
-                construction_total: dev.construction_turns,
                 started_turn: player.turn_count || 0,
                 progress_start_turn: (player.turn_count || 0) + 1,  // 下回合開始計算進度
                 assigned_senior: 0,
@@ -179,293 +168,76 @@
             const productState = facilityState.upgrade_products[productId];
             if (!productState) return { success: false, message: '項目不存在' };
             
-            if (productState.status !== config.UPGRADE_STATUS.RESEARCHING) {
+            if (productState.status !== 'researching') {
                 return { success: false, message: '項目非研發中狀態' };
             }
             
             // 檢查是否已到達進度開始回合（下回合才開始計算）
             const currentTurn = player.turn_count || 0;
             const progressStartTurn = productState.progress_start_turn || (productState.started_turn + 1);
+            
             if (currentTurn < progressStartTurn) {
-                // 還未到開始計算進度的回合，不更新進度
-                return {
-                    success: true,
-                    newState: player,
-                    message: "研發將於下回合開始計算進度",
-                    progress: 0,
-                    waitingToStart: true
+                return { 
+                    success: true, 
+                    newState: player, 
+                    message: '研發準備中（下回合開始進度）' 
                 };
             }
+            
             const product = config.getUpgradeProduct(productId);
+            if (!product) return { success: false, message: '產品配置不存在' };
+            
             const dev = product.development;
             
-            // 計算加速
-            let speedBoost = 1.0;
-            if (assignedTuring > 0 && dev.turing_boost) {
-                speedBoost += dev.turing_boost * assignedTuring;
+            // 計算本回合加速
+            let baseProgress = 1;
+            let boost = 0;
+            
+            if (assignedSenior > 0) {
+                boost += assignedSenior * (dev.senior_boost || 0);
             }
-            if (assignedSenior > 0 && dev.senior_boost) {
-                speedBoost += dev.senior_boost * Math.min(assignedSenior, 3);  // 最多3人加速
+            if (assignedTuring > 0) {
+                boost += assignedTuring * (dev.turing_boost || 0);
             }
             
+            const progress = baseProgress + boost;
+            
+            // 更新狀態
             const newPlayer = JSON.parse(JSON.stringify(player));
             const newProductState = newPlayer.facility_upgrade_state.upgrade_products[productId];
-            
-            // 更新進度
-            newProductState.research_progress += speedBoost;
+            newProductState.research_progress += progress;
             newProductState.assigned_senior = assignedSenior;
             newProductState.assigned_turing = assignedTuring;
             
-            // 檢查是否研發完成
+            // 檢查是否完成研發
             if (newProductState.research_progress >= newProductState.research_total) {
-                // 進入施工階段
-                return this.startConstruction(newPlayer, productId);
-            }
-            
-            return {
-                success: true,
-                newState: newPlayer,
-                message: `研發進度：${Math.floor(newProductState.research_progress)}/${newProductState.research_total}`,
-                progress: newProductState.research_progress / newProductState.research_total
-            };
-        },
-        
-        // ==========================================
-        // 開始施工
-        // ==========================================
-        
-        /**
-         * 開始施工階段
-         */
-        startConstruction(player, productId) {
-            const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
-            const product = config.getUpgradeProduct(productId);
-            const dev = product.development;
-            
-            // 檢查施工成本
-            if (dev.construction_cost > player.cash) {
-                // 施工成本不足，暫停於研發完成狀態
-                const newPlayer = JSON.parse(JSON.stringify(player));
-                newPlayer.facility_upgrade_state.upgrade_products[productId].status = 'research_completed';
+                newProductState.research_progress = newProductState.research_total;
+                newProductState.status = 'research_completed';  // 標記為研發完成，等待施工
+                newProductState.completed_turn = currentTurn;
+                
                 return {
                     success: true,
                     newState: newPlayer,
-                    message: `研發完成，但施工資金不足 $${dev.construction_cost}M`,
-                    awaiting_construction: true
+                    research_completed: true,
+                    message: `🔬 ${product.name} 研發完成！可前往設施進行施工升級`,
+                    product
                 };
             }
             
-            const newPlayer = JSON.parse(JSON.stringify(player));
-            newPlayer.cash -= dev.construction_cost;
-            
-            const newProductState = newPlayer.facility_upgrade_state.upgrade_products[productId];
-            newProductState.status = config.UPGRADE_STATUS.CONSTRUCTING;
-            newProductState.construction_progress = 0;
-            
-            // 添加到施工中列表
-            newPlayer.facility_upgrade_state.active_constructions.push({
-                productId,
-                type: product.upgrade_path.type,
-                remaining_turns: dev.construction_turns,
-                impact: product.construction_impact
-            });
-            
             return {
                 success: true,
                 newState: newPlayer,
-                message: `開始施工：${product.name}（${dev.construction_turns} 季），施工期間部分產能停擺`,
-                construction_started: true
+                message: `研發進度：${Math.floor(newProductState.research_progress)}/${newProductState.research_total}`
             };
         },
         
         // ==========================================
-        // 處理施工進度
+        // 獲取升級效果（供其他系統查詢已應用的升級）
         // ==========================================
         
         /**
-         * 處理施工進度（每回合調用）
-         */
-        processConstructionProgress(player) {
-            const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
-            if (!config) return { success: false, changes: [] };
-            
-            const facilityState = player.facility_upgrade_state;
-            if (!facilityState || !facilityState.active_constructions.length) {
-                return { success: true, changes: [], message: '無施工中項目' };
-            }
-            
-            const newPlayer = JSON.parse(JSON.stringify(player));
-            const changes = [];
-            const completedIds = [];
-            
-            const currentTurn = player.turn_count || 0;
-            
-            for (const construction of newPlayer.facility_upgrade_state.active_constructions) {
-                // 檢查施工是否已開始（下回合才開始計算）
-                const constructionStartTurn = construction.start_turn || 0;
-                if (currentTurn < constructionStartTurn) {
-                    // 還未到開始計算的回合，跳過此項目
-                    continue;
-                }
-                
-                construction.remaining_turns -= 1;
-                
-                // 更新產品狀態
-                const productState = newPlayer.facility_upgrade_state.upgrade_products[construction.productId];
-                if (productState) {
-                    productState.construction_progress += 1;
-                }
-                
-                if (construction.remaining_turns <= 0) {
-                    // 施工完成
-                    completedIds.push(construction.productId);
-                    const result = this.completeUpgrade(newPlayer, construction.productId);
-                    if (result.success) {
-                        Object.assign(newPlayer, result.newState);
-                        changes.push({
-                            productId: construction.productId,
-                            type: 'completed',
-                            message: result.message
-                        });
-                    }
-                }
-            }
-            
-            // 移除已完成的施工項目
-            newPlayer.facility_upgrade_state.active_constructions = 
-                newPlayer.facility_upgrade_state.active_constructions.filter(
-                    c => !completedIds.includes(c.productId)
-                );
-            
-            return {
-                success: true,
-                newState: newPlayer,
-                changes
-            };
-        },
-        
-        // ==========================================
-        // 完成升級
-        // ==========================================
-        
-        /**
-         * 完成升級，應用效果
-         */
-        completeUpgrade(player, productId) {
-            const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
-            const product = config.getUpgradeProduct(productId);
-            if (!product) return { success: false, message: '產品不存在' };
-            
-            const newPlayer = JSON.parse(JSON.stringify(player));
-            const productState = newPlayer.facility_upgrade_state.upgrade_products[productId];
-            
-            // 更新狀態
-            productState.status = config.UPGRADE_STATUS.OPERATING;
-            productState.completed_turn = player.turn_count || 0;
-            
-            // 記錄已完成的升級
-            const upgradePath = product.upgrade_path;
-            if (!newPlayer.facility_upgrade_state.completed_upgrades[upgradePath.type]) {
-                newPlayer.facility_upgrade_state.completed_upgrades[upgradePath.type] = {};
-            }
-            newPlayer.facility_upgrade_state.completed_upgrades[upgradePath.type][upgradePath.path] = upgradePath.target_level;
-            
-            // 同步到 asset_upgrades（與舊系統兼容）
-            if (!newPlayer.asset_upgrades) {
-                newPlayer.asset_upgrades = window.AssetCardEngine?.createInitialUpgradeState() || {};
-            }
-            if (!newPlayer.asset_upgrades[upgradePath.type]) {
-                newPlayer.asset_upgrades[upgradePath.type] = {};
-            }
-            newPlayer.asset_upgrades[upgradePath.type][upgradePath.path] = upgradePath.target_level;
-            
-            // 檢查是否解鎖部門
-            let departmentUnlocked = null;
-            if (product.completion_effects.unlocks_department) {
-                const deptId = product.completion_effects.unlocks_department;
-                if (!newPlayer.facility_upgrade_state.unlocked_departments.includes(deptId)) {
-                    newPlayer.facility_upgrade_state.unlocked_departments.push(deptId);
-                    departmentUnlocked = product.department_benefits;
-                }
-            }
-            
-            // === 同步到設施技術狀態 ===
-            // 研發完成後，所有相容設施都可以進行施工升級
-            const SpaceEng = window.SpaceEngine;
-            if (SpaceEng && SpaceEng.syncResearchToFacilities) {
-                const syncedState = SpaceEng.syncResearchToFacilities(newPlayer, productId);
-                Object.assign(newPlayer, syncedState);
-            }
-            
-            return {
-                success: true,
-                newState: newPlayer,
-                message: `✓ ${product.name} 研發完成！現在可在設施中進行施工升級`,
-                effects: product.completion_effects,
-                departmentUnlocked,
-                facilitiesCanUpgrade: true  // 標記設施可升級
-            };
-        },
-        
-        // ==========================================
-        // 計算施工期間產能損失
-        // ==========================================
-        
-        /**
-         * 計算當前施工對產能的影響
-         */
-        calculateConstructionImpact(player) {
-            const facilityState = player.facility_upgrade_state;
-            if (!facilityState || !facilityState.active_constructions.length) {
-                return {
-                    capacity_loss_percent: 0,
-                    power_loss_percent: 0,
-                    compute_loss_percent: 0,
-                    descriptions: []
-                };
-            }
-            
-            const impact = {
-                capacity_loss_percent: 0,
-                power_loss_percent: 0,
-                compute_loss_percent: 0,
-                descriptions: []
-            };
-            
-            for (const construction of facilityState.active_constructions) {
-                const impactData = construction.impact;
-                if (impactData) {
-                    if (impactData.capacity_loss_percent) {
-                        impact.capacity_loss_percent += impactData.capacity_loss_percent;
-                    }
-                    if (impactData.power_loss_percent) {
-                        impact.power_loss_percent += impactData.power_loss_percent;
-                    }
-                    if (impactData.compute_loss_percent) {
-                        impact.compute_loss_percent += impactData.compute_loss_percent;
-                    }
-                    if (impactData.description) {
-                        impact.descriptions.push(impactData.description);
-                    }
-                }
-            }
-            
-            return impact;
-        },
-        
-        /**
-         * 應用施工損失到實際數值
-         */
-        applyConstructionPenalty(baseValue, lossPercent) {
-            return baseValue * (1 - Math.min(lossPercent, 0.5));  // 最多損失50%
-        },
-        
-        // ==========================================
-        // 獲取升級效果
-        // ==========================================
-        
-        /**
-         * 獲取所有生效中升級的效果
+         * 獲取所有已應用升級的效果（status === 'applied'）
+         * 注意：這裡不包含 research_completed 狀態，因為那些還沒施工應用到設施
          */
         getAllActiveEffects(player) {
             const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
@@ -478,7 +250,8 @@
             const costs = {};
             
             for (const [productId, state] of Object.entries(facilityState.upgrade_products)) {
-                if (state.status !== config.UPGRADE_STATUS.OPERATING) continue;
+                // 只計算已應用到設施的升級
+                if (state.status !== 'applied') continue;
                 
                 const product = config.getUpgradeProduct(productId);
                 if (!product || !product.completion_effects) continue;
@@ -540,15 +313,14 @@
                     upgrade_path: product.upgrade_path,
                     
                     // 狀態
-                    status: state?.status || config.UPGRADE_STATUS.LOCKED,
+                    status: state?.status || 'locked',
                     research_progress: state?.research_progress || 0,
                     research_total: product.development.research_turns,
-                    construction_progress: state?.construction_progress || 0,
-                    construction_total: product.development.construction_turns,
                     
                     // 成本
                     research_cost: product.development.base_cost,
                     construction_cost: product.development.construction_cost,
+                    construction_turns: product.development.construction_turns,
                     total_cost: product.development.base_cost + product.development.construction_cost,
                     
                     // 解鎖
@@ -558,7 +330,6 @@
                     // 效果預覽
                     benefits: product.completion_effects.benefits,
                     costs: product.completion_effects.costs,
-                    construction_impact: product.construction_impact,
                     
                     // 部門
                     unlocks_department: product.completion_effects.unlocks_department,
@@ -584,7 +355,7 @@
         },
         
         /**
-         * 獲取進行中的項目
+         * 獲取進行中的項目（僅研發中）
          */
         getActiveProjects(player) {
             const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
@@ -596,9 +367,7 @@
             const active = [];
             
             for (const [productId, state] of Object.entries(facilityState.upgrade_products)) {
-                if (state.status === config.UPGRADE_STATUS.RESEARCHING ||
-                    state.status === config.UPGRADE_STATUS.CONSTRUCTING) {
-                    
+                if (state.status === 'researching') {
                     const product = config.getUpgradeProduct(productId);
                     active.push({
                         productId,
@@ -607,15 +376,57 @@
                         status: state.status,
                         research_progress: state.research_progress,
                         research_total: state.research_total,
-                        construction_progress: state.construction_progress,
-                        construction_total: state.construction_total,
-                        isResearching: state.status === config.UPGRADE_STATUS.RESEARCHING,
-                        isConstructing: state.status === config.UPGRADE_STATUS.CONSTRUCTING
+                        isResearching: true
                     });
                 }
             }
             
             return active;
+        },
+        
+        /**
+         * 獲取已完成研發但未施工的項目
+         */
+        getCompletedResearch(player) {
+            const config = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
+            if (!config) return [];
+            
+            const facilityState = player.facility_upgrade_state;
+            if (!facilityState) return [];
+            
+            const completed = [];
+            
+            for (const [productId, state] of Object.entries(facilityState.upgrade_products)) {
+                if (state.status === 'research_completed') {
+                    const product = config.getUpgradeProduct(productId);
+                    completed.push({
+                        productId,
+                        name: product?.name || productId,
+                        icon: product?.icon || '🔧',
+                        upgrade_path: product?.upgrade_path,
+                        construction_cost: product?.development.construction_cost || 0,
+                        construction_turns: product?.development.construction_turns || 0,
+                        completed_turn: state.completed_turn
+                    });
+                }
+            }
+            
+            return completed;
+        },
+        
+        /**
+         * 標記技術為已應用（由施工系統調用）
+         */
+        markAsApplied(player, productId) {
+            const facilityState = player.facility_upgrade_state;
+            if (!facilityState || !facilityState.upgrade_products[productId]) {
+                return player;
+            }
+            
+            const newPlayer = JSON.parse(JSON.stringify(player));
+            newPlayer.facility_upgrade_state.upgrade_products[productId].status = 'applied';
+            
+            return newPlayer;
         }
     };
     
@@ -624,6 +435,6 @@
     // ==========================================
     window.FacilityUpgradeEngine = FacilityUpgradeEngine;
     
-    console.log('✓ Facility Upgrade Engine loaded');
+    console.log('✓ Facility Upgrade Engine loaded (Research Only)');
     
 })();
