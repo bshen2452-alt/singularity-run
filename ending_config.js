@@ -301,11 +301,11 @@ const EndingConfig = (function() {
                 priority: 10,
                 check: (player) => {
                     if (player.mp_tier >= 2 || player.model_power < 25) return false;
-                    return player.cash < 10 && player.model_power >= 25 && player.market_cap < 200;
+                    return player.cash < 10 && player.model_power >= 25 && player.market_cap < 10;
                 },
                 warning: (player) => {
                     if (player.mp_tier >= 2) return null;
-                    if (player.model_power >= 25 && player.cash < 20 && player.market_cap < 250) {
+                    if (player.model_power >= 25 && player.cash < 20 && player.market_cap < 25) {
                         return {
                             active: true,
                             turnsLeft: Math.ceil(player.cash / 5),
