@@ -716,7 +716,11 @@ function handleEndTurn(player, rivals, globalParams) {
             const endingCheck = checkFunc(newPlayer, newRivals);
             
             if (endingCheck && (endingCheck.ending || endingCheck)) {
-                ending = endingCheck.ending || endingCheck;
+                // ✅ 保留完整的结局数据结构，包括 victory 字段
+                ending = {
+                    ...(endingCheck.ending || endingCheck),
+                    victory: endingCheck.victory !== undefined ? endingCheck.victory : false
+                };
                 
                 messages.push({ text: '遊戲結束！', type: 'event' });
                 
