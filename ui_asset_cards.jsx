@@ -2439,11 +2439,11 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                             value={summary.by_type?.legal_high_broad || 0}
                             color="#00f5ff"
                             actionType={tier >= 1 ? 'purchase' : null}
-                            actionPrice={5}
+                            actionPrice={4}
                             onAction={(typeId, actionType) => {
                                 onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
                             }}
-                            disabled={player.cash < purchaseQty * 5 || !capacityCheck.canPurchase}
+                            disabled={player.cash < purchaseQty * 4 || !capacityCheck.canPurchase}
                             canSell={canSellType('legal_high_broad')}
                             sellPrice={getSellPrice('legal_high_broad')}
                             onSell={(typeId) => {
@@ -2458,11 +2458,11 @@ function DataCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpgra
                             value={summary.by_type?.legal_high_focused || 0}
                             color="#44aaff"
                             actionType={tier >= 1 ? 'purchase' : null}
-                            actionPrice={4}
+                            actionPrice={6}
                             onAction={(typeId, actionType) => {
                                 onAction('buyDataByType', { dataType: typeId, quantity: purchaseQty });
                             }}
-                            disabled={player.cash < purchaseQty * 4 || !capacityCheck.canPurchase}
+                            disabled={player.cash < purchaseQty * 6 || !capacityCheck.canPurchase}
                             canSell={canSellType('legal_high_focused')}
                             sellPrice={getSellPrice('legal_high_focused')}
                             onSell={(typeId) => {

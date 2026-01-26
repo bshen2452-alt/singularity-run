@@ -100,7 +100,7 @@ const DataConfig = {
             diversity: 'broad',
             icon: '💎',
             color: '#00f5ff',
-            base_price: 5,              // 購買單價
+            base_price: 4,              // 購買單價
             description: '頂級數據資源，合法取得且適用廣泛'
         },
         // 合法高品質專精
@@ -112,7 +112,7 @@ const DataConfig = {
             diversity: 'focused',
             icon: '📊',
             color: '#44aaff',
-            base_price: 4,
+            base_price: 6,
             description: '特定領域的高品質數據'
         },
         // 合法低品質（不區分多樣性）
