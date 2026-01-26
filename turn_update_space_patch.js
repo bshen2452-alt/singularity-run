@@ -93,7 +93,7 @@
                         if (researchResult.success && researchResult.newState) {
                             newPlayer = researchResult.newState;
                             
-                            if (researchResult.construction_started) {
+                            if (researchResult.research_completed) {
                                 messages.push({
                                     text: '🔬 ' + researchResult.message,
                                     type: 'success'
@@ -104,21 +104,8 @@
                 }
             }
             
-            // 處理施工進度
-            var constructionResult = FacilityUpgradeEngine.processConstructionProgress(newPlayer);
-            if (constructionResult.success && constructionResult.newState) {
-                newPlayer = constructionResult.newState;
-                
-                if (constructionResult.changes) {
-                    for (var i = 0; i < constructionResult.changes.length; i++) {
-                        var change = constructionResult.changes[i];
-                        messages.push({
-                            text: '🏗️ ' + change.message,
-                            type: 'success'
-                        });
-                    }
-                }
-            }
+            // 注意：施工進度由 space_construction_patch.js 在 processSpaceConstruction 中處理
+            // 不需要在這裡單獨處理
             
             result.player = newPlayer;
         }
