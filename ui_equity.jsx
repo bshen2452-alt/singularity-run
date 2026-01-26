@@ -567,10 +567,8 @@ const EquityUI = {
     // IPO 彈窗
     // ==========================================
 
-    renderIPOModal(player, onConfirm, onCancel) {
+    renderIPOModal(player, selectedScale, selectedPricing, onScaleChange, onPricingChange, onConfirm, onCancel) {
         const config = window.EquityConfig?.IPO;
-        const [selectedScale, setScale] = React.useState('medium');
-        const [selectedPricing, setPricing] = React.useState('low');
 
         if (!config) return null;
 
@@ -760,14 +758,10 @@ const EquityUI = {
     // 戰略融資彈窗
     // ==========================================
 
-    renderFundingModal(player, fundingType, onConfirm, onCancel) {
+    renderFundingModal(player, fundingType, selectedInvestor, onInvestorChange, onConfirm, onCancel) {
         const config = window.EquityConfig?.STRATEGIC_FUNDING;
         const typeConfig = config?.TYPES?.[fundingType];
         const investorProfiles = config?.INVESTOR_PROFILES || {};
-        
-        const [selectedInvestor, setInvestor] = React.useState(
-            Object.keys(investorProfiles)[0] || 'tech_vc'
-        );
 
         if (!typeConfig) return null;
 

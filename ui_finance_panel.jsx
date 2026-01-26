@@ -1509,10 +1509,10 @@ const FinancePanelUI = {
     // IPO 彈窗
     // ==========================================
 
-    renderIPOModal(player, globalParams, selectedScale, selectedPricing, onScaleChange, onPricingChange, onConfirm, onCancel) {
+    renderIPOModal(player, selectedScale, selectedPricing, onScaleChange, onPricingChange, onConfirm, onCancel) {
         const EquityUI = window.EquityUI;
         if (!EquityUI) return null;
-        return EquityUI.renderIPOModal(player, globalParams, selectedScale, selectedPricing, onScaleChange, onPricingChange, onConfirm, onCancel);
+        return EquityUI.renderIPOModal(player, selectedScale, selectedPricing, onScaleChange, onPricingChange, onConfirm, onCancel);
     },
 
     // ==========================================
@@ -1530,10 +1530,10 @@ const FinancePanelUI = {
     // 戰略融資彈窗
     // ==========================================
 
-    renderFundingModal(player, fundingType, onConfirm, onCancel) {
+    renderFundingModal(player, fundingType, selectedInvestor, onInvestorChange, onConfirm, onCancel) {
         const EquityUI = window.EquityUI;
         if (!EquityUI) return null;
-        return EquityUI.renderFundingModal(player, fundingType, onConfirm, onCancel);
+        return EquityUI.renderFundingModal(player, fundingType, selectedInvestor, onInvestorChange, onConfirm, onCancel);
     }
 };
 

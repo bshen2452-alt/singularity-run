@@ -672,7 +672,6 @@ function FinanceActions({ gameState, derived, onAction }) {
                 {/* IPO 彈窗 */}
                 {showIPOModal && FinancePanelUI.renderIPOModal(
                     player, 
-                    globalParams,
                     selectedIPOScale,
                     selectedIPOPricing,
                     setSelectedIPOScale,
@@ -685,7 +684,6 @@ function FinanceActions({ gameState, derived, onAction }) {
                 {showFundingModal && selectedFundingType && FinancePanelUI.renderFundingModal(
                     player,
                     selectedFundingType,
-                    globalParams,
                     selectedInvestor,
                     setSelectedInvestor,
                     handleFundingConfirm,
