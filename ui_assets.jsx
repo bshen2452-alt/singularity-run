@@ -1155,7 +1155,7 @@ function AssetActionsPanel({ gameState, derived, onAction }) {
                         }}
                     >📋 傳統模式</button>
                 </div>
-                <AssetCardsPanel player={player} onAction={onAction} />
+                <AssetCardsPanel player={player} onAction={onAction} globalParams={globalParams} derived={derived} />
             </div>
         );
     }

@@ -46,6 +46,12 @@
             }
         }
         
+        // 更新空間快取（計算容量、人力、電力狀態）
+        var SpaceEngine = window.SpaceEngine;
+        if (SpaceEngine && SpaceEngine.updateSpaceCache && result.player.space_state) {
+            result.player = SpaceEngine.updateSpaceCache(result.player);
+        }
+
         // 處理設施維護成本
         if (SpaceConstructionPatch && SpaceConstructionPatch.calculateMaintenanceCost) {
             var maintenanceCost = SpaceConstructionPatch.calculateMaintenanceCost(result.player);
