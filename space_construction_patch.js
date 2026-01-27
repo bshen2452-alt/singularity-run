@@ -108,8 +108,9 @@
         for (var productId in upgradeProducts) {
             var productState = upgradeProducts[productId];
             
-            // 只處理研發已完成的產品（包括 research_completed, COMPLETED, OPERATING）
+            // 處理研發已完成或已應用的產品（research_completed, applied, 向後兼容舊狀態）
             if (productState.status !== 'research_completed' &&
+                productState.status !== 'applied' &&
                 productState.status !== STATUS.COMPLETED && 
                 productState.status !== STATUS.OPERATING) {
                 continue;
@@ -347,7 +348,17 @@
                     facility.tech_levels.levels[project.pathId].status = 'completed';
                     facility.tech_levels.levels[project.pathId].construction_remaining = 0;
                     
+                    // 重要：同步更新 player.asset_upgrades 以便 asset_card_engine 能正確讀取等級
                     var pathConfig = getTechPathConfig(project.pathId);
+                    if (pathConfig) {
+                        var assetType = pathConfig.category;
+                        if (!newPlayer.asset_upgrades) newPlayer.asset_upgrades = {};
+                        if (!newPlayer.asset_upgrades[assetType]) newPlayer.asset_upgrades[assetType] = {};
+                        var currentAssetLevel = newPlayer.asset_upgrades[assetType][project.pathId] || 0;
+                        if (project.targetLevel > currentAssetLevel) {
+                            newPlayer.asset_upgrades[assetType][project.pathId] = project.targetLevel;
+                        }
+                    }
                     var pathName = pathConfig ? pathConfig.name : project.pathId;
                     
                     messages.push({

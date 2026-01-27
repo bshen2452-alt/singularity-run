@@ -107,6 +107,11 @@
             // 注意：施工進度由 space_construction_patch.js 在 processSpaceConstruction 中處理
             // 不需要在這裡單獨處理
             
+            // 同步已完成研發到所有設施（更新 available 狀態）
+            if (SpaceConstructionPatch && SpaceConstructionPatch.syncCompletedResearchToFacilities) {
+                newPlayer = SpaceConstructionPatch.syncCompletedResearchToFacilities(newPlayer);
+            }
+            
             result.player = newPlayer;
         }
         
