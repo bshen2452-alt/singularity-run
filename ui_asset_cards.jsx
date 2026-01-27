@@ -243,8 +243,8 @@ function UpgradePathDisplay({
             </div>
             
             <div style={{ fontSize: '0.65rem', marginBottom: '6px', display: 'flex', gap: '8px' }}>
-                <span style={{ color: 'var(--accent-green)' }}>â†‘ {pathConfig?.benefit_summary || ''}</span>
-                <span style={{ color: 'var(--accent-red)' }}>â†“ {pathConfig?.cost_summary || ''}</span>
+                <span style={{ color: 'var(--accent-green)' }}>🟡 {pathConfig?.benefit_summary || ''}</span>
+                <span style={{ color: 'var(--accent-red)' }}>🟡 {pathConfig?.cost_summary || ''}</span>
             </div>
             
             <div style={{ display: 'flex', gap: '3px', marginBottom: '6px' }}>
@@ -1646,7 +1646,22 @@ function TalentCard({ player, onAction, onUpgrade, isExpanded, onToggle, showUpg
                 <StatRow icon="👷" label="Junior" value={talent.junior || 0} unit=" 人" />
                 <StatRow icon="👥" label="總人數" value={totalTalent} unit=" 人" highlight />
                 <StatRow icon="💰" label="人事成本" value={(derived?.hr_cost || 0).toFixed(1)} unit=" M/季" color="var(--accent-red)" />
+                {isTier2Plus && player.space_state?.cache && (
+                    <StatRow 
+                        icon="⚙️" 
+                        label="營運最低需求人力" 
+                        value={`${player.space_state.cache.actual_juniors || 0}/${player.space_state.cache.required_juniors || 0}`}
+                        unit=" Junior"
+                        color={
+                            (player.space_state.cache.workforce_ratio || 1) >= 1 ? 'var(--accent-green)' :
+                            (player.space_state.cache.workforce_ratio || 1) >= 0.7 ? 'var(--accent-yellow)' :
+                            'var(--accent-red)'
+                        }
+                    />
+                )}
             </div>
+            
+
             
             {/* 聘用區域 */}
             <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--bg-tertiary)', borderRadius: '6px' }}>

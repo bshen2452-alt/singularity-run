@@ -637,7 +637,7 @@ const EquityUI = {
                                     cursor: 'pointer',
                                     fontWeight: selectedScale === key ? 'bold' : 'normal'
                                 },
-                                onClick: () => setScale(key)
+                                onClick: () => onScaleChange(key)
                             },
                                 React.createElement('div', null, opt.icon),
                                 React.createElement('div', { style: { fontSize: '0.9rem' } }, opt.name),
@@ -674,7 +674,7 @@ const EquityUI = {
                                     cursor: 'pointer',
                                     fontWeight: selectedPricing === key ? 'bold' : 'normal'
                                 },
-                                onClick: () => setPricing(key)
+                                onClick: () => onPricingChange(key)
                             },
                                 React.createElement('div', null, opt.icon),
                                 React.createElement('div', { style: { fontSize: '0.9rem' } }, opt.name),

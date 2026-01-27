@@ -298,7 +298,7 @@ function CommunityStrategyPanel({ player, onSelectStrategy, disabled, selectedSt
                 color: '#aa88ff',
                 fontSize: '14px'
             }
-        }, '📢 社群戰略（每季可選一個）'),
+        }, '📢 社群戰略'),
         
         React.createElement('div', {
             key: 'strategies',
