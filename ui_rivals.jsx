@@ -734,7 +734,7 @@ function RivalsPanelEnhanced({ rivals, player, globalParams, onInvestRival, onBu
                             // 給每個對手不同的橘色深淺
                             const rivalColors = ['#ff8800', '#ff6600', '#ff9933', '#cc5500', '#ffaa44'];
                             const bgColor = p.name === '你' 
-                                ? 'linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-blue) 100%)'
+                                ? 'linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-green) 100%)'
                                 : rivalColors[idx % rivalColors.length];
                             return React.createElement('div', {
                                 key: idx,
