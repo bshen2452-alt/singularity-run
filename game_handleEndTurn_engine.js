@@ -447,6 +447,14 @@ function handleEndTurn(player, rivals, globalParams) {
         // ============================================
         // 階段 4: 玩家狀態更新（調用 processTurnUpdates）
         // ============================================
+        // Debug: 檢查傳給 processTurnUpdates 的資料
+        if (newPlayer?.space_state?.facilities?.[0]?.tech_levels) {
+            console.log("🔀 handleEndTurn 傳給 processTurnUpdates:", 
+                newPlayer.space_state.facilities[0].id,
+                'constructing:', newPlayer.space_state.facilities[0].tech_levels.constructing?.length,
+                JSON.stringify(newPlayer.space_state.facilities[0].tech_levels.constructing));
+        }
+        
         if (TurnEng.processTurnUpdates) {
             const turnResult = TurnEng.processTurnUpdates(newPlayer, newGlobalParams);
             

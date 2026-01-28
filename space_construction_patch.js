@@ -165,27 +165,30 @@
         var pathData = facility.tech_levels.levels[pathId];
         if (!pathData) return { canStart: false, reason: '此設施不支援該技術路線' };
         
-        if (pathData.status === 'locked' || pathData.available <= pathData.current) {
-            return { canStart: false, reason: '技術尚未研發完成' };
-        }
-        
-        if (pathData.status === 'constructing') {
-            return { canStart: false, reason: '該技術正在施工中' };
-        }
-        
-        var constructing = facility.tech_levels.constructing || [];
-        if (constructing.length >= 2) {
-            return { canStart: false, reason: '此設施同時施工已達上限(2)' };
-        }
-        
-        // 從 facility_upgrade_products_config 獲取成本
+        // 先計算成本（用於顯示）
         var targetLevel = pathData.current + 1;
         var productId = pathId + '_lv' + targetLevel;
         var upgradeConfig = window.FACILITY_UPGRADE_PRODUCTS_CONFIG;
         var product = upgradeConfig ? upgradeConfig.getUpgradeProduct(productId) : null;
-        
         var constructionCost = product ? product.development.construction_cost : 30;
         var constructionTurns = product ? product.development.construction_turns : 1;
+        
+        // 檢查是否可以開始施工
+        if (pathData.status === 'locked') {
+            return { canStart: false, reason: '技術尚未研發，請先完成研究', cost: constructionCost, turns: constructionTurns };
+        }
+        if (pathData.available <= pathData.current) {
+            return { canStart: false, reason: '已達到研發的最高等級，請先研發下一級', cost: constructionCost, turns: constructionTurns };
+        }
+        
+        if (pathData.status === 'constructing') {
+            return { canStart: false, reason: '該技術正在施工中', cost: constructionCost, turns: constructionTurns };
+        }
+        
+        var constructing = facility.tech_levels.constructing || [];
+        if (constructing.length >= 2) {
+            return { canStart: false, reason: '此設施同時施工已達上限(2)', cost: constructionCost, turns: constructionTurns };
+        }
         
         if (playerState.cash < constructionCost) {
             return { 
@@ -230,6 +233,7 @@
                     remaining: check.turns,
                     total: check.turns
                 });
+                console.log('  ✓ 施工已添加, constructing數量:', techLevels.constructing.length);
                 break;
             }
         }
@@ -333,6 +337,13 @@
         console.log("📊 under_construction 數量:", underConstruction.length, underConstruction.map(function(p) { return p.id + '(' + p.construction_remaining + ')'; }));
         
         // === 處理設施技術施工進度 ===
+        console.log('🔬 檢查設施技術施工, 設施數量:', facilities.length);
+        // 添加顯示每個設施的 tech_levels 狀態
+        facilities.forEach(function(f, idx) {
+            console.log('  設施[' + idx + ']:', f.id, 
+                'tech_levels:', f.tech_levels ? 'exists' : 'null',
+                'constructing:', f.tech_levels && f.tech_levels.constructing ? f.tech_levels.constructing.length : 'N/A');
+        });
         facilities.forEach(function(facility) {
             if (!facility.tech_levels || !facility.tech_levels.constructing) return;
             
@@ -360,6 +371,22 @@
                         }
                     }
                     var pathName = pathConfig ? pathConfig.name : project.pathId;
+                    
+                    // 重要：同步更新 facility_upgrade_state 的狀態為 applied
+                    var productId = project.pathId + '_lv' + project.targetLevel;
+                    console.log('🔧 施工完成，嘗試更新狀態:', productId, 'targetLevel:', project.targetLevel);
+                    if (newPlayer.facility_upgrade_state && newPlayer.facility_upgrade_state.upgrade_products) {
+                        var upgradeProduct = newPlayer.facility_upgrade_state.upgrade_products[productId];
+                        if (upgradeProduct) {
+                            upgradeProduct.status = 'applied';
+                            console.log('✓ 已更新 facility_upgrade_state 狀態為 applied');
+                        } else {
+                            console.log('⚠ 找不到 upgrade_products[' + productId + ']');
+                            console.log('  現有產品:', Object.keys(newPlayer.facility_upgrade_state.upgrade_products || {}));
+                        }
+                    } else {
+                        console.log('⚠ facility_upgrade_state 不存在');
+                    }
                     
                     messages.push({
                         text: '✓ ' + facility.name + ' 完成技術升級：' + 

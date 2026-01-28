@@ -54,18 +54,36 @@
                 construction_turns: dev.construction_turns || 0
             };
             
+            // 檢查是否已經開始或完成研發
+            const facilityState = player.facility_upgrade_state || this.createInitialState();
+            const currentStatus = facilityState.upgrade_products[productId];
+            if (currentStatus) {
+                const status = currentStatus.status;
+                if (status === 'researching') {
+                    return { canUnlock: false, reason: '研發進行中', cost };
+                }
+                if (status === 'research_completed') {
+                    return { canUnlock: false, reason: '研發已完成，請前往設施施工', cost };
+                }
+                if (status === 'applied') {
+                    return { canUnlock: false, reason: '此升級已應用', cost };
+                }
+            }
+            
             // 檢查Tier要求
             if ((player.mp_tier || 0) < reqs.mp_tier) {
                 return { canUnlock: false, reason: `需要 Tier ${reqs.mp_tier}`, cost };
             }
             
-            // 檢查前置升級
+            // 檢查前置升級（只需研發完成即可，不需要施工完成）
             if (reqs.previous_upgrade) {
-                const facilityState = player.facility_upgrade_state || this.createInitialState();
                 const prevStatus = facilityState.upgrade_products[reqs.previous_upgrade];
                 if (!prevStatus || (prevStatus.status !== 'research_completed' && 
                     prevStatus.status !== 'applied')) {
-                    return { canUnlock: false, reason: `需要先完成 ${reqs.previous_upgrade}`, cost };
+                    // 取得前置升級的名稱
+                    const prevProduct = config.getUpgradeProduct(reqs.previous_upgrade);
+                    const prevName = prevProduct ? prevProduct.name : reqs.previous_upgrade;
+                    return { canUnlock: false, reason: `需要先完成研發：${prevName}`, cost };
                 }
             }
             
@@ -305,6 +323,22 @@
                 const state = facilityState.upgrade_products[productId];
                 const canUnlock = this.canUnlockUpgrade(player, productId);
                 
+                // 確定正確的狀態
+                let displayStatus = 'locked';
+                if (state?.status) {
+                    displayStatus = state.status;
+                } else if (canUnlock.canUnlock) {
+                    // 尚未開始但可以解鎖 -> unlocked
+                    displayStatus = 'unlocked';
+                }
+                
+                // 確保成本資訊總是可用
+                const dev = product.development || {};
+                const researchCost = dev.base_cost || 0;
+                const constructionCost = dev.construction_cost || 0;
+                const researchTurns = dev.research_turns || 0;
+                const constructionTurns = dev.construction_turns || 0;
+                
                 summary[productId] = {
                     id: productId,
                     name: product.name,
@@ -313,27 +347,30 @@
                     upgrade_path: product.upgrade_path,
                     
                     // 狀態
-                    status: state?.status || 'locked',
+                    status: displayStatus,
                     research_progress: state?.research_progress || 0,
-                    research_total: product.development.research_turns,
+                    research_total: researchTurns,
                     
-                    // 成本
-                    research_cost: product.development.base_cost,
-                    construction_cost: product.development.construction_cost,
-                    construction_turns: product.development.construction_turns,
-                    total_cost: product.development.base_cost + product.development.construction_cost,
+                    // 成本 - 確保總是有數值
+                    research_cost: researchCost,
+                    construction_cost: constructionCost,
+                    construction_turns: constructionTurns,
+                    total_cost: researchCost + constructionCost,
                     
-                    // 解鎖
-                    canUnlock: canUnlock.canUnlock,
+                    // 解鎖 - 根據狀態決定是否可以開始研發
+                    canUnlock: displayStatus === 'unlocked' || (displayStatus === 'locked' && canUnlock.canUnlock),
                     unlockReason: canUnlock.reason,
                     
                     // 效果預覽
-                    benefits: product.completion_effects.benefits,
-                    costs: product.completion_effects.costs,
+                    benefits: product.completion_effects?.benefits,
+                    costs: product.completion_effects?.costs,
                     
                     // 部門
-                    unlocks_department: product.completion_effects.unlocks_department,
+                    unlocks_department: product.completion_effects?.unlocks_department,
                     department_benefits: product.department_benefits,
+                    
+                    // 施工影響
+                    construction_impact: product.construction_impact,
                     
                     pros: product.pros,
                     cons: product.cons

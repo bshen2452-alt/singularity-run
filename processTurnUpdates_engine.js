@@ -198,6 +198,19 @@ function calculateDerivedStats(player, globalParams) {
  */
 function processTurnUpdates(player, globalParams) {
     const updatedPlayer = JSON.parse(JSON.stringify(player));
+    // Debug: 檢查深拷貝前後的 constructing
+    if (player?.space_state?.facilities?.[0]?.tech_levels) {
+        console.log("📥 processTurnUpdates 輸入:", 
+            player.space_state.facilities[0].id,
+            'constructing:', player.space_state.facilities[0].tech_levels.constructing?.length,
+            JSON.stringify(player.space_state.facilities[0].tech_levels.constructing));
+    }
+    if (updatedPlayer?.space_state?.facilities?.[0]?.tech_levels) {
+        console.log("📤 深拷貝後:", 
+            updatedPlayer.space_state.facilities[0].id,
+            'constructing:', updatedPlayer.space_state.facilities[0].tech_levels.constructing?.length,
+            JSON.stringify(updatedPlayer.space_state.facilities[0].tech_levels.constructing));
+    }
     const messages = [];
 
     // === 1. 處理財務行動冷卻 ===

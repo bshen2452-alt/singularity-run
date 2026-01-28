@@ -92,13 +92,13 @@ const FacilityUpgradeUI = {
                 React.createElement('div', { key: 'research', className: 'bg-black/20 rounded p-2' }, [
                     React.createElement('div', { key: 'label', className: 'text-gray-400' }, '研發'),
                     React.createElement('div', { key: 'value', className: 'text-white' }, 
-                        `$${product.research_cost}M / ${product.research_total}季`
+                        `$${product.research_cost || 0}M / ${product.research_total || 0}季`
                     )
                 ]),
                 React.createElement('div', { key: 'construct', className: 'bg-black/20 rounded p-2' }, [
                     React.createElement('div', { key: 'label', className: 'text-gray-400' }, '施工'),
                     React.createElement('div', { key: 'value', className: 'text-white' }, 
-                        `$${product.construction_cost}M / ${product.construction_total}季`
+                        `$${product.construction_cost || 0}M / ${product.construction_total || 0}季`
                     )
                 ])
             ]),
@@ -155,7 +155,7 @@ const FacilityUpgradeUI = {
                     key: 'start',
                     className: 'flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded text-sm',
                     onClick: () => onStartResearch && onStartResearch(product.id)
-                }, `開始研發 ($${product.research_cost}M)`),
+                }, `開始研發 ($${product.research_cost || 0}M)`),
                 
                 status === 'locked' && !product.canUnlock &&
                 React.createElement('div', {

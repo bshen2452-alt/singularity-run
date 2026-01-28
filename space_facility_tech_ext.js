@@ -171,7 +171,9 @@
          * @returns {Object} - { success, newState, message }
          */
         SpaceEngine.startFacilityTechConstruction = function(playerState, facilityId, pathId) {
+            console.log('🚀 [ext] startFacilityTechConstruction:', facilityId, pathId);
             var check = this.canStartFacilityTechConstruction(playerState, facilityId, pathId);
+            console.log('  canStart:', check.canStart, check.reason || 'OK');
             if (!check.canStart) {
                 return { success: false, message: check.reason };
             }
@@ -193,6 +195,7 @@
                         remaining: check.turns,
                         total: check.turns
                     });
+                    console.log('  ✓ 施工已添加, constructing:', JSON.stringify(techLevels.constructing));
                     break;
                 }
             }

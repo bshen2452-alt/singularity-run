@@ -35,10 +35,18 @@
         // ==========================================
         var SpaceConstructionPatch = window.SpaceConstructionPatch;
         if (SpaceConstructionPatch && SpaceConstructionPatch.processSpaceConstruction) {
+            console.log('🏗️ 開始處理空間建設進度...');
             var spaceResult = SpaceConstructionPatch.processSpaceConstruction(result.player);
             
             if (spaceResult.player) {
                 result.player = spaceResult.player;
+                // Debug: 檢查施工後的狀態
+                if (result.player.facility_upgrade_state && result.player.facility_upgrade_state.upgrade_products) {
+                    console.log('🏗️ 施工處理後的產品狀態:');
+                    for (var pid in result.player.facility_upgrade_state.upgrade_products) {
+                        console.log('  ' + pid + ': ' + result.player.facility_upgrade_state.upgrade_products[pid].status);
+                    }
+                }
             }
             
             if (spaceResult.messages && spaceResult.messages.length > 0) {
@@ -82,8 +90,16 @@
             var facilityState = result.player.facility_upgrade_state;
             var newPlayer = result.player;
             
-            // 處理研發進度
+            // Debug: 顯示當前所有產品狀態
+            console.log('📊 回合更新 - facility_upgrade_state 產品狀態:');
             var upgradeProducts = facilityState.upgrade_products || {};
+            for (var productId in upgradeProducts) {
+                if (upgradeProducts.hasOwnProperty(productId)) {
+                    console.log('  ' + productId + ': ' + upgradeProducts[productId].status);
+                }
+            }
+            
+            // 處理研發進度
             for (var productId in upgradeProducts) {
                 if (upgradeProducts.hasOwnProperty(productId)) {
                     var state = upgradeProducts[productId];

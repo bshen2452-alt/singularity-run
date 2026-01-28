@@ -626,6 +626,15 @@ function useGameState() {
             if (result && result.success) {
                 const newPlayer = result.player || result.updatedPlayer;
                 console.log("✅ Updating player state:", !!newPlayer, newPlayer?.cash, newPlayer?.space_state?.under_construction?.length);
+                // Debug: 檢查設施技術施工狀態
+                if (action === 'startFacilityTechConstruction' && newPlayer?.space_state?.facilities) {
+                    const facility = newPlayer.space_state.facilities[0];
+                    console.log("🔍 Debug - newPlayer facility tech_levels:", 
+                        facility?.id,
+                        'constructing:', facility?.tech_levels?.constructing?.length,
+                        JSON.stringify(facility?.tech_levels?.constructing));
+                }
+                
                 if (newPlayer) { setPlayer(newPlayer); }
 
                 // 核心策略行動標記
@@ -765,6 +774,15 @@ function useGameState() {
         if (!player) {
             addMessage('遊戲尚未初始化', 'danger');
             return;
+        }
+
+        // Debug: 檢查進入 handleEndTurn 時的 player 狀態
+        if (player?.space_state?.facilities) {
+            const facility = player.space_state.facilities[0];
+            console.log("🔄 handleEndTurn 開始 - facility constructing:", 
+                facility?.id,
+                facility?.tech_levels?.constructing?.length,
+                JSON.stringify(facility?.tech_levels?.constructing));
         }
         
         // 檢查必要的 Engine
