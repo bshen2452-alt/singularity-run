@@ -805,7 +805,7 @@ const ProductConfig = {
                         description: "低階手機可用的免費AI",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
-                        effects: { community: 200, hype: 12, trust: 15, revenue_base: 2 },
+                        effects: { community: 200, hype: 12, revenue_base: 2 },
                         risks: { entropy: 5, compliance_risk: 2 },
                         requiresTuring: false,
                         requiresSenior: true
@@ -818,8 +818,8 @@ const ProductConfig = {
                         description: "用戶提供算力的合作網絡",
                         devCost: { cash: 20, data: 50 },
                         devTurns: 2,
-                        effects: { community: 100, revenue_base: 6, trust: 5 },
-                        risks: {},
+                        effects: { community: 500, revenue_base: 6, trust: 15, data: 50 },
+                        risks: { entropy: 20, regulation: 10 },
                         requiresTuring: true,
                         requiresSenior: true
                     },
@@ -831,8 +831,8 @@ const ProductConfig = {
                         description: "定義 AI 產出的格式標準",
                         devCost: { cash: 15, data: 30 },
                         devTurns: 1,
-                        effects: { revenue_bonus: 8, trust: 8 },
-                        risks: {},
+                        effects: { revenue_bonus: 10, trust: 20, alignment: 5 },
+                        risks: { regulation: 5 },
                         requiresTuring: true,
                         requiresSenior: true
                     }
@@ -849,8 +849,8 @@ const ProductConfig = {
                         description: "分散式裝置協作完成大型任務",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
-                        effects: { community: 800, hype: 20, trust: 22, revenue_base: 8 },
-                        risks: { entropy: 5, compliance_risk: 5 },
+                        effects: { community: 800, trust: 22, revenue_base: 8 },
+                        risks: { entropy: 20, regulation: 5 },
                         requiresTuring: false,
                         requiresSenior: true
                     },
@@ -862,8 +862,8 @@ const ProductConfig = {
                         description: "匯聚開源數據分析預測市場走向",
                         devCost: { cash: 40, data: 100 },
                         devTurns: 3,
-                        effects: { community: 300, revenue_base: 12, hype: 10 },
-                        risks: { compliance_risk: 6 },
+                        effects: { community: 800, revenue_base: 12, hype: 10, data: 100 },
+                        risks: { compliance_risk: 6, regulation: 10 },
                         requiresTuring: true,
                         requiresSenior: true
                     },
@@ -875,8 +875,8 @@ const ProductConfig = {
                         description: "定義 AI 跨模型溝通守則",
                         devCost: { cash: 50, data: 120 },
                         devTurns: 3,
-                        effects: { trust: 18, revenue_bonus: 15 },
-                        risks: { compliance_risk: 3 },
+                        effects: { trust: 18, revenue_bonus: 15, alignment: 8 },
+                        risks: { regulation: 3 },
                         requiresTuring: true,
                         requiresSenior: true
                     }
@@ -893,8 +893,8 @@ const ProductConfig = {
                         description: "規範合作機制，凝聚小型開發者",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
-                        effects: { community: 3000, hype: 35, trust: 28, revenue_base: 25 },
-                        risks: { entropy: 10, compliance_risk: 8 },
+                        effects: { community: 3000, hype: 35,  revenue_base: 25 },
+                        risks: { entropy: 20, compliance_risk: 8 },
                         requiresTuring: false,
                         requiresSenior: true
                     },
@@ -906,8 +906,8 @@ const ProductConfig = {
                         description: "透過全球閒置算力網路建立 24 小時個人 AI 特助",
                         devCost: { cash: 60, data: 150 },
                         devTurns: 3,
-                        effects: { community: 500, trust: 20, alignment: 10 },
-                        risks: { regulation: 10 },
+                        effects: { community: 500, trust: 28 },
+                        risks: { regulation: 18 },
                         requiresTuring: true,
                         requiresSenior: true
                     },
@@ -938,7 +938,7 @@ const ProductConfig = {
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 15000, hype: 80, trust: 40, revenue_base: 40 },
-                        risks: { entropy: 15, compliance_risk: 12 },
+                        risks: { entropy: 20, compliance_risk: 12 },
                         requiresTuring: false,
                         requiresSenior: true
                     },
@@ -950,8 +950,8 @@ const ProductConfig = {
                         description: "連接全球裝置，無需核心伺服器的超智能體",
                         devCost: { cash: 100, data: 200 },
                         devTurns: 4,
-                        effects: { trust: 40, alignment: 25 },
-                        risks: {},
+                        effects: { trust: 40 },
+                        risks: { regulation: 25 },
                         requiresTuring: true,
                         requiresSenior: true
                     },
@@ -963,7 +963,7 @@ const ProductConfig = {
                         description: "制定 AI 技術自我迭代的標準規則",
                         devCost: { cash: 80, data: 180 },
                         devTurns: 4,
-                        effects: { community: 5000, trust: 30, revenue_bonus: 25 },
+                        effects: { community: 5000, trust: 30, alignment: 25, revenue_bonus: 25 },
                         risks: { regulation: 15 },
                         requiresTuring: true,
                         requiresSenior: true
