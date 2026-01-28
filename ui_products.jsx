@@ -1204,10 +1204,8 @@ function ProductDevelopmentPanel({ player, derived, onAction }) {
                     <CompletedProductsDisplay player={player} route={player.route} onAssignSenior={(productId, count) => onAction('assignSenior', { productId, count })} />
                     
                     {/* 操作按鈕 */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '16px' }}>
+                    <div style={{ display: 'grid', gap: '8px', marginTop: '16px' }}>
                         <GlowButton variant="primary" size="small" onClick={() => setShowCatalog(true)}>📋 商品目錄</GlowButton>
-                        <GlowButton variant="secondary" size="small" onClick={() => setShowTuringPanel(true)}>🧠 Turing</GlowButton>
-                        <GlowButton variant="warning" size="small" onClick={() => setShowSeniorPanel(true)}>👨‍💻 Senior</GlowButton>
                     </div>
                 </>
             )}

@@ -284,7 +284,7 @@ function UpgradePathDisplay({
             
             {!isMaxed && nextConfig && !isInProgress && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>â†’ {nextConfig.name}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{nextConfig.name}</span>
                     {GlowButton ? (
                         <GlowButton variant="primary" size="small" onClick={() => onUpgrade(assetType, pathId)} disabled={disabled || !canUpgrade} style={{ fontSize: '0.65rem', padding: '3px 8px' }}>
                             ${upgradeCost?.cash || '?'}M
