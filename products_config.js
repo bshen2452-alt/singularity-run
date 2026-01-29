@@ -83,10 +83,10 @@ const ProductConfig = {
                 products: [
                     {
                         id: "sl_t1_milestone",
-                        name: "算力供應v1. H100 算力池",
+                        name: "通用模型v1. Giant-Chat 通用基座",
                         type: "milestone",
-                        icon: "💻",
-                        description: "基礎對話AI產品，通過里程碑即可營運",
+                        icon: "💬",
+                        description: "算力堆疊的起點，目標是理解語法。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 100, hype: 10, trust: 5, revenue_base: 5 },
@@ -95,11 +95,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t1_api",
-                        name: "合成數據v1. Self-Play 訓練集",
+                        id: "sl_t1_native",
+                        name: "場景原生 v1. 工作流程對話助手",
                         type: "unlockable",
-                        icon: "🔌",
-                        description: "利用 AI 生成數據的嘗試",
+                        icon: "📱",
+                        description: "貼近用戶辦公室情境，建立初步社群。",
                         devCost: { cash: 30, data: 100 },
                         devTurns: 2,
                         effects: { community: 50, hype: 5, revenue_base: 8, revenue_bonus: 10 },
@@ -108,11 +108,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t1_enterprise",
-                        name: "通用模型v1. Giant-Chat 通用基座",
+                        id: "sl_t1_vertical",
+                        name: "垂直專家 v1. 法律/醫療診斷助手",
                         type: "unlockable",
-                        icon: "💬",
-                        description: "多功能聊天模型",
+                        icon: "⚖️",
+                        description: "針對特定領域小規模訓練，建立專業信任。",
                         devCost: { cash: 40, data: 80 },
                         devTurns: 3,
                         effects: { trust: 10, revenue_base: 12, revenue_bonus: 15 },
@@ -127,10 +127,10 @@ const ProductConfig = {
                 products: [
                     {
                         id: "sl_t2_milestone",
-                        name: "算力供應v2. Mega-Cluster 算力方舟",
+                        name: "通用模型 v2. 多模態湧現基座 (70B)",
                         type: "milestone",
-                        icon: "🏬",
-                        description: "超大型數據中心集群",
+                        icon: "🖼️",
+                        description: "模型湧現邏輯推理能力，解決各種問題。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 500, hype: 25, trust: 10, revenue_base: 20 },
@@ -139,11 +139,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t2_plugins",
-                        name: "合成數據v2.Recursive-Data 自我演化數據",
+                        id: "sl_t2_native",
+                        name: "場景原生 v2. 智慧工作流整合",
                         type: "unlockable",
                         icon: "🔧",
-                        description: "提供合成數據給 AI 自我迭代訓練",
+                        description: "將 AI 嵌入企業 ERP，產生大量用戶反饋數據。",
                         devCost: { cash: 60, data: 150 },
                         devTurns: 3,
                         effects: { community: 200, hype: 15, revenue_bonus: 20 },
@@ -152,11 +152,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t2_agents",
-                        name: "通用模型v2. Reasoning-Foundation 萬能邏輯基座",
+                        id: "sl_t2_vertical",
+                        name: "垂直專家 v2. 行業私有化部署",
                         type: "unlockable",
-                        icon: "🧑‍🎓",
-                        description: "解決各學科問題的巨型模型",
+                        icon: "🏭",
+                        description: "灌注專精資料，實現具體情境零幻覺輸出。",
                         devCost: { cash: 80, data: 200 },
                         devTurns: 4,
                         effects: { community: 150, revenue_base: 25, trust: -5 },
@@ -171,10 +171,10 @@ const ProductConfig = {
                 products: [
                     {
                         id: "sl_t3_milestone",
-                        name: "算力供應v3. Compute-State 算力國",
+                        name: "通用模型 v3. 思考鏈邏輯模型 (SCoT)",
                         type: "milestone",
-                        icon: "🏙️",
-                        description: "足以模擬一個小國運行能力的超大型集群",
+                        icon: "🧩",
+                        description: "導入強化學習，模型具備自我修正與深思熟慮能力。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 2000, hype: 40, trust: 15, revenue_base: 50 },
@@ -183,11 +183,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t3_research",
-                        name: "合成數據v3.World-Simulator 世界模擬器",
+                        id: "sl_t3_native",
+                        name: "場景原生 v3. 自主代理人生態",
                         type: "unlockable",
                         icon: "🔬",
-                        description: "在虛擬世界中模擬真實物理法則，讓 AI 在其中演練",
+                        description: "AI 自主作業，解放人類時間與精力。",
                         devCost: { cash: 100, data: 300 },
                         devTurns: 4,
                         effects: { trust: 20, revenue_base: 30, alignment: 10 },
@@ -196,11 +196,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t3_coding",
-                        name: "通用模型v3. Omni-Agent 通用代理基座",
+                        id: "sl_t3_vertical",
+                        name: "垂直專家 v3. 科研/製藥模擬器",
                         type: "unlockable",
-                        icon: "🧑‍🏫",
-                        description: "能切換任何職業、任何技能的 AI 代理人",
+                        icon: "🧬",
+                        description: "在微觀領域超越人類專家，掌握核心技術產權。",
                         devCost: { cash: 120, data: 250 },
                         devTurns: 3,
                         effects: { community: 500, revenue_bonus: 30, hype: 20 },
@@ -215,10 +215,10 @@ const ProductConfig = {
                 products: [
                     {
                         id: "sl_t4_milestone",
-                        name: "算力供應v4. Dyson-Node 戴森節點",
+                        name: "通用模型v4. The-Core 萬能核心",
                         type: "milestone",
-                        icon: "🪐",
-                        description: "太空建設太陽能算力陣列，獲取近乎無限的能源與計算力",
+                        icon: "🛐",
+                        description: "具備自我意識雛形的巨型模型，能理解萬物。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 10000, hype: 80, trust: 20, revenue_base: 100 },
@@ -227,11 +227,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t4_agi_api",
-                        name: "合成數據v4.Reality-Synthesis 現實合成器",
+                        id: "sl_t4_native",
+                        name: "場景原生 v4. 現實控制界面",
                         type: "unlockable",
                         icon: "🌄",
-                        description: "依靠虛擬運算推演預測、影響現實",
+                        description: "依靠虛擬運算預測現實，消除數位與實體的邊界。",
                         devCost: { cash: 200, data: 500 },
                         devTurns: 5,
                         effects: { revenue_base: 80, revenue_bonus: 50, hype: 30 },
@@ -240,11 +240,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "sl_t4_safety",
-                        name: "通用模型v4. The-Core 萬能核心",
+                        id: "sl_t4_vertical",
+                        name: "垂直專家 v4. 全知學科聖殿",
                         type: "unlockable",
-                        icon: "🛐",
-                        description: "具備自我意識雛形的巨型模型，能理解萬物",
+                        icon: "🏛️",
+                        description: "積累所有知識，解決所有已知的科學難題。",
                         devCost: { cash: 150, data: 400 },
                         devTurns: 4,
                         effects: { trust: 30, alignment: 20, compliance_risk: -15 },
@@ -262,7 +262,7 @@ const ProductConfig = {
                 products: [
                     {
                         id: "mm_t1_milestone",
-                        name: "娛樂創作v1. Text-to-Image AI 圖像生成器",
+                        name: "娛樂創作v1. Text-to-Image 文字藝術師",
                         type: "milestone",
                         icon: "🎨",
                         description: "文字轉圖像AI產品",
@@ -274,7 +274,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t1_video",
+                        id: "mm_t1_int",
                         name: "人機互動v1. Soul-Mate 虛擬筆友",
                         type: "unlockable",
                         icon: "♥️",
@@ -287,7 +287,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t1_design",
+                        id: "mm_t1_sci",
                         name: "科研協作v1. Molecule-Reader 論文摘要",
                         type: "unlockable",
                         icon: "✏️",
@@ -318,7 +318,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t2_music",
+                        id: "mm_t2_int",
                         name: "人機互動v2. Empathy-Core 情感解析器",
                         type: "unlockable",
                         icon: "👼",
@@ -331,7 +331,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t2_3d",
+                        id: "mm_t2_sci",
                         name: "科研協作v2. Synthesis-Lab 實驗推演",
                         type: "unlockable",
                         icon: "🧪",
@@ -362,7 +362,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t3_vr",
+                        id: "mm_t3_int",
                         name: "人機互動v3. Society-Glue 社會黏合劑",
                         type: "unlockable",
                         icon: "🚥",
@@ -375,7 +375,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t3_digital_twin",
+                        id: "mm_t3_sci",
                         name: "科研協作v3. Auto-Lab 實驗室負責人",
                         type: "unlockable",
                         icon: "🧑‍🔬",
@@ -406,7 +406,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t4_reality",
+                        id: "mm_t4_int",
                         name: "人機互動v4. Social-Construction 社會建構工程",
                         type: "unlockable",
                         icon: "🔮",
@@ -419,7 +419,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mm_t4_conscious",
+                        id: "mm_t4_sci",
                         name: "科研協作v4. Theorem-Hunter 定理獵人",
                         type: "unlockable",
                         icon: "🧬",
@@ -441,10 +441,10 @@ const ProductConfig = {
                 products: [
                     {
                         id: "ef_t1_milestone",
-                        name: "Linear-Logic 核心",
+                        name: "前沿演算v1. 神經元剪枝",
                         type: "milestone",
                         icon: "⚡",
-                        description: "前沿演算v1. 高效率運算模型",
+                        description: "初步演算法優化，提升模型反應速度。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 80, hype: 8, trust: 12, revenue_base: 4 },
@@ -454,10 +454,10 @@ const ProductConfig = {
                     },
                     {
                         id: "ef_t1_sdk",
-                        name: "極致效率v1. Cooling-Mind 演算法",
+                        name: "極致效率v1. Cooling-Mind 蒸餾器",
                         type: "unlockable",
                         icon: "📚",
-                        description: "降低模型推論消耗",
+                        description: "將大模型能力濃縮，降低推論成本。",
                         devCost: { cash: 25, data: 60 },
                         devTurns: 2,
                         effects: { community: 60, trust: 8, revenue_base: 5 },
@@ -466,7 +466,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t1_license",
+                        id: "ef_t1_lic",
                         name: "邊緣運算v1. Tiny-Brain 嵌入模組",
                         type: "unlockable",
                         icon: "🛠️",
@@ -485,7 +485,7 @@ const ProductConfig = {
                 products: [
                     {
                         id: "ef_t2_milestone",
-                        name: "前沿演算v2. 蒸餾技術平台",
+                        name: "前沿演算v2. 跨模態融合架構",
                         type: "milestone",
                         icon: "💾",
                         description: "知識蒸餾與模型壓縮",
@@ -497,7 +497,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t2_chip",
+                        id: "ef_t2_sdk",
                         name: "極致效率v2. Carbon-Neutral 節能中樞",
                         type: "unlockable",
                         icon: "🔲",
@@ -510,11 +510,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t2_cloud",
-                        name: "邊緣運算v2. Local-Brain 離線大腦",
+                        id: "ef_t2_lic",
+                        name: "邊緣運算v2. Local-Brain 離線個人助理",
                         type: "unlockable",
                         icon: "🖥️",
-                        description: "優化模型在本機的運行效率",
+                        description: "優化模型在本機的運行效率，無需聯網。",
                         devCost: { cash: 50, data: 120 },
                         devTurns: 3,
                         effects: { community: 100, revenue_base: 15, trust: 8 },
@@ -541,11 +541,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t3_automl",
+                        id: "ef_t3_sdk",
                         name: "極致效率v3.Energy-Arbitrator 能源仲裁者",
                         type: "unlockable",
                         icon: "🌡️",
-                        description: "AI 代理人自主進行能源管理",
+                        description: "極致的算力調度，大幅降低營運成本。",
                         devCost: { cash: 100, data: 200 },
                         devTurns: 4,
                         effects: { community: 300, revenue_base: 25, hype: 15 },
@@ -554,7 +554,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t3_research",
+                        id: "ef_t3_lic",
                         name: "邊緣運算v3. Edge-Sovereign 邊緣主權",
                         type: "unlockable",
                         icon: "🚗",
@@ -585,11 +585,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t4_quantum",
+                        id: "ef_t4_sdk",
                         name: "極致效率v4. Entropy-Zero 零熵演算法",
                         type: "unlockable",
                         icon: "🔬",
-                        description: "實現近乎無損的運算",
+                        description: "實現近乎無損的運算，業界終極標準。",
                         devCost: { cash: 180, data: 300 },
                         devTurns: 5,
                         effects: { revenue_base: 50, revenue_bonus: 40, hype: 30 },
@@ -598,7 +598,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "ef_t4_sustainability",
+                        id: "ef_t4_lic",
                         name: "邊緣運算v4. Gaia-Pulse 蓋婭脈動",
                         type: "unlockable",
                         icon: "🌱",
@@ -632,7 +632,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t1_drone",
+                        id: "em_t1_industrial",
                         name: "工業機器人v1. Pick-Logic 視覺分析",
                         type: "unlockable",
                         icon: "😶",
@@ -645,11 +645,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t1_industrial",
-                        name: "智慧物流v1. Last-Mile 路線規劃器",
+                        id: "em_t1_logistics",
+                        name: "智慧物流v1. Last-Mile 配送小車",
                         type: "unlockable",
                         icon: "🚛",
-                        description: "優化配送路線",
+                        description: "在封閉園區內進行末端配送，採集基礎路況數據。",
                         devCost: { cash: 35, data: 70 },
                         devTurns: 2,
                         effects: { trust: 10, revenue_bonus: 10 },
@@ -667,7 +667,7 @@ const ProductConfig = {
                         name: "人形機器人v2. General-Worker 泛用靈巧手",
                         type: "milestone",
                         icon: "👏",
-                        description: "可理解複雜流程的機器人",
+                        description: "突破手部自由度，可操作 90% 的人類工具。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 400, hype: 30, trust: 12, revenue_base: 15 },
@@ -676,11 +676,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t2_warehouse",
+                        id: "em_t2_industrial",
                         name: "工業機器人v2. Adaptive-Line 自適應產線",
                         type: "unlockable",
                         icon: "🧑‍🏭",
-                        description: "工廠機器人能自主診斷錯誤，並調整生產邏輯",
+                        description: "具備視覺反饋的動態產線，與人類員工安全共存。",
                         devCost: { cash: 70, data: 150 },
                         devTurns: 3,
                         effects: { revenue_base: 20, revenue_bonus: 18 },
@@ -689,11 +689,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t2_delivery",
-                        name: "智慧物流v2. Sky-Net 物流代理",
+                        id: "em_t2_logistics",
+                        name: "智慧物流v2. Urban-Flow 無人機隊",
                         type: "unlockable",
-                        icon: "🚐",
-                        description: "統籌車流量與配送節奏",
+                        icon: "🛸",
+                        description: "跨越地形障礙，獲取大量城市環境長尾數據。",
                         devCost: { cash: 60, data: 130 },
                         devTurns: 3,
                         effects: { community: 150, hype: 18, revenue_base: 12 },
@@ -710,8 +710,8 @@ const ProductConfig = {
                         id: "人形機器人v3. em_t3_milestone",
                         name: "Civil-Servant 服務大師",
                         type: "milestone",
-                        icon: "🤖",
-                        description: "進入養老、照護與基層服務領域的自主機器人",
+                        icon: "👨‍👩‍👧",
+                        description: "語言與動作對齊，進入養老、照護與基層服務領域。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 1500, hype: 50, trust: 15, revenue_base: 40 },
@@ -720,11 +720,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t3_surgical",
-                        name: "工業機器人v3. Black-Factory 黑燈工廠代理",
+                        id: "em_t3_industrial",
+                        name: "工業機器人v3. Black-Factory 黑燈代理",
                         type: "unlockable",
                         icon: "🏭",
-                        description: "無人化工廠",
+                        description: "無需照明與空調的完全自主工廠，產能極致化。",
                         devCost: { cash: 120, data: 250 },
                         devTurns: 5,
                         effects: { trust: 25, revenue_base: 35 },
@@ -733,11 +733,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t3_construction",
-                        name: "智慧物流v3. City-Brain 智慧交通網",
+                        id: "em_t3_logistics",
+                        name: "智慧物流v3. City-Vortex 全自動配送網",
                         type: "unlockable",
-                        icon: "🏗️",
-                        description: "自主調度城市所有運輸工具，實現即時調度",
+                        icon: "🌀",
+                        description: "城市級別的資源調度，實現物流即時化。",
                         devCost: { cash: 100, data: 200 },
                         devTurns: 4,
                         effects: { revenue_bonus: 30, hype: 20 },
@@ -764,8 +764,8 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t4_space",
-                        name: "工業機器人v4. Self-Building Hive 自建蜂巢",
+                        id: "em_t4_industrial",
+                        name: "工業機器人v4. Self-replicating 自我複製蜂巢",
                         type: "unlockable",
                         icon: "🚀",
                         description: "AI 自主在極端環境（深海、月球）建設全自動工廠",
@@ -777,10 +777,10 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "em_t4_companion",
+                        id: "em_t4_logistics",
                         name: "智慧物流v4. Hyper-Loop 全球脈絡",
                         type: "unlockable",
-                        icon: "🛰️",
+                        icon: "🌍",
                         description: "結合超音速管道與演算法的全球物流網",
                         devCost: { cash: 150, data: 350 },
                         devTurns: 5,
@@ -811,11 +811,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t1_hosting",
+                        id: "os_t1_decentral",
                         name: "去中心化v1. P2P 知識節點",
                         type: "unlockable",
                         icon: "📨",
-                        description: "用戶提供算力的合作網絡",
+                        description: "利用用戶閒置硬體進行分散式推理。",
                         devCost: { cash: 20, data: 50 },
                         devTurns: 2,
                         effects: { community: 500, revenue_base: 6, trust: 15, data: 50 },
@@ -824,11 +824,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t1_support",
+                        id: "os_t1_standard",
                         name: "標準制定v1. Schema-One 語義標準",
                         type: "unlockable",
                         icon: "📕",
-                        description: "定義 AI 產出的格式標準",
+                        description: "定義 AI 交換格式，讓所有開源模型能互相溝通。",
                         devCost: { cash: 15, data: 30 },
                         devTurns: 1,
                         effects: { revenue_bonus: 10, trust: 20, alignment: 5 },
@@ -846,7 +846,7 @@ const ProductConfig = {
                         name: "普及推廣v2. Logic-Mesh 協作推理網路",
                         type: "milestone",
                         icon: "👥",
-                        description: "分散式裝置協作完成大型任務",
+                        description: "多裝置協作，將低品質數據轉化為實用功能。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 800, trust: 22, revenue_base: 8 },
@@ -855,11 +855,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t2_marketplace",
+                        id: "os_t2_decentral",
                         name: "去中心化v2. Open-Oracle 市場預測系統",
                         type: "unlockable",
                         icon: "🛒",
-                        description: "匯聚開源數據分析預測市場走向",
+                        description: "無審查的預測模型，社群共同治理。",
                         devCost: { cash: 40, data: 100 },
                         devTurns: 3,
                         effects: { community: 800, revenue_base: 12, hype: 10, data: 100 },
@@ -868,11 +868,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t2_federated",
+                        id: "os_t2_standard",
                         name: "標準制定v2. Inter-Model 協議 2.0",
                         type: "unlockable",
                         icon: "🔗",
-                        description: "定義 AI 跨模型溝通守則",
+                        description: "跨廠商協作標準，確立品牌權威。",
                         devCost: { cash: 50, data: 120 },
                         devTurns: 3,
                         effects: { trust: 18, revenue_bonus: 15, alignment: 8 },
@@ -890,7 +890,7 @@ const ProductConfig = {
                         name: "普及推廣v3. DAO-Governor 自治協議",
                         type: "milestone",
                         icon: "🕸️",
-                        description: "規範合作機制，凝聚小型開發者",
+                        description: "讓百萬用戶參與標記，自動產生通用數據。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 3000, hype: 35,  revenue_base: 25 },
@@ -899,7 +899,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t3_dao",
+                        id: "os_t3_decentral",
                         name: "去中心化v3. Logic-Cloud 共享大腦",
                         type: "unlockable",
                         icon: "⚖️",
@@ -912,11 +912,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t3_bounty",
+                        id: "os_t3_standard",
                         name: "標準制定v3. Universal-Action 標準行為模式",
                         type: "unlockable",
                         icon: "🏆",
-                        description: "定義 AI 操作所有軟硬體的統一標準",
+                        description: "定義 AI 操作所有軟硬體的終極行為規範。",
                         devCost: { cash: 40, data: 80 },
                         devTurns: 2,
                         effects: { trust: 25, alignment: 15, compliance_risk: -10 },
@@ -934,7 +934,7 @@ const ProductConfig = {
                         name: "普及推廣v4. Open-Science 知識湧現平台",
                         type: "milestone",
                         icon: "💡",
-                        description: "全球協作，技術民主化",
+                        description: "全球協作，技術民主化。",
                         devCost: { cash: 0, data: 0 },
                         devTurns: 0,
                         effects: { community: 15000, hype: 80, trust: 40, revenue_base: 40 },
@@ -943,11 +943,11 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "os_t4_foundation",
+                        id: "os_t4_decentral",
                         name: "去中心化v4. Swarm-Intelligence 集體智慧",
                         type: "unlockable",
                         icon: "🌍",
-                        description: "連接全球裝置，無需核心伺服器的超智能體",
+                        description: "連接全球裝置，無需核心伺服器的超智能體。",
                         devCost: { cash: 100, data: 200 },
                         devTurns: 4,
                         effects: { trust: 40 },
@@ -960,7 +960,7 @@ const ProductConfig = {
                         name: "標準制定v4. Evolution-Standard 進化協議",
                         type: "unlockable",
                         icon: "🏛️",
-                        description: "制定 AI 技術自我迭代的標準規則",
+                        description: "制定 AI 技術自我迭代的標準規則。",
                         devCost: { cash: 80, data: 180 },
                         devTurns: 4,
                         effects: { community: 5000, trust: 30, alignment: 25, revenue_bonus: 25 },
@@ -990,7 +990,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t1_cyber",
+                        id: "mi_t1_drone",
                         name: "無人集群v1. Eagle-Eye 影像標註員",
                         type: "unlockable",
                         icon: "🔍",
@@ -1003,7 +1003,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t1_logistics",
+                        id: "mi_t1_cyber",
                         name: "網路資安v1. Ghost-Wall 代碼審計員",
                         type: "unlockable",
                         icon: "📟",
@@ -1034,7 +1034,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t2_drone_swarm",
+                        id: "mi_t2_drone",
                         name: "無人集群v2. Swarm-Commander 蜂群意識",
                         type: "unlockable",
                         icon: "🐝",
@@ -1047,7 +1047,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t2_simulation",
+                        id: "mi_t2_cyber",
                         name: "網路資安v2. Zero-Day Hunter 漏洞獵人",
                         type: "unlockable",
                         icon: "🎯",
@@ -1078,7 +1078,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t3_counter",
+                        id: "mi_t3_drone",
                         name: "無人集群v3. Hunter-Seeker 獵殺者",
                         type: "unlockable",
                         icon: "🧿",
@@ -1091,7 +1091,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t3_command",
+                        id: "mi_t3_cyber",
                         name: "網路資安v3. Cyber-Centurion 網路百夫長",
                         type: "unlockable",
                         icon: "🎖️",
@@ -1122,7 +1122,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t4_deterrence",
+                        id: "mi_t4_drone",
                         name: "無人集群v4. AI威懾系統",
                         type: "unlockable",
                         icon: "☢️",
@@ -1135,7 +1135,7 @@ const ProductConfig = {
                         requiresSenior: true
                     },
                     {
-                        id: "mi_t4_peacekeep",
+                        id: "mi_t4_cyber",
                         name: "網路資安v4. Quantum-Wall 量子防火牆",
                         type: "unlockable",
                         icon: "💎",
