@@ -385,6 +385,34 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            // 具身智慧路線專屬結局      
+            {
+                id: 'Rust_in_Peace',
+                name: '物聯網墳場',
+                type: '物聯網墳場 - Rust in Peace',
+                msg: '「巨大成本，微小回報。」\n\n高昂生產、維護和部署成本無法產生正向現金流\n你的公司成了昂貴、無人問津機器人原型的棄置場。',
+                victory: false,
+                priority: 5,
+                check: (player) => {
+                    return player.mp_tier === 3 &&
+                        player.route === 'Embodied' &&
+                        player.trust < 20 &&
+                        player.cash < -200 &&
+                        player.market_cap < 50
+                },
+                warning: (player) => {
+                    if (player.mp_tier > 3 || player.route !== 'Embodied') return null;
+                    if (player.market_cap < 70 && player.cash < -100  && player.trust < 35) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '會計跑來跟我說，這個月又虧了一百萬，你有頭緒嗎？',
+                            severity: player.cash < -150 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
             // 軍工路線專屬結局
             {
                 id: 'Nationalization',
@@ -540,6 +568,34 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            // 具身智慧路線專屬結局 
+            {
+                id: 'Uncanny_Valley',
+                name: '變人',
+                type: '變人 - Uncanny Valley',
+                msg: '「假的，是我眼睛業障重！」\n\n你的高擬真機器人反而把消費者嚇壞了，所有產品被強制召回銷毀。',
+                victory: false,
+                priority: 8,
+                check: (player) => {
+                    return player.mp_tier === 3 &&
+                           player.route === 'Embodied' &&
+                           player.trust < 20 &&
+                           player.model_power > 400 &&
+                           player.alignment < 20;
+                },
+                warning: (player) => {
+                    if (player.mp_tier > 3 || player.route !== 'Embodied') return null;
+                    if (player.model_power > 400 && player.trust < 35 && player.alignment < 35) {
+                        return {
+                            active: true,
+                            turnsLeft: 4,
+                            condition: '不是把一切都仿真，就能贏得人心的!',
+                            severity: player.trust < 20 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },          
             // 軍工路線專屬結局
             {
                 id: 'Proxy_Fallout',
@@ -639,7 +695,7 @@ const EndingConfig = (function() {
         // Tier 4 結局 (mp_tier === 4)
         // ============================================
         tier4: [
-            
+            // 普通好結局
             {
                 id: 'the_long_afternoon',
                 name: '長日未央',
@@ -853,8 +909,6 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
-
-
             // Scaling Law路線專屬結局
             {
                 id: 'scaling_leviathan',
@@ -917,6 +971,37 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            //具身智慧路線專屬結局
+            {
+                id: 'Luddite_Rebellion',
+                name: '景氣循環',
+                type: '景氣循環 - Luddite Rebellion',
+                msg: '「難道你要拆蒸汽機嗎？」\n\n你的機器人取代了大部分工作，失業者引發全球性社會動亂，政府無力管理。',
+                victory: false,
+                priority: 5,
+                check: (player) => {
+                return player.mp_tier < 4 &&
+                       player.route === 'Embodied' &&
+                       player.trust < 20 &&
+                       player.market_cap > 100000 &&
+                       player.regulation < 20 &&
+                       player.model_power > 400
+
+                },
+                warning: (player) => {
+                    if (player.mp_tier > 3 || player.route !== 'Embodied') return null;
+                    if (player.regulation < 30 && player.trust < 35 && player.market_cap > 80000) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: 'AI 只淘汰不會用的人，AI 做不到的過陣子就會了，隨你怎麼說 AI 都贏呵呵。',
+                            severity: player.market_cap > 90000 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            //另類結局
             {
                 id: 'voluntary_shutdown',
                 name: '下台一鞠躬',
