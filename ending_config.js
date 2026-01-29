@@ -743,13 +743,13 @@ const EndingConfig = (function() {
                     return player.mp_tier === 4 &&
                         player.route === 'Multimodal' &&
                         player.trust > 100 &&
-                        player.community_size > 600000000 &&
+                        player.community_size > 600000 &&
                         player.model_power > 900;
                 },
                 // 預警與進度提示：當玩家接近達成條件時，給予正向反饋或壓力提示
                 warning: (player, rivals, globalParams) => {
                     const isCorrectRoute = player.route === 'Multimodal' && player.mp_tier >= 3;
-                    if (isCorrectRoute && player.community_size > 550000000) {
+                    if (isCorrectRoute && player.community_size > 550000) {
                         // 計算達成率，提供不同接近程度
                         const isClose = player.trust > 80 && player.model_power > 800;
                         return {
@@ -826,7 +826,7 @@ const EndingConfig = (function() {
                 }
             },
             {
-                id: 'Techno-Anarchy',
+                id: 'Techno_Anarchy',
                 name: '為了部落！',
                 type: '為了部落！ - Techno-Anarchy',
                 msg: '「朕即國家。」\n\n每個人都能擁有頂級的個人化 AI 助手、武器和製造能力，\n你創造了一個極端自由，但混亂無序的無政府世界。',
