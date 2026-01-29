@@ -385,7 +385,33 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
-
+            // 軍工路線專屬結局
+            {
+                id: 'Nationalization',
+                name: '國家大手',
+                type: '國家大手 - Nationalization',
+                msg: '「狗是人類最好的朋友。」\n\n你與國家走得太近，最終被視為國防體系的一部分。\n資源無缺但失去了選擇的自由。',
+                victory: false,
+                priority: 5,
+                check: (player) => {
+                    return player.mp_tier < 3 &&
+                        player.route === 'Military' &&
+                        player.market_cap < 200 &&
+                        player.regulation > 90 &&
+                        player.trust > 90
+                },
+                warning: (player) => {
+                    if (player.route === 'Military' && player.regulation < 80 && player.market_cap < 200) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '好用的小工具，政府愛到不想放手。',
+                            severity: player.trust > 70 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
         ],
 
         // ============================================
@@ -453,7 +479,7 @@ const EndingConfig = (function() {
                 }
             },
             // 開源路線專屬結局
-{
+            {
                 id: 'pandoras_fork',
                 name: '十面埋伏',
                 type: "十面埋伏 - Pandora's Fork",
@@ -514,6 +540,36 @@ const EndingConfig = (function() {
                     return null;
                 }
             },
+            // 軍工路線專屬結局
+            {
+                id: 'Proxy_Fallout',
+                name: '替身攻擊',
+                type: '替身攻擊 - Proxy Fallout',
+                msg: '「這是替身攻擊！」\n\n因為軍事 AI 系統高度自主性和激進演算法，全世界陷入永無止境的低烈度戰爭泥淖。',
+                victory: false,
+                priority: 8,
+                check: (player) => {
+                    // 檢查是否符合：Tier 3、多模態路線、模型能力達標、合規風險過高且信任度過低
+                    return player.mp_tier === 3 &&
+                           player.route === 'Military' &&
+                           player.alignment < 20 &&
+                           player.entropy > 90 &&
+                           player.model_power > 400;
+
+                },
+                warning: (player) => {
+                    if (player.route === 'Military' && player.entropy > 70 && player.alignment < 35) {
+                        return {
+                            active: true,
+                            turnsLeft: 3,
+                            condition: '最好的防禦就是攻擊，而你的 AI 將其發揚光大......',
+                            severity: player.entropy > 80 ? 'critical' : 'warning'
+                        };
+                    }
+                    return null;
+                }
+            },
+            //普通結局
             {
                 id: 'wunderkind_no_more',
                 name: '小時了了',
