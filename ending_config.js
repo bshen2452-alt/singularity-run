@@ -750,17 +750,17 @@ const EndingConfig = (function() {
                 priority: 100, // 極致成就，優先級設為最高
                 check: (player) => {
                     // 達成最高 MP 等級、走效率路線、且擁有 10 名以上圖靈級天才
-                    // 備註：cash < 5,000,000 代表這不是靠錢砸出來的，而是純粹的技術突破
+                    // 備註：market_cap < 5,000 代表這不是靠錢砸出來的，而是純粹的技術突破
                     return player.mp_tier === 4 &&
-                        player.cash < 5000000 &&
+                        player.market_cap < 5000 &&
                         player.route === 'Efficiency' &&
-        player.model_power > 800 &&
+                        player.model_power > 800 &&
                         (player.talent?.turing || 0) >= 10;
                 },
                 warning: (player) => {
                     const turingCount = (player.talent?.turing || 0);
                     // 當條件接近（例如有 10 個圖靈級天才且 MP 等級已高）時給予預警
-                    if (player.route === 'Efficiency' && turingCount >= 4 && player.mp_tier >= 3) {
+                    if (player.route === 'Efficiency' && turingCount >= 8 && player.mp_tier >= 3) {
                         return {
                             active: true,
                             turnsLeft: 2,
@@ -819,7 +819,7 @@ const EndingConfig = (function() {
                 warning: (player) => {
                     // 當玩家進入 Scaling Law 路線且資金/債務規模接近時觸發預警
                     if (player.route === 'Scaling Law' && 
-                        (player.cash >= 850000000 || player.debt >= 850000000)) {
+                        (player.cash >= 85000 || player.debt >= 85000)) {
                         return {
                             active: true,
                             turnsLeft: 5,
@@ -843,19 +843,19 @@ const EndingConfig = (function() {
                            player.route === 'Scaling Law' &&
                            player.cash < 70000 &&
                            player.debt > 90000 &&
-                           (player.product_state?.product_revenue || 0) < 1000000 && 
+                           (player.product_state?.product_revenue || 0) < 100 && 
                            player.model_power > 800;
                 },
                 // 預警邏輯：當債務接近現金且現金流低於安全線時觸發
                 warning: (player) => {
                     const isDebtHeavy = player.debt > player.cash * 0.8;
-                    const isCashFlowLow = (player.product_state?.product_revenue || 0) < 2000000;
+                    const isCashFlowLow = (player.product_state?.product_revenue || 0) < 200;
                     if (player.route === 'Scaling Law' && isDebtHeavy && isCashFlowLow) {
                         return {
                             active: true,
                             turnsLeft: 3,
                             condition: '讓你陷入困境的通常不是你不了解的，而是你自認為太了解的。',
-                            severity: (player.product_state?.product_revenue || 0) < 1500000 ? 'critical' : 'warning'
+                            severity: (player.product_state?.product_revenue || 0) < 150 ? 'critical' : 'warning'
                         };
                     }
                     return null;
